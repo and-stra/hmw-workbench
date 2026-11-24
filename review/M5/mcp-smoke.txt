@@ -1,0 +1,168 @@
+﻿hmw-workbench M5 MCP copy-save test
+date: 2026-11-24 22:36:10
+copy exe: C:\Games\cod-hwm\hmw-workbench\build\edit_test\hmw-workbench.exe
+copy root: C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root (first asset root in build\edit_test\workbench.json)
+pristine copy: 5208 bytes, sha256 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D
+real model untouched check: sha256 before 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D
+
+> initialize
+< hmw-workbench protocol 2025-06-18
+
+> tools/call load_model {"model":"vm_crossbow_base"}
+< isError=False
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call get_tags {"name":"tag_red_dot"}
+< isError=False
+< {
+  "count": 1,
+  "tags": [
+    {
+      "added": false,
+      "local_pos": [
+        3.2427539825439453,
+        0.0,
+        5.735755920410156
+      ],
+      "name": "tag_red_dot",
+      "world_pos": [
+        3.2427539825439453,
+        0.0,
+        5.735755920410156
+      ]
+    }
+  ]
+}
+
+> tools/call add_tag {"parent":"j_gun","copy_from":"tag_red_dot","tag":"tag_m5_copy"}
+< isError=False
+< {
+  "added": true,
+  "dirty": true,
+  "local_pos": [
+    3.2427539825439453,
+    0.0,
+    5.735755920410156
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "j_gun",
+  "tag": "tag_m5_copy",
+  "world_pos": [
+    3.2427539825439453,
+    0.0,
+    5.735755920410156
+  ]
+}
+
+> tools/call move_tag {"tag":"tag_m5_copy","pos":[3.242754,0,5.785756]}
+< isError=False
+< {
+  "dirty": true,
+  "local_pos": [
+    3.2427539825439453,
+    0.0,
+    5.7857561111450195
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "j_gun",
+  "tag": "tag_m5_copy",
+  "world_pos": [
+    3.2427539825439453,
+    0.0,
+    5.7857561111450195
+  ]
+}
+
+> tools/call save_model {}
+< isError=False
+< {
+  "backup": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb.bak",
+  "dirty": false,
+  "saved": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+  "tags_json": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.tags.json",
+  "validation": "ok: 20 surfaces, 8 materials, 6 material json missing"
+}
+
+> tools/call load_model {"model":"vm_crossbow_base"}
+< isError=False
+< {
+  "bones": 40,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call get_tags {"name":"tag_m5_copy"}
+< isError=False
+< {
+  "count": 1,
+  "tags": [
+    {
+      "added": false,
+      "local_pos": [
+        3.2427539825439453,
+        0.0,
+        5.7857561111450195
+      ],
+      "name": "tag_m5_copy",
+      "world_pos": [
+        3.2427539825439453,
+        0.0,
+        5.7857561111450195
+      ]
+    }
+  ]
+}
+
+checks:
+  PASS initialize
+  PASS load_model from the copy (39 bones)
+  PASS get_tags: tag_red_dot present on the copy
+  PASS add_tag tag_m5_copy (copy of tag_red_dot)
+  PASS move_tag tag_m5_copy to (3,24275, 0,00000, 5,78576)
+  PASS save_model wrote the copy
+  PASS save_model reports the .bak path
+  PASS .bak exists and equals the pristine copy (5208 bytes)
+  PASS saved copy differs from the .bak (5208 -> 5308 bytes)
+  PASS <model>.tags.json written
+  PASS tags.json contains tag_m5_copy
+  PASS reloaded the saved copy (40 bones = 39 + tag_m5_copy)
+  PASS added + moved tag persisted after reload (not dirty, local pos matches)
+  PASS real model untouched (sha256 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D)
+
+result: 14 passed, 0 failed

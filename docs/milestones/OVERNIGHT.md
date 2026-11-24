@@ -11,7 +11,7 @@ and `git log --oneline -5`; then continue with the first open item below. Do not
 | milestone | state | commit | notes |
 |---|---|---|---|
 | M0-M4b | done | e4ba51a ... 5f6cec6 | previous sessions |
-| M5 tag editing | **code complete, one verification pending** | 23c650c | see below |
+| M5 tag editing | **done** | 23c650c + follow-up | all checks pass, copy-save 14/14 |
 | M6 camos | not started | – | |
 | M7 hardening | not started | – | |
 | M8 world models | not started | – | |
@@ -52,15 +52,11 @@ Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit incl
 - [x] `fit_crossbow_after.txt` shows `tag_reflex`, `tag_acog`, `tag_silencer` found.
 - [x] ADS-end with `-crosshair`: reflex and ACOG reticle aim (960.0, 508.0), 0 px off.
 - [x] Idle/fire/reload sheets with the new tags, no exploded vertices.
-- [ ] **Only open check:** MCP write tools save **on a copy of a model in the temp folder**
-  (not the real file). `move_tag`/`add_tag`/`revert_tags` pass on the real model in memory
-  (`review\M5\mcp-edit.txt`, 16/16); `save_model` is the same `SaveEditedModel` path tested by the
-  CLI save, but the copy-folder MCP test script (`m5-mcp-copy.ps1`) is not written yet.
-  Plan for the new context: copy the exe to `build\edit_test\`, write a `workbench.json` there
-  with `build\edit_test\m5root` (containing `xmodel\vm_crossbow_base.xmb` +
-  `xsurface\010296ab_3f739e8a_100.xsb`) as the first root, start that copy `-mcp`, call
-  `load_model`, `add_tag`, `move_tag`, `save_model`, check the copy's `.bak`/`.tags.json`, write
-  `review\M5\mcp-smoke.txt`; then correct this checklist and amend the M5 commit.
+- [x] **Copy-save check (closed 25 Nov):** MCP write tools save **on a copy of a model in
+  `build\edit_test\`** (not the real file): `tools\test\m5-mcp-copy.ps1` -> `review\M5\mcp-smoke.txt`,
+  **14/14 passed**. 39 -> 40 bones after reload, `tag_m5_copy` persisted at the moved local
+  position, `.bak` byte-identical to the pristine copy, saved copy 5208 -> 5308 B, `.tags.json`
+  contains the tag, real model sha256 unchanged.
 
 ## M5 open issues / notes
 
