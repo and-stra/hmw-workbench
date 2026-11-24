@@ -1,0 +1,30 @@
+hmw-workbench M7 scripted window test
+PASS load crossbow weapon
+PASS play vm_crossbow_idle
+PASS crossbow animation advanced to a posed frame
+PASS mount reflexmwr on tag_reflex
+PASS load h2_m4_mp weapon
+PASS play M4 idle (vm_h2_m4a1_idle)
+PASS mount reflexmwrm4
+PASS load copy model vm_crossbow_base
+PASS add tag_window_test on the copy
+PASS move tag_window_test
+PASS save the copy model
+  saved: C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root\xmodel\vm_crossbow_base.xmb
+  backup: C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root\xmodel\vm_crossbow_base.xmb.bak
+  tags: C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root\xmodel\vm_crossbow_base.tags.json
+  validation: ok: 20 surfaces, 8 materials, 6 material json missing
+PASS copy .bak exists
+PASS copy .tags.json exists
+PASS reload the copy and find tag_window_test
+
+result: PASS (0 failed)
+
+checks:
+  PASS window app exited 0
+  PASS scripted window test (load crossbow/M4, anims, attach, edit copy, save, reload, close)
+  PASS copy .bak is the pristine model
+  PASS copy .tags.json written
+  PASS real game model untouched (sha256 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D)
+
+result: 5 passed, 0 failed

@@ -19,6 +19,9 @@ imgui.ini
 # Reference source checkouts (read-only reference, never committed)
 .ref/
 
+# Regenerated large regression artifacts (the summary lives next to it)
+review/M7/regression/
+
 # OS / editor noise
 Thumbs.db
 desktop.ini

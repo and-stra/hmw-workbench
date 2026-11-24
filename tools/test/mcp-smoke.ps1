@@ -152,16 +152,16 @@ try {
     $crossbow = Call-Tool "load_weapon" @{ weapon = "iw5_exocrossbow_mp"; hands = "viewhands_tf141"; attachments = @("reflexmwr") }
     $crossbowJson = Get-Json $crossbow
     if ($null -eq $crossbowJson -and $null -ne $crossbow) { $crossbowJson = $crossbow }
-    if ($crossbowJson -and $crossbowJson.attachments -and $crossbowJson.attachments[0].found -eq $false) {
-        $script:checks.Add("PASS load_weapon: reflexmwr missing its tag_reflex")
+    if ($crossbowJson -and $crossbowJson.attachments -and $crossbowJson.attachments[0].found -eq $true) {
+        $script:checks.Add("PASS load_weapon: reflexmwr mounted on tag_reflex")
     } else {
         $script:checks.Add("FAIL load_weapon: attachment result")
     }
 
     $fit = Get-Json (Call-Tool "attachment_fit_report" @{ weapon = "iw5_exocrossbow_mp"; hands = "viewhands_tf141"; attachments = @("reflexmwr", "acogmwr", "thermalmwr") })
     $reflex = $fit.attachments | Where-Object { $_.name -eq "reflexmwr" } | Select-Object -First 1
-    if ($fit -and $reflex -and $reflex.found -eq $false -and ($reflex.nearest -contains "tag_red_dot")) {
-        $script:checks.Add("PASS attachment_fit_report: reflexmwr -> tag_reflex missing, nearest tag_red_dot")
+    if ($fit -and $reflex -and $reflex.found -eq $true) {
+        $script:checks.Add("PASS attachment_fit_report: reflexmwr found its tag_reflex")
     } else {
         $script:checks.Add("FAIL attachment_fit_report: reflexmwr result")
     }
@@ -223,7 +223,7 @@ try {
     $missing = Call-Tool "screenshot" @{
         path = "review/M4b/crossbow_reflexmwr_via_mcp.png"; view = "firstperson"; pitch = -18
         width = 1920; height = 1016
-        caption = "crossbow + reflexmwr via MCP: weapon has no tag_reflex (nearest tag_red_dot)"
+        caption = "crossbow + reflexmwr via MCP: tag_reflex fitted in M5"
     }
     if (Test-Path (Join-Path $repo "review\M4b\crossbow_reflexmwr_via_mcp.png")) {
         $script:checks.Add("PASS screenshot: crossbow_reflexmwr_via_mcp.png")

@@ -11,8 +11,8 @@ and `git log --oneline -5`; then continue with the first open item below.
 |---|---|---|---|
 | M0-M4b | done | e4ba51a ... 5f6cec6 | previous sessions |
 | M5 tag editing | **done** | 23c650c + bc8365e | all checks pass, copy-save 14/14 |
-| M6 camos | **done** | see M6.md | research + preview, 3 camos on M4/crossbow |
-| M7 hardening | not started | – | |
+| M6 camos | **done** | a419bbb | research + preview, 3 camos on M4/crossbow |
+| M7 hardening | **done** | see M7.md | 80/80 regression, window test 5/5 |
 | M8 world models | not started | – | |
 | M9 player models | not started | – | |
 | M10 comfort features | not started | – | |
@@ -73,6 +73,19 @@ Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit incl
   exe (`review\M6\camo_check.txt`), MCP camo test 6/6 (`review\M6\mcp-camo.txt`).
 - Build clean (0 warnings). Review: `review\M6\` (baselines, 9 camo PNGs, MCP PNGs, logs).
 - Files changed outside the repo: none.
+
+## M7 - hardening
+
+- New `README.md` (tool, build, run, UI, CLI reference, MCP link, asset roots) and
+  `docs\workflow-porting.md` (step-by-step port check with the crossbow example).
+- `tools\test\m7-regression.ps1`: `-validate` (523/0, 298/47, 189/30), `-roundtrip` (523/523),
+  every M1-M6 review command, all MCP scripts and the M7 window test -> **80/80 passed**
+  (`review\M7\regression.txt`).
+- Fixed the outdated MCP smoke expectation (reflexmwr is now found since M5): 42/42.
+- `tools\test\m7-window.ps1` + `-window-test`: real window, crossbow + M4 + anims +
+  attachments, add/move/save a tag on the copy, reload, close cleanly -> **5/5**
+  (`review\M7\window-test.txt`); real model hash unchanged.
+- Clean build 0 warnings. No app code changes besides the `-window-test` test hook.
 
 ## M5 open issues / notes
 

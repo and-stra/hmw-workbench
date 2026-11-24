@@ -104,6 +104,8 @@ struct Options {
 	float camoStrength = 1.0f;
 	bool hasCamoScale = false;
 	float camoScale = 1.0f;
+	bool windowTest = false;
+	std::filesystem::path windowTestReport;
 	std::filesystem::path editTestSource;
 	std::filesystem::path editTestTarget;
 	std::string caption;
@@ -169,6 +171,9 @@ void PrintUsage() {
 	    "      Read and write every .xmb into build\\roundtrip and byte-compare (must be 100%).\n"
 	    "  hmw-workbench.exe -mcp\n"
 	    "      Stdio MCP server: load weapons/models/attachments, pose anims and render offscreen PNGs.\n"
+	    "  hmw-workbench.exe -window-test [report.txt]\n"
+	    "      Scripted window run (load crossbow + M4, anims, attachment, tag edit on the copy\n"
+	    "      model, close after 30 frames) for M7 regression testing.\n"
 	    "\n"
 	    "workbench.json next to the exe configures asset roots, window size and camera.\n",
 	    stdout);
@@ -528,6 +533,106 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 	return 0;
 }
 
+int RunWindowTest(wb::commands::Workbench& workbench, const std::filesystem::path& reportPath) {
+	std::FILE* out = stdout;
+	std::FILE* file = nullptr;
+	if (!reportPath.empty()) {
+		std::error_code ec;
+		std::filesystem::create_directories(reportPath.parent_path(), ec);
+		if (_wfopen_s(&file, reportPath.c_str(), L"w") == 0 && file != nullptr) {
+			out = file;
+		} else {
+			std::fprintf(stderr, "window-test: cannot write %s\n", reportPath.string().c_str());
+		}
+	}
+	int failures = 0;
+	const auto check = [&out, &failures](bool ok, const std::string& what) {
+		std::fprintf(out, "%s %s\n", ok ? "PASS" : "FAIL", what.c_str());
+		if (!ok) {
+			++failures;
+		}
+	};
+
+	std::fprintf(out, "hmw-workbench M7 scripted window test\n");
+	std::string error;
+
+	// 1. Crossbow weapon in first person, idle animation, HMW reflex attachment.
+	const bool crossbow = workbench.LoadWeapon("iw5_exocrossbow_mp", "viewhands_tf141", true, error);
+	check(crossbow, "load crossbow weapon" + (crossbow ? std::string() : ": " + error));
+	if (crossbow) {
+		const bool idle = workbench.PlayAnim("vm_crossbow_idle", error);
+		check(idle, "play vm_crossbow_idle" + (idle ? std::string() : ": " + error));
+		workbench.SetAnimTime(0.3);
+		workbench.SetAnimPlaying(true);
+		check(workbench.Anim() != nullptr && workbench.AnimFrame() > 0.0f,
+		      "crossbow animation advanced to a posed frame");
+		const bool attached = workbench.Attach("reflexmwr", error);
+		bool found = false;
+		for (const auto& mount : workbench.Attachments()) {
+			if (mount.name == "reflexmwr" && mount.tagFound) {
+				found = true;
+			}
+		}
+		check(attached && found, "mount reflexmwr on tag_reflex" + (attached ? std::string() : ": " + error));
+	}
+
+	// 2. H2 M4 weapon in first person, idle animation, its reflex attachment.
+	const bool m4 = workbench.LoadWeapon("h2_m4_mp", "", true, error);
+	check(m4, "load h2_m4_mp weapon" + (m4 ? std::string() : ": " + error));
+	if (m4) {
+		const std::string stateAnim = workbench.EffectiveAnimForState("IDLE");
+		const bool idle = !stateAnim.empty() && workbench.PlayAnim(stateAnim, error);
+		check(idle, "play M4 idle (" + stateAnim + ")" + (idle ? std::string() : ": " + error));
+		workbench.SetAnimTime(0.2);
+		const bool attached = workbench.Attach("reflexmwrm4", error);
+		check(attached, "mount reflexmwrm4" + (attached ? std::string() : ": " + error));
+	}
+
+	// 3. Standalone crossbow from the copy root (build\edit_test\m5root): add/move/save a tag.
+	const bool model = workbench.LoadModel("vm_crossbow_base", error);
+	check(model, "load copy model vm_crossbow_base" + (model ? std::string() : ": " + error));
+	if (model) {
+		const DirectX::XMFLOAT3 zero{0.0f, 0.0f, 0.0f};
+		const DirectX::XMFLOAT4 identity{0.0f, 0.0f, 0.0f, 1.0f};
+		bool added = workbench.AddTag("tag_window_test", "j_gun", "tag_red_dot", zero, identity, error);
+		check(added, "add tag_window_test on the copy" + (added ? std::string() : ": " + error));
+		DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+		for (const auto& info : workbench.EditableTags()) {
+			if (info.name == "tag_window_test") {
+				pos = info.localPos;
+			}
+		}
+		pos.z += 0.02f;
+		const bool moved = workbench.MoveTagLocal("tag_window_test", pos, identity, error);
+		check(moved, "move tag_window_test" + (moved ? std::string() : ": " + error));
+		wb::commands::ModelSaveResult saved;
+		const bool savedOk = workbench.SaveEditedModel(saved, error);
+		check(savedOk, "save the copy model" + (savedOk ? "" : ": " + error));
+		if (savedOk) {
+			std::fprintf(out, "  saved: %s\n  backup: %s\n  tags: %s\n  validation: %s\n",
+			             saved.path.c_str(), saved.backup.c_str(), saved.tagsJson.c_str(),
+			             saved.validation.c_str());
+			check(std::filesystem::exists(saved.backup), "copy .bak exists");
+			check(std::filesystem::exists(saved.tagsJson), "copy .tags.json exists");
+		}
+		const bool reloaded = workbench.LoadModel("vm_crossbow_base", error);
+		bool found = false;
+		for (const auto& info : workbench.EditableTags()) {
+			if (info.name == "tag_window_test") {
+				found = true;
+			}
+		}
+		check(reloaded && found, "reload the copy and find tag_window_test");
+	}
+
+	std::fprintf(out, "\nresult: %s (%d failed)\n", failures == 0 ? "PASS" : "FAIL", failures);
+	if (file != nullptr) {
+		std::fclose(file);
+	}
+	std::printf("window-test: %s (%d failed)\n", reportPath.string().c_str(), failures);
+	return failures;
+}
+
 int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HINSTANCE instance,
                 const Options& options) {
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
@@ -642,6 +747,15 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 		}
 	}
 
+	int windowTestFrames = -1;
+	if (options.windowTest) {
+		const std::filesystem::path report =
+		    options.windowTestReport.empty() ? exeDir / "window-test.txt"
+		                                     : std::filesystem::absolute(options.windowTestReport);
+		RunWindowTest(workbench, report);
+		windowTestFrames = 30;
+	}
+
 	bool quit = false;
 	while (!quit) {
 		MSG message;
@@ -655,6 +769,12 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 		}
 		if (quit || app.WantsClose()) {
 			break;
+		}
+		if (windowTestFrames >= 0) {
+			if (windowTestFrames == 0) {
+				break;
+			}
+			--windowTestFrames;
 		}
 
 		if (g_resizePending) {
@@ -742,6 +862,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.mode = Mode::Validate;
 		} else if (arg == L"-mcp") {
 			options.mode = Mode::Mcp;
+		} else if (arg == L"-window-test") {
+			options.windowTest = true;
+			if (i + 1 < argc && argv[i + 1][0] != L'-') {
+				options.windowTestReport = std::filesystem::path(argv[++i]);
+			}
 		} else if (arg == L"-roundtrip") {
 			options.mode = Mode::RoundTrip;
 			options.roundTrip = true;

@@ -1,0 +1,86 @@
+﻿M7 regression run
+date: 2026-11-24 23:02:08
+exe: C:\Games\cod-hwm\hmw-workbench\build\bin\Release\hmw-workbench.exe
+
+PASS validate                           exit 1
+PASS validate counts                    523/0, 298/47, 189/30 (known missing)
+PASS roundtrip                          exit 0, 151 B
+PASS roundtrip                          523/523 identical
+PASS m1_info_crossbow                   exit 0
+PASS m1_info_knife                      exit 0
+PASS m1_crossbow_orbit                  exit 0, 276863 B
+PASS m1_crossbow_bones                  exit 0, 308564 B
+PASS m1_crossbow_wire                   exit 0, 339591 B
+PASS m1_knife_orbit                     exit 0, 137356 B
+PASS m2_crossbow_fp                     exit 0, 287627 B
+PASS m2_crossbow_orbit                  exit 0, 345472 B
+PASS m2_m4_fp                           exit 0, 280833 B
+PASS m2_m4_orbit                        exit 0, 316671 B
+PASS m2_m4_textured_orbit               exit 0, 203907 B
+PASS m2_m4_h1_checker_orbit             exit 0, 400599 B
+PASS m3_crossbow_idle                   exit 0, 287627 B
+PASS m3_crossbow_reload_sheet           exit 0, 4974187 B
+PASS m3_crossbow_fire_sheet             exit 0, 1872000 B
+PASS m3_crossbow_sprint_sheet           exit 0, 441569 B
+PASS m3_crossbow_raise_sheet            exit 0, 1403059 B
+PASS m3_crossbow_ads_up_sheet           exit 0, 1075549 B
+PASS m3_crossbow_reload_orbit_sheet     exit 0, 2973496 B
+PASS m3_m4_idle                         exit 0, 280833 B
+PASS m3_m4_reload_sheet                 exit 0, 6007071 B
+PASS m31_m4_hip                         exit 0, 345610 B
+PASS m31_m4_ads                         exit 0, 94194 B
+PASS m4_crossbow_hip                    exit 0, 353444 B
+PASS m4_crossbow_ads                    exit 0, 380997 B
+PASS m4_crossbow_reload_sheet           exit 0, 462150 B
+PASS m4_m4_reflex_hip                   exit 0, 356234 B
+PASS m4_m4_reflex_ads                   exit 0, 99489 B
+PASS m4_m4_acog_hip                     exit 0, 393246 B
+PASS m4_m4_silencer_hip                 exit 0, 344251 B
+PASS m4_crossbow_reflexmwr              exit 0, 623793 B
+PASS m4_fit_crossbow                    exit 0, 12828 B
+PASS m4_fit_m4                          exit 0, 12820 B
+PASS m4b_hands_viewhands_tf141_crossbow exit 0, 177928 B
+PASS m4b_hands_viewhands_tf141_reload   exit 0, 401257 B
+PASS m4b_hands_viewhands_tf141_m4       exit 0, 174152 B
+PASS m4b_hands_viewhands_udt_crossbow   exit 0, 160014 B
+PASS m4b_hands_viewhands_udt_reload     exit 0, 353740 B
+PASS m4b_hands_viewhands_udt_m4         exit 0, 157255 B
+PASS m4b_hands_viewhands_rangers_crossbow exit 0, 185298 B
+PASS m4b_hands_viewhands_rangers_reload exit 0, 404365 B
+PASS m4b_hands_viewhands_rangers_m4     exit 0, 173916 B
+PASS m4b_hands_viewhands_h2_ghillie_crossbow exit 0, 187685 B
+PASS m4b_hands_viewhands_h2_ghillie_reload exit 0, 431979 B
+PASS m4b_hands_viewhands_h2_ghillie_m4  exit 0, 199033 B
+PASS m4b_hands_viewhands_h1_arab_desert_mp_camo_crossbow exit 0, 149639 B
+PASS m4b_hands_viewhands_h1_arab_desert_mp_camo_reload exit 0, 337045 B
+PASS m4b_hands_viewhands_h1_arab_desert_mp_camo_m4 exit 0, 143037 B
+PASS m4b_hands_globalViewhands_mw2_airborne_crossbow exit 0, 160675 B
+PASS m4b_hands_globalViewhands_mw2_airborne_reload exit 0, 358724 B
+PASS m4b_hands_globalViewhands_mw2_airborne_m4 exit 0, 155239 B
+PASS m4b_hands_globalViewhands_mw2_militia_crossbow exit 0, 164801 B
+PASS m4b_hands_globalViewhands_mw2_militia_reload exit 0, 353359 B
+PASS m4b_hands_globalViewhands_mw2_militia_m4 exit 0, 160727 B
+PASS m4b_mcp_smoke                      exit 0 (log C:\Games\cod-hwm\hmw-workbench\review\M7\regression\logs\m4b_mcp_smoke.txt)
+PASS m5_fit_after                       exit 0, 12828 B
+PASS m5_reflex_ads_end                  exit 0, 377385 B
+PASS m5_acog_ads_end                    exit 0, 415179 B
+PASS m5_reflex_hip                      exit 0, 359351 B
+PASS m5_silencer_side                   exit 0, 572813 B
+PASS m5_silencer_top                    exit 0, 414170 B
+PASS m5_reload_sheet                    exit 0, 401257 B
+PASS m5_fire_sheet                      exit 0, 238158 B
+PASS m5_mcp_edit                        exit 0 (log C:\Games\cod-hwm\hmw-workbench\review\M7\regression\logs\m5_mcp_edit.txt)
+PASS m5_mcp_copy_save                   exit 0 (log C:\Games\cod-hwm\hmw-workbench\review\M7\regression\logs\m5_mcp_copy_save.txt)
+PASS m6_m4_christmas_stock              exit 0, 529793 B
+PASS m6_m4_blue_jade_stock              exit 0, 498642 B
+PASS m6_m4_red_wash_stock               exit 0, 412431 B
+PASS m6_crossbow_christmas              exit 0, 555499 B
+PASS m6_crossbow_blue_jade              exit 0, 530709 B
+PASS m6_crossbow_red_wash               exit 0, 482235 B
+PASS m6_m4_fp                           exit 0, 306418 B
+PASS m6_nocamo_m4                       exit 0, 229322 B
+PASS m6_mcp_camo                        exit 0 (log C:\Games\cod-hwm\hmw-workbench\review\M7\regression\logs\m6_mcp_camo.txt)
+PASS window_test                        exit 0 (log C:\Games\cod-hwm\hmw-workbench\review\M7\regression\logs\window_test.txt)
+PASS window app test                  5/5
+
+result: 80 passed, 0 failed

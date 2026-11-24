@@ -6,6 +6,7 @@ exe: C:\Games\cod-hwm\hmw-workbench\build\bin\Release\hmw-workbench.exe
 > tools/call load_weapon {"hands":"viewhands_tf141","weapon":"iw5_exocrossbow_mp"}
 < {
   "attachments": [],
+  "camo": null,
   "first_person": true,
   "gun_model": "vm_crossbow_base",
   "hands": "viewhands_tf141",

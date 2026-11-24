@@ -1,5 +1,5 @@
 ﻿hmw-workbench M6 MCP camo test
-date: 2026-11-24 22:51:35
+date: 2026-11-24 23:02:00
 > initialize -> hmw-workbench
 
 > tools/call load_weapon {"first_person":true,"camo":"camo_h1_blue_jade","weapon":"h2_m4_mp"}
