@@ -250,7 +250,8 @@ private:
 		                       {"hands", str("Viewhands override (optional).")},
 		                       {"attachments", {{"type", "array"}, {"items", {{"type", "string"}}}}},
 		                       {"camo", str("Camo material or name (camo_h1_<name>), e.g. camo_h1_goldfish.")},
-		                       {"first_person", boolean("First-person view (default true).")}}},
+		                       {"world", boolean("Load the worldModel (no hands, orbit) instead of the viewmodel.")},
+		                       {"first_person", boolean("First-person view (default true; world forces orbit).")}}},
 		       {"required", {"weapon"}}}}},
 		    {{"name", "load_model"},
 		     {"description", "Load a standalone xmodel (orbit view; unloads the weapon)."},
@@ -297,6 +298,7 @@ private:
 		      {{"type", "object"},
 		       {"properties", {{"weapon", str("Weapon (default: the loaded weapon).")},
 		                       {"hands", str("Viewhands override.")},
+		                       {"world", boolean("Use the world model and the attachments' world models.")},
 		                       {"attachments", {{"type", "array"}, {"items", {{"type", "string"}}}}}}}}}},
 		    {{"name", "compare_tags"},
 		     {"description", "Compare the bind-pose tags of two weapons/models: shared tags with deltas, and tags only on one side."},
@@ -441,8 +443,9 @@ private:
 		}
 		const std::string hands = args.value("hands", "");
 		const bool firstPerson = args.value("first_person", true);
+		const bool world = args.value("world", false);
 		std::string error;
-		if (!workbench_.LoadWeapon(weapon, hands, firstPerson, error)) {
+		if (!workbench_.LoadWeapon(weapon, hands, firstPerson, error, world)) {
 			return json{{"error", error}};
 		}
 		json attachments = json::array();
@@ -493,6 +496,8 @@ private:
 		}
 		return json{{"weapon", viewmodel->weapon.name},
 		            {"gun_model", viewmodel->weapon.gunModel},
+		            {"loaded_model", viewmodel->gun.model.name},
+		            {"world_model", viewmodel->isWorldModel},
 		            {"hands", viewmodel->handsName},
 		            {"hands_source", viewmodel->handsSource},
 		            {"first_person", workbench_.IsFirstPerson()},
@@ -743,6 +748,7 @@ private:
 			return json{{"error", "weapon is required (or load a weapon first)"}};
 		}
 		std::string hands = args.value("hands", "");
+		const bool world = args.value("world", false);
 		std::vector<std::string> filter;
 		if (args.contains("attachments") && args["attachments"].is_array()) {
 			for (const auto& value : args["attachments"]) {
@@ -753,7 +759,7 @@ private:
 		}
 		commands::AttachmentFitReport report;
 		std::string error;
-		if (!commands::BuildFitReport(roots_, weapon, hands, filter, report, error)) {
+		if (!commands::BuildFitReport(roots_, weapon, hands, filter, report, error, world)) {
 			return json{{"error", error}};
 		}
 		json entries = json::array();
@@ -767,6 +773,7 @@ private:
 		}
 		return json{{"weapon", report.weapon},
 		            {"gun_model", report.gunModel},
+		            {"world", report.world},
 		            {"hands", report.handsModel},
 		            {"weapon_tags", report.weaponTags},
 		            {"attachments", entries}};

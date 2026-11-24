@@ -106,6 +106,7 @@ struct Options {
 	float camoScale = 1.0f;
 	bool windowTest = false;
 	std::filesystem::path windowTestReport;
+	bool worldModel = false;
 	std::filesystem::path editTestSource;
 	std::filesystem::path editTestTarget;
 	std::string caption;
@@ -153,11 +154,11 @@ void PrintUsage() {
 	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
 	    "                    [-crosshair] [-marktags]\n"
 	    "                    [-camo <camo_h1_name|name>] [-camo-strength <0..1>] [-camo-scale <n>]\n"
-	    "                    [-caption <text>] [-no-ads-align]\n"
+	    "                    [-world] [-caption <text>] [-no-ads-align]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
-	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>]\n"
+	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>] [-world]\n"
 	    "      Text report: every attachment's view model, needed weapon tag, found/missing,\n"
-	    "      and the nearest weapon tags for missing ones.\n"
+	    "      and the nearest weapon tags for missing ones. -world uses the world models.\n"
 	    "  hmw-workbench.exe -fit-crossbow -weapon iw5_exocrossbow_mp\n"
 	    "      Add/fit tag_reflex, tag_acog and tag_silencer on the crossbow and save the xmb\n"
 	    "      (with .bak and .tags.json).\n"
@@ -331,7 +332,7 @@ void ApplyWorkbenchView(wb::commands::Workbench& workbench, const Options& optio
 		                       options.hasPitch ? options.pitch : settings.camera.pitch,
 		                       options.hasDistance ? options.distance : settings.camera.distance,
 		                       options.hasFov ? options.fov : settings.camera.fov);
-	} else if (options.viewFirstPerson) {
+	} else if (options.viewFirstPerson && !options.worldModel) {
 		workbench.SetFirstPersonView(options.hasYaw ? options.yaw : 0.0f,
 		                             options.hasPitch ? options.pitch : 0.0f,
 		                             options.hasFov ? options.fov : 0.0f);
@@ -374,13 +375,14 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 	bool hasAsset = false;
 	if (!options.weaponName.empty()) {
 		std::string error;
-		if (!workbench.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson, error)) {
+		if (!workbench.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson, error,
+		                          options.worldModel)) {
 			std::fprintf(stderr, "cannot load weapon %s: %s\n", options.weaponName.c_str(), error.c_str());
 			return 1;
 		}
 		const wb::scene::ViewmodelAsset* viewmodel = workbench.Viewmodel();
-		std::printf("weapon: %s | gun: %s | hands: %s (%s)\n", viewmodel->weapon.name.c_str(),
-		            viewmodel->weapon.gunModel.c_str(),
+		std::printf("weapon: %s | model: %s%s | hands: %s (%s)\n", viewmodel->weapon.name.c_str(),
+		            viewmodel->gun.model.name.c_str(), viewmodel->isWorldModel ? " (world)" : "",
 		            viewmodel->handsName.empty() ? "(none)" : viewmodel->handsName.c_str(),
 		            viewmodel->handsSource.c_str());
 		for (const std::string& warning : viewmodel->warnings) {
@@ -733,6 +735,12 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 	} else if (!options.modelName.empty()) {
 		app.LoadModelByName(options.modelName);
 	}
+	if (options.worldModel && !options.weaponName.empty()) {
+		std::string error;
+		if (!workbench.SetWorldModel(true, error)) {
+			std::fprintf(stderr, "world model: %s\n", error.c_str());
+		}
+	}
 	if (!options.camoName.empty()) {
 		std::string error;
 		if (!workbench.SetCamo(options.camoName, error)) {
@@ -964,6 +972,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		} else if (arg == L"-camo-scale") {
 			valid = ParseFloatArg(nextValue(), options.camoScale) && options.camoScale > 0.0f;
 			options.hasCamoScale = valid;
+		} else if (arg == L"-world") {
+			options.worldModel = true;
 		} else if (arg == L"-fit-report") {
 			options.fitReport = true;
 			if (i + 1 < argc && argv[i + 1][0] != L'-') {
@@ -1099,7 +1109,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		}
 		wb::commands::AttachmentFitReport report;
 		std::string error;
-		if (!wb::commands::BuildFitReport(roots, options.weaponName, options.handsName, {}, report, error)) {
+		if (!wb::commands::BuildFitReport(roots, options.weaponName, options.handsName, {}, report, error,
+		                                  options.worldModel)) {
 			std::fprintf(stderr, "fit report: %s\n", error.c_str());
 			CoUninitialize();
 			return 1;

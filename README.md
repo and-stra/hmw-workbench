@@ -109,6 +109,7 @@ relative to the current working directory unless they are absolute.
 | `-attach <name>` (repeatable) | mount an HMW attachment |
 | `-hidesurface <i,i,...>` | hide weapon surfaces by index |
 | `-camo <camo_h1_name\|name>` | apply a camo (M6); `-camo-strength 0..1`, `-camo-scale n` |
+| `-world` | load the weapon's world model (no hands, orbit) and its attachments' world models |
 | `-bones` / `-wire` / `-crosshair` / `-marktags` / `-grid` / `-nogrid` | overlays |
 | `-yaw <deg>` / `-pitch <deg>` / `-dist <units>` / `-fov <vertical deg>` | camera |
 | `-exposure <n>` | lighting exposure |
@@ -117,7 +118,7 @@ relative to the current working directory unless they are absolute.
 | `-no-ads-align` | disable automatic ADS reticle alignment (tag fitting) |
 | `-posedump [file]` | text dump of the posed skeleton, animation coverage, bounds, tag screen positions |
 | `-info <xmodel\|xanim>` | text dump (bones/tags/surfaces/materials or anim frames/notetracks) |
-| `-fit-report [file] -weapon <name>` | attachment fit report (needed tag, found/missing, nearest tags) |
+| `-fit-report [file] -weapon <name>` | attachment fit report (needed tag, found/missing, nearest tags; add `-world`) |
 | `-validate` | parse every xmodel + surface set + material in all roots (exit 1 when known assets are missing) |
 | `-roundtrip [report.txt]` | read/write every `.xmb` to `build\roundtrip` and byte-compare |
 | `-fit-crossbow -weapon <name>` | add/fit `tag_reflex`, `tag_acog`, `tag_silencer` and save the crossbow (M5) |

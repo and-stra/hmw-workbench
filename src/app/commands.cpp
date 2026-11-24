@@ -473,15 +473,19 @@ bool Workbench::Attach(const std::string& attachment, std::string& error) {
 	}
 	mount.name = mount.attachment.name;
 	mount.internalName = mount.attachment.internalName;
-	if (mount.attachment.viewModels.empty()) {
-		error = "attachment " + mount.name + " has no view model";
+	const std::vector<std::string>& modelNames =
+	    worldModel_ && !mount.attachment.worldModels.empty() ? mount.attachment.worldModels
+	                                                         : mount.attachment.viewModels;
+	if (modelNames.empty()) {
+		error = "attachment " + mount.name + " has no " + (worldModel_ ? "world model" : "view model");
 		return false;
 	}
-	mount.viewModel = mount.attachment.viewModels.front();
+	mount.viewModel = modelNames.front();
 
 	std::string loadError;
 	if (!assets::LoadModelAsset(mount.viewModel, roots_, mount.model, loadError, true)) {
-		error = "attachment " + mount.name + " view model " + mount.viewModel + ": " + loadError;
+		error = "attachment " + mount.name + (worldModel_ ? " world model " : " view model ") +
+		        mount.viewModel + ": " + loadError;
 		return false;
 	}
 	std::string uploadError;
@@ -499,6 +503,9 @@ bool Workbench::Attach(const std::string& attachment, std::string& error) {
 	}
 
 	for (const std::string& reticleName : mount.attachment.reticleViewModels) {
+		if (worldModel_) {
+			break; // reticle view models are a first-person overlay
+		}
 		assets::ModelAsset reticle;
 		std::string reticleError;
 		if (!assets::LoadModelAsset(reticleName, roots_, reticle, reticleError, true)) {
@@ -1019,7 +1026,9 @@ std::string Workbench::EffectiveAnimForState(const std::string& state) const {
 }
 
 bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson,
-                           std::string& error) {	ClearWeapon();
+                           std::string& error, bool world) {
+	ClearWeapon();
+	worldModel_ = world;
 	primaryAnim_.reset();
 	idleAnim_.reset();
 	animName_.clear();
@@ -1033,7 +1042,7 @@ bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, 
 	handsOverride_ = hands;
 
 	scene::ViewmodelAsset loaded;
-	if (!scene::LoadViewmodel(weapon, hands, roots_, loaded, error)) {
+	if (!scene::LoadViewmodel(weapon, hands, roots_, loaded, error, world)) {
 		weaponError_ = error;
 		return false;
 	}
@@ -1062,7 +1071,7 @@ bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, 
 
 	RefreshAnimLists();
 
-	viewMode_ = firstPerson ? ViewMode::FirstPerson : ViewMode::Orbit;
+	viewMode_ = (firstPerson && !world) ? ViewMode::FirstPerson : ViewMode::Orbit;
 	if (viewMode_ == ViewMode::FirstPerson) {
 		showGrid_ = false;
 	} else {
@@ -1084,12 +1093,13 @@ bool Workbench::ReloadWeapon(std::string& error) {
 	const double previousTime = time_;
 	const bool previousAdditive = additive_;
 	const bool firstPerson = viewMode_ == ViewMode::FirstPerson;
+	const bool previousWorld = worldModel_;
 	std::vector<std::string> attached;
 	attached.reserve(attachments_.size());
 	for (const AttachmentMount& mount : attachments_) {
 		attached.push_back(mount.name);
 	}
-	if (!LoadWeapon(weaponName_, handsOverride_, firstPerson, error)) {
+	if (!LoadWeapon(weaponName_, handsOverride_, firstPerson, error, previousWorld)) {
 		return false;
 	}
 	for (const std::string& attachment : attached) {
@@ -1149,7 +1159,18 @@ bool Workbench::ReloadModel(std::string& error) {
 }
 
 bool Workbench::SetHands(const std::string& hands, std::string& error) {
+	if (worldModel_) {
+		return true;
+	}
 	handsOverride_ = hands;
+	return ReloadWeapon(error);
+}
+
+bool Workbench::SetWorldModel(bool world, std::string& error) {
+	if (worldModel_ == world) {
+		return true;
+	}
+	worldModel_ = world;
 	return ReloadWeapon(error);
 }
 
@@ -1675,8 +1696,9 @@ bool LoadModelForInfo(const std::vector<std::filesystem::path>& roots, const std
 
 bool BuildFitReport(const std::vector<std::filesystem::path>& roots, const std::string& weaponName,
                     const std::string& handsOverride, const std::vector<std::string>& attachmentFilter,
-                    AttachmentFitReport& out, std::string& error) {
+                    AttachmentFitReport& out, std::string& error, bool world) {
 	out = AttachmentFitReport{};
+	out.world = world;
 	const std::optional<std::filesystem::path> weaponPath = assets::FindWeaponFile(roots, weaponName);
 	if (!weaponPath.has_value()) {
 		error = "weapon json not found: weapons/" + weaponName + ".json";
@@ -1690,19 +1712,21 @@ bool BuildFitReport(const std::vector<std::filesystem::path>& roots, const std::
 		return false;
 	}
 	out.weapon = weapon.name;
-	out.gunModel = weapon.gunModel;
+	out.gunModel = world && !weapon.worldModel.empty() ? weapon.worldModel : weapon.gunModel;
 
 	assets::ModelAsset gun;
 	std::string loadError;
-	if (!assets::LoadModelAsset(weapon.gunModel, roots, gun, loadError, false)) {
-		error = "gun model " + weapon.gunModel + ": " + loadError;
+	if (!assets::LoadModelAsset(out.gunModel, roots, gun, loadError, false)) {
+		error = (world ? "world model " : "gun model ") + out.gunModel + ": " + loadError;
 		return false;
 	}
 
 	std::string handsName = handsOverride;
-	if (handsName.empty()) {
-		handsName = weapon.handModel == "viewmodel_base_viewhands" ? scene::DefaultFactionHands(roots)
-		                                                          : weapon.handModel;
+	if (!world) {
+		if (handsName.empty()) {
+			handsName = weapon.handModel == "viewmodel_base_viewhands" ? scene::DefaultFactionHands(roots)
+			                                                          : weapon.handModel;
+		}
 	}
 	out.handsModel = handsName;
 	assets::ModelAsset hands;
@@ -1742,12 +1766,14 @@ bool BuildFitReport(const std::vector<std::filesystem::path>& roots, const std::
 		try {
 			const assets::AttachmentAsset attachment = assets::LoadAttachment(*path);
 			entry.name = attachment.name;
-			if (attachment.viewModels.empty()) {
-				entry.note = "no view model";
+			const std::vector<std::string>& modelNames =
+			    world && !attachment.worldModels.empty() ? attachment.worldModels : attachment.viewModels;
+			if (modelNames.empty()) {
+				entry.note = world ? "no world model" : "no view model";
 				out.attachments.push_back(std::move(entry));
 				continue;
 			}
-			entry.viewModel = attachment.viewModels.front();
+			entry.viewModel = modelNames.front();
 			assets::ModelAsset model;
 			std::string modelError;
 			if (!assets::LoadModelAsset(entry.viewModel, roots, model, modelError, false)) {
@@ -1777,16 +1803,17 @@ bool BuildFitReport(const std::vector<std::filesystem::path>& roots, const std::
 
 void PrintFitReport(const AttachmentFitReport& report, std::FILE* out) {
 	std::fprintf(out, "weapon: %s\n", report.weapon.c_str());
-	std::fprintf(out, "gun: %s\n", report.gunModel.c_str());
+	std::fprintf(out, "model: %s%s\n", report.gunModel.c_str(), report.world ? " (world)" : "");
 	std::fprintf(out, "hands: %s\n", report.handsModel.empty() ? "(none)" : report.handsModel.c_str());
 	std::fprintf(out, "weapon tags (%zu):", report.weaponTags.size());
 	for (const std::string& tag : report.weaponTags) {
 		std::fprintf(out, " %s", tag.c_str());
 	}
 	std::fprintf(out, "\n\n");
-	std::fprintf(out, "attachments: %zu (mount tag = attachment view model root bone)\n",
-	             report.attachments.size());
-	std::fprintf(out, "  %-32s %-40s %-22s %-8s %s\n", "attachment", "view model", "needed tag", "status",
+	std::fprintf(out, "attachments: %zu (mount tag = attachment %s root bone)\n", report.attachments.size(),
+	             report.world ? "world model" : "view model");
+	std::fprintf(out, "  %-32s %-40s %-22s %-8s %s\n", "attachment",
+	             report.world ? "world model" : "view model", "needed tag", "status",
 	             "nearest weapon tags");
 	for (const AttachmentFitEntry& entry : report.attachments) {
 		std::string nearest;

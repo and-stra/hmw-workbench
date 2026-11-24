@@ -56,6 +56,7 @@ struct AttachmentFitReport {
 	std::string weapon;
 	std::string gunModel;
 	std::string handsModel;
+	bool world = false;
 	std::vector<std::string> weaponTags;
 	std::vector<AttachmentFitEntry> attachments;
 };
@@ -113,12 +114,15 @@ public:
 	void SetRoots(std::vector<std::filesystem::path> roots);
 
 	// ---- loading ----
-	bool LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson, std::string& error);
+	bool LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson, std::string& error,
+	                bool world = false);
 	void UnloadWeapon() { ClearWeapon(); }
 	bool ReloadWeapon(std::string& error);
 	bool LoadModel(const std::string& model, std::string& error);
 	bool ReloadModel(std::string& error);
 	bool SetHands(const std::string& hands, std::string& error);
+	bool IsWorldModel() const { return worldModel_; }
+	bool SetWorldModel(bool world, std::string& error);
 
 	// ---- attachments ----
 	bool Attach(const std::string& attachment, std::string& error);
@@ -278,6 +282,7 @@ private:
 	Camera camera_;
 
 	bool hasWeapon_ = false;
+	bool worldModel_ = false;
 	scene::ViewmodelAsset viewmodel_;
 	std::unique_ptr<GpuModel> gpuGun_;
 	std::unique_ptr<GpuModel> gpuHands_;
@@ -354,7 +359,7 @@ bool LoadModelForInfo(const std::vector<std::filesystem::path>& roots, const std
 // root bone (= required weapon tag), and reports found/missing plus the nearest weapon tags.
 bool BuildFitReport(const std::vector<std::filesystem::path>& roots, const std::string& weapon,
                     const std::string& hands, const std::vector<std::string>& attachmentFilter,
-                    AttachmentFitReport& out, std::string& error);
+                    AttachmentFitReport& out, std::string& error, bool world = false);
 void PrintFitReport(const AttachmentFitReport& report, std::FILE* out);
 
 // Direct mapping used by the Inspector for animOverrides[].animTreeType.

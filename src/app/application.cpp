@@ -600,6 +600,18 @@ void Application::DrawWeaponInspector() {
 		workbench_.SetViewMode(commands::ViewMode::FirstPerson);
 	}
 
+	bool world = workbench_.IsWorldModel();
+	if (ImGui::Checkbox("World model (orbit)", &world)) {
+		std::string error;
+		if (!workbench_.SetWorldModel(world, error)) {
+			ImGui::SetTooltip("%s", error.c_str());
+		} else if (world) {
+			workbench_.SetViewMode(commands::ViewMode::Orbit);
+		}
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("model: %s", viewmodel->gun.model.name.c_str());
+
 	bool grid = workbench_.ShowGrid();
 	if (ImGui::Checkbox("Grid", &grid)) {
 		workbench_.SetShowGrid(grid);

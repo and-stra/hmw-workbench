@@ -1,0 +1,111 @@
+weapon: iw5_exocrossbow_mp
+model: npc_crossbow_base (world)
+hands: (none)
+weapon tags (17): tag_weapon tag_acog_2 tag_clip tag_directhack tag_eotech tag_flash tag_ik_loc_le tag_lasersight tag_loot tag_parabolic_mic tag_red_dot tag_scope tag_sight_on tag_target_enhancer tag_thermal_scope tag_tracker tag_vrd
+
+attachments: 104 (mount tag = attachment world model root bone)
+  attachment                       world model                              needed tag             status   nearest weapon tags
+  acog                             -                                        -                      -          no world model
+  acogmwr                          attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrak47                      attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrak74u                     attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraprast                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraprsmg                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraugast                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraugsmg                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrbarrett                   attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrdmr25                     attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrdragunov                  attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrfeblmg                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrfebsmg                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrg3                        attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrg36c                      attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrjunlmg                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrjunsnp                    attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm14                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm16                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm21                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm4                        attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm40a3                     attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm60e4                     attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrmp5                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrp90                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrremington700              attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrrpd                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrsaw                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrskorpion                  attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwruzi                       attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrxmlar                     attach_h1_scope_acog_npc                 tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  akimbo                           -                                        -                      -          no world model
+  akimbomwrhidden                  -                                        -                      -          no world model
+  augscope                         attach_h2_aug_scope_vm                   tag_steyr_scope        MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  bloodmwr                         -                                        -                      -          no world model
+  f2000scope                       -                                        -                      -          no world model
+  fastfire                         -                                        -                      -          no world model
+  fmj                              -                                        -                      -          no world model
+  foregrip                         -                                        -                      -          no world model
+  gl                               -                                        -                      -          no world model
+  glak47                           -                                        -                      -          no world model
+  glmwraprast                      attach_h1_launcher_m203_nooptics_npc     tag_m203               MISSING  
+  glmwraugast                      attach_h1_launcher_m203_nooptics_npc     tag_m203               MISSING  
+  glmwrg36c                        attach_h1_launcher_m203_nooptics_npc     tag_m203               MISSING  
+  glmwrm14                         attach_h1_launcher_m203_nooptics_npc     tag_m203               MISSING  
+  glmwrxmlar                       attach_h1_launcher_m203_nooptics_npc     tag_m203               MISSING  
+  glpre                            -                                        -                      -          no world model
+  glpremwraugast                   -                                        -                      -          no world model
+  gripmwrfeblmg                    -                                        -                      -          no world model
+  gripmwrjunlmg                    -                                        -                      -          no world model
+  gripmwrkam12                     -                                        -                      -          no world model
+  heartbeat                        attach_h2_heartbeat_npc                  tag_heartbeat          MISSING  
+  holo                             -                                        -                      -          no world model
+  mars                             -                                        -                      -          no world model
+  ogscope                          -                                        -                      -          no world model
+  reflex                           -                                        -                      -          no world model
+  reflexmwr                        attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrak47                    attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrak74u                   attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwraprsmg                  attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwraugast                  attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwraugsmg                  attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrfeblmg                  attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrg3                      attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrg36c                    attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrjunlmg                  attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm1014                   attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm14                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm16                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm4                      attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm60e4                   attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrmp5                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrp90                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrrpd                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrsaw                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrskorpion                attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwruzi                     attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrwinchester1200          attach_h1_optic_reflex_npc               tag_reflex             MISSING  tag_red_dot, tag_eotech
+  sho                              -                                        -                      -          no world model
+  shopre                           -                                        -                      -          no world model
+  silencerar                       -                                        -                      -          no world model
+  silencerlmg                      attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencermwraprast                attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencermwraprpst                attach_h1_silencer_pistol_npc            tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencermwraprsmg                attach_h1_silencer_mp5_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencermwraugast                attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencermwraugsmg                attach_h1_silencer_mp5_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencermwrxmlar                 attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencerpistol                   attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencershotgun                  attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencersmg                      attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  silencersniper                   attach_h1_silencer_556_npc               tag_silencer           MISSING  tag_flash, tag_sight_on, tag_scope
+  tacknifecolt44                   -                                        -                      -          no world model
+  tacknifecolt45                   -                                        -                      -          no world model
+  tacknifedeagle                   wpn_h2_bolo_knife_vm                     tag_weapon_left        MISSING  tag_weapon
+  tacknifem9                       -                                        -                      -          no world model
+  tacknifemwrdeserteagle           -                                        -                      -          no world model
+  tacknifeusp                      -                                        -                      -          no world model
+  thermal                          -                                        -                      -          no world model
+  thermalmwr                       attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  thermalmwrm60e4                  attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  thermalmwrrpd                    attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  thermalmwrsaw                    attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  xmag                             -                                        -                      -          no world model

@@ -23,14 +23,17 @@ struct ViewmodelAsset {
 	DirectX::XMFLOAT3 boundsHalf{1.0f, 1.0f, 1.0f};
 	DirectX::XMFLOAT3 viewOrigin{0.0f, 0.0f, 0.0f};
 	bool viewOriginValid = false;
+	bool isWorldModel = false;
 	std::vector<std::string> warnings;
 };
 
 // The weapon xmodel root bone (bone 0, `j_gun` in the AW port, `tag_weapon` in HMW models)
 // is attached to the hands model's `tag_weapon` bone. Render the gun with gunTransform.
+// With `world` the weapon's worldModel is loaded instead (no hands, no gun transform) for the
+// orbit/world view; the same mount rule then uses the attachment world models.
 bool LoadViewmodel(const std::string& weaponName, const std::string& handsOverride,
                    const std::vector<std::filesystem::path>& roots, ViewmodelAsset& out,
-                   std::string& error);
+                   std::string& error, bool world = false);
 
 // Default faction hands for weapons whose handModel is the `viewmodel_base_viewhands`
 // placeholder. Prefers viewhands_tf141 (the crossbow's hands), then any viewhands model.

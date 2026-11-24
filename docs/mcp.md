@@ -58,13 +58,14 @@ Load a weapon json, its hands and attachments in first person (or orbit).
 | `hands` | string | weapon `handModel` / faction default | viewhands override |
 | `attachments` | string[] | `[]` | attachment asset names (`reflexmwr`, `acogmwrm4`, ...) |
 | `camo` | string | – | camo material (`camo_h1_blue_jade`) or bare name (`blue_jade`); applied to the gun + attachment view models |
-| `first_person` | bool | `true` | first-person view (orbit otherwise) |
+| `world` | bool | `false` | load `worldModel` instead of `gunModel` (no hands, orbit); attachments use their `worldModels` |
+| `first_person` | bool | `true` | first-person view (orbit otherwise; `world` forces orbit) |
 
-Returns `{weapon, gun_model, hands, hands_source, first_person, camo:{name,texture,strength},
-attachments:[{name,view_model,required_tag,found}], warnings}`. A missing tag is reported with
-`found:false`; the attachment is still mounted (red, at the weapon origin) so a screenshot shows
-the problem. An unknown camo reports `camo:{name,error}` and leaves the weapon loaded without a
-camo (see `docs/camos.md`).
+Returns `{weapon, gun_model, loaded_model, world_model, hands, hands_source, first_person,
+camo:{name,texture,strength}, attachments:[{name,view_model,required_tag,found}], warnings}`. A
+missing tag is reported with `found:false`; the attachment is still mounted (red, at the weapon
+origin) so a screenshot shows the problem. An unknown camo reports `camo:{name,error}` and leaves
+the weapon loaded without a camo (see `docs/camos.md`).
 
 ### `load_model`
 
@@ -138,9 +139,10 @@ tag, found/missing, nearest weapon tags.
 |---|---|---|
 | `weapon` | string | the loaded weapon |
 | `hands` | string | resolved like `load_weapon` |
+| `world` | bool | `false`: use the weapon's world model and the attachments' world models |
 | `attachments` | string[] | all attachment assets in the roots |
 
-Returns `{weapon,gun_model,hands,weapon_tags,[{name,view_model,required_tag,found,nearest,note}]}`.
+Returns `{weapon,gun_model,world,hands,weapon_tags,[{name,view_model,required_tag,found,nearest,note}]}`.
 
 ### `compare_tags`
 

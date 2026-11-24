@@ -111,8 +111,9 @@ std::string DefaultFactionHands(const std::vector<std::filesystem::path>& roots)
 
 bool LoadViewmodel(const std::string& weaponName, const std::string& handsOverride,
                    const std::vector<std::filesystem::path>& roots, ViewmodelAsset& out,
-                   std::string& error) {
+                   std::string& error, bool world) {
 	out = ViewmodelAsset{};
+	out.isWorldModel = world;
 	const std::optional<std::filesystem::path> weaponPath = assets::FindWeaponFile(roots, weaponName);
 	if (!weaponPath.has_value()) {
 		error = "weapon json not found: weapons/" + weaponName + ".json";
@@ -126,14 +127,31 @@ bool LoadViewmodel(const std::string& weaponName, const std::string& handsOverri
 		return false;
 	}
 
+	const std::string modelName =
+	    world ? (out.weapon.worldModel.empty() ? out.weapon.gunModel : out.weapon.worldModel)
+	          : out.weapon.gunModel;
+	if (world && out.weapon.worldModel.empty()) {
+		out.warnings.push_back("weapon has no worldModel; using gunModel " + out.weapon.gunModel);
+	}
 	try {
-		if (!assets::LoadModelAsset(out.weapon.gunModel, roots, out.gun, error, true)) {
-			error = "gun model " + out.weapon.gunModel + ": " + error;
+		if (!assets::LoadModelAsset(modelName, roots, out.gun, error, true)) {
+			error = (world ? "world model " : "gun model ") + modelName + ": " + error;
 			return false;
 		}
 	} catch (const std::exception& e) {
-		error = std::string("gun model: ") + e.what();
+		error = std::string(world ? "world model: " : "gun model: ") + e.what();
 		return false;
+	}
+
+	if (world) {
+		// World models are authored in world space: no hands, no viewmodel join.
+		out.handsName.clear();
+		out.handsSource = "world";
+		out.hasHands = false;
+		DirectX::XMStoreFloat4x4(&out.gunTransform, DirectX::XMMatrixIdentity());
+		out.boundsCenter = out.gun.boundsCenter;
+		out.boundsHalf = out.gun.boundsHalf;
+		return true;
 	}
 
 	const std::string placeholder = "viewmodel_base_viewhands";

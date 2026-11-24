@@ -12,8 +12,8 @@ and `git log --oneline -5`; then continue with the first open item below.
 | M0-M4b | done | e4ba51a ... 5f6cec6 | previous sessions |
 | M5 tag editing | **done** | 23c650c + bc8365e | all checks pass, copy-save 14/14 |
 | M6 camos | **done** | a419bbb | research + preview, 3 camos on M4/crossbow |
-| M7 hardening | **done** | see M7.md | 80/80 regression, window test 5/5 |
-| M8 world models | not started | – | |
+| M7 hardening | **done** | 33595c1 | 80/80 regression, window test 5/5 |
+| M8 world models | **done** | see M8.md | world model + world attachments, fit report |
 | M9 player models | not started | – | |
 | M10 comfort features | not started | – | |
 
@@ -86,6 +86,16 @@ Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit incl
   attachments, add/move/save a tag on the copy, reload, close cleanly -> **5/5**
   (`review\M7\window-test.txt`); real model hash unchanged.
 - Clean build 0 warnings. No app code changes besides the `-window-test` test hook.
+
+## M8 - world models
+
+- `LoadViewmodel(..., world)`: `worldModel` (fallback gunModel), no hands, orbit; `-world` and
+  `load_weapon world=true`; UI checkbox; `Attach` uses `worldModels` in world mode; world fit
+  report (`-fit-report -world`, MCP `world:true`).
+- Self-check: crossbow `npc_crossbow_base` and M4 `wpn_h2_m4a1_npc` textured
+  (`review\M8\`), M4 world reflex found on `tag_reflex`, crossbow world reflex missing
+  (nearest `tag_red_dot`) - the M5 tags are VM-only, documented. MCP world test **7/7**.
+- Build clean (0 warnings). Files changed outside the repo: none.
 
 ## M5 open issues / notes
 

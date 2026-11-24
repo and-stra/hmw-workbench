@@ -1,0 +1,111 @@
+weapon: h2_m4_mp
+model: wpn_h2_m4a1_npc (world)
+hands: (none)
+weapon tags (18): tag_weapon tag_acog tag_brass tag_clip tag_cover tag_holo tag_flash tag_foregrip tag_heartbeat tag_ik_loc_le tag_laser tag_m203 tag_reflex tag_shotgun tag_sight_off tag_sight_on tag_silencer tag_thermal_scope
+
+attachments: 104 (mount tag = attachment world model root bone)
+  attachment                       world model                              needed tag             status   nearest weapon tags
+  acog                             -                                        -                      -          no world model
+  acogmwr                          attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrak47                      attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrak74u                     attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwraprast                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwraprsmg                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwraugast                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwraugsmg                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrbarrett                   attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrdmr25                     attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrdragunov                  attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrfeblmg                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrfebsmg                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrg3                        attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrg36c                      attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrjunlmg                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrjunsnp                    attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrm14                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrm16                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrm21                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrm4                        attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrm40a3                     attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrm60e4                     attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrmp5                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrp90                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrremington700              attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrrpd                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrsaw                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrskorpion                  attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwruzi                       attach_h1_scope_acog_npc                 tag_acog               found    
+  acogmwrxmlar                     attach_h1_scope_acog_npc                 tag_acog               found    
+  akimbo                           -                                        -                      -          no world model
+  akimbomwrhidden                  -                                        -                      -          no world model
+  augscope                         attach_h2_aug_scope_vm                   tag_steyr_scope        MISSING  tag_acog, tag_thermal_scope, tag_shotgun
+  bloodmwr                         -                                        -                      -          no world model
+  f2000scope                       -                                        -                      -          no world model
+  fastfire                         -                                        -                      -          no world model
+  fmj                              -                                        -                      -          no world model
+  foregrip                         -                                        -                      -          no world model
+  gl                               -                                        -                      -          no world model
+  glak47                           -                                        -                      -          no world model
+  glmwraprast                      attach_h1_launcher_m203_nooptics_npc     tag_m203               found    
+  glmwraugast                      attach_h1_launcher_m203_nooptics_npc     tag_m203               found    
+  glmwrg36c                        attach_h1_launcher_m203_nooptics_npc     tag_m203               found    
+  glmwrm14                         attach_h1_launcher_m203_nooptics_npc     tag_m203               found    
+  glmwrxmlar                       attach_h1_launcher_m203_nooptics_npc     tag_m203               found    
+  glpre                            -                                        -                      -          no world model
+  glpremwraugast                   -                                        -                      -          no world model
+  gripmwrfeblmg                    -                                        -                      -          no world model
+  gripmwrjunlmg                    -                                        -                      -          no world model
+  gripmwrkam12                     -                                        -                      -          no world model
+  heartbeat                        attach_h2_heartbeat_npc                  tag_heartbeat          found    
+  holo                             -                                        -                      -          no world model
+  mars                             -                                        -                      -          no world model
+  ogscope                          -                                        -                      -          no world model
+  reflex                           -                                        -                      -          no world model
+  reflexmwr                        attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrak47                    attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrak74u                   attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwraprsmg                  attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwraugast                  attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwraugsmg                  attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrfeblmg                  attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrg3                      attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrg36c                    attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrjunlmg                  attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrm1014                   attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrm14                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrm16                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrm4                      attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrm60e4                   attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrmp5                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrp90                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrrpd                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrsaw                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrskorpion                attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwruzi                     attach_h1_optic_reflex_npc               tag_reflex             found    
+  reflexmwrwinchester1200          attach_h1_optic_reflex_npc               tag_reflex             found    
+  sho                              -                                        -                      -          no world model
+  shopre                           -                                        -                      -          no world model
+  silencerar                       -                                        -                      -          no world model
+  silencerlmg                      attach_h1_silencer_556_npc               tag_silencer           found    
+  silencermwraprast                attach_h1_silencer_556_npc               tag_silencer           found    
+  silencermwraprpst                attach_h1_silencer_pistol_npc            tag_silencer           found    
+  silencermwraprsmg                attach_h1_silencer_mp5_npc               tag_silencer           found    
+  silencermwraugast                attach_h1_silencer_556_npc               tag_silencer           found    
+  silencermwraugsmg                attach_h1_silencer_mp5_npc               tag_silencer           found    
+  silencermwrxmlar                 attach_h1_silencer_556_npc               tag_silencer           found    
+  silencerpistol                   attach_h1_silencer_556_npc               tag_silencer           found    
+  silencershotgun                  attach_h1_silencer_556_npc               tag_silencer           found    
+  silencersmg                      attach_h1_silencer_556_npc               tag_silencer           found    
+  silencersniper                   attach_h1_silencer_556_npc               tag_silencer           found    
+  tacknifecolt44                   -                                        -                      -          no world model
+  tacknifecolt45                   -                                        -                      -          no world model
+  tacknifedeagle                   wpn_h2_bolo_knife_vm                     tag_weapon_left        MISSING  tag_weapon
+  tacknifem9                       -                                        -                      -          no world model
+  tacknifemwrdeserteagle           -                                        -                      -          no world model
+  tacknifeusp                      -                                        -                      -          no world model
+  thermal                          -                                        -                      -          no world model
+  thermalmwr                       attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  thermalmwrm60e4                  attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  thermalmwrrpd                    attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  thermalmwrsaw                    attach_h1_scope_thermal_npc_mp           tag_thermal_scope      found    
+  xmag                             -                                        -                      -          no world model

@@ -1,0 +1,167 @@
+﻿hmw-workbench M8 MCP world-model test
+date: 2026-11-24 23:08:50
+> initialize -> hmw-workbench
+
+> tools/call load_weapon {"first_person":true,"world":true,"weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [],
+  "camo": null,
+  "first_person": false,
+  "gun_model": "vm_crossbow_base",
+  "hands": "",
+  "hands_source": "world",
+  "loaded_model": "npc_crossbow_base",
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": true
+}
+
+> tools/call screenshot {"dist":52,"width":1600,"yaw":25,"path":"review/M8/crossbow_world_via_mcp.png","pitch":20,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M8/crossbow_world_via_mcp.png (1600x900, 288030 bytes)
+
+> tools/call attachment_fit_report {"world":true,"attachments":["reflexmwr","acogmwr"],"weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [
+    {
+      "found": false,
+      "name": "reflexmwr",
+      "nearest": [
+        "tag_red_dot",
+        "tag_eotech"
+      ],
+      "note": "",
+      "required_tag": "tag_reflex",
+      "view_model": "attach_h1_optic_reflex_npc"
+    },
+    {
+      "found": false,
+      "name": "acogmwr",
+      "nearest": [
+        "tag_acog_2",
+        "tag_scope",
+        "tag_thermal_scope"
+      ],
+      "note": "",
+      "required_tag": "tag_acog",
+      "view_model": "attach_h1_scope_acog_npc"
+    }
+  ],
+  "gun_model": "npc_crossbow_base",
+  "hands": "",
+  "weapon": "iw5_exocrossbow_mp",
+  "weapon_tags": [
+    "tag_weapon",
+    "tag_acog_2",
+    "tag_clip",
+    "tag_directhack",
+    "tag_eotech",
+    "tag_flash",
+    "tag_ik_loc_le",
+    "tag_lasersight",
+    "tag_loot",
+    "tag_parabolic_mic",
+    "tag_red_dot",
+    "tag_scope",
+    "tag_sight_on",
+    "tag_target_enhancer",
+    "tag_thermal_scope",
+    "tag_tracker",
+    "tag_vrd"
+  ],
+  "world": true
+}
+
+> tools/call load_weapon {"world":true,"attachments":["reflexmwr"],"weapon":"h2_m4_mp"}
+< {
+  "attachments": [
+    {
+      "found": true,
+      "name": "reflexmwr",
+      "required_tag": "tag_reflex",
+      "view_model": "attach_h1_optic_reflex_npc"
+    }
+  ],
+  "camo": null,
+  "first_person": false,
+  "gun_model": "wpn_h2_m4a1_vm",
+  "hands": "",
+  "hands_source": "world",
+  "loaded_model": "wpn_h2_m4a1_npc",
+  "warnings": [],
+  "weapon": "h2_m4_mp",
+  "world_model": true
+}
+
+> tools/call screenshot {"dist":40,"width":1600,"yaw":35,"path":"review/M8/m4_world_reflex_via_mcp.png","pitch":18,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M8/m4_world_reflex_via_mcp.png (1600x900, 242127 bytes)
+
+> tools/call attachment_fit_report {"world":true,"attachments":["reflexmwr","acogmwr"],"weapon":"h2_m4_mp"}
+< {
+  "attachments": [
+    {
+      "found": true,
+      "name": "reflexmwr",
+      "nearest": [],
+      "note": "",
+      "required_tag": "tag_reflex",
+      "view_model": "attach_h1_optic_reflex_npc"
+    },
+    {
+      "found": true,
+      "name": "acogmwr",
+      "nearest": [],
+      "note": "",
+      "required_tag": "tag_acog",
+      "view_model": "attach_h1_scope_acog_npc"
+    }
+  ],
+  "gun_model": "wpn_h2_m4a1_npc",
+  "hands": "",
+  "weapon": "h2_m4_mp",
+  "weapon_tags": [
+    "tag_weapon",
+    "tag_acog",
+    "tag_brass",
+    "tag_clip",
+    "tag_cover",
+    "tag_holo",
+    "tag_flash",
+    "tag_foregrip",
+    "tag_heartbeat",
+    "tag_ik_loc_le",
+    "tag_laser",
+    "tag_m203",
+    "tag_reflex",
+    "tag_shotgun",
+    "tag_sight_off",
+    "tag_sight_on",
+    "tag_silencer",
+    "tag_thermal_scope"
+  ],
+  "world": true
+}
+
+> tools/call load_weapon {"world":false,"weapon":"h2_m4_mp"}
+< {
+  "attachments": [],
+  "camo": null,
+  "first_person": true,
+  "gun_model": "wpn_h2_m4a1_vm",
+  "hands": "viewhands_tf141",
+  "hands_source": "faction",
+  "loaded_model": "wpn_h2_m4a1_vm",
+  "warnings": [],
+  "weapon": "h2_m4_mp",
+  "world_model": false
+}
+
+checks:
+  PASS load_weapon world=true: npc_crossbow_base, no hands, orbit
+  PASS screenshot crossbow world via MCP
+  PASS world fit report: npc_crossbow_base has no tag_reflex (nearest tag_red_dot)
+  PASS load_weapon world=true: wpn_h2_m4a1_npc + reflexmwr found on tag_reflex
+  PASS screenshot M4 world + reflex via MCP
+  PASS world fit report: wpn_h2_m4a1_npc has tag_reflex
+  PASS load_weapon world=false returns the view model
+
+result: 7 passed, 0 failed
