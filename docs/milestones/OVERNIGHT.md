@@ -1,4 +1,4 @@
-# Overnight progress log
+﻿# Overnight progress log
 
 Last update: 24 Nov 2026, ~23:00. The user asked to document the state and stop; the next session
 starts with a fresh context.
@@ -11,14 +11,14 @@ and `git log --oneline -5`; then continue with the first open item below. Do not
 | milestone | state | commit | notes |
 |---|---|---|---|
 | M0-M4b | done | e4ba51a ... 5f6cec6 | previous sessions |
-| M5 tag editing | **code complete, one verification pending** | 0cdcbd4 | see below |
+| M5 tag editing | **code complete, one verification pending** | 23c650c | see below |
 | M6 camos | not started | – | |
 | M7 hardening | not started | – | |
 | M8 world models | not started | – | |
 | M9 player models | not started | – | |
 | M10 comfort features | not started | – | |
 
-Commit hash of this checkpoint: **0cdcbd4** (`M5: tag editing`). The commit includes
+Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit includes
 `docs\porting\aw.md` updated by Claude and `docs\OVERNIGHT-TASK.md`.
 
 ## M5 - what is done
@@ -83,3 +83,4 @@ Commit hash of this checkpoint: **0cdcbd4** (`M5: tag editing`). The commit incl
    dropdown/CLI/MCP and the shader approximation. One commit `M6: camos`.
 3. M7 hardening, then M8 world models, M9 player models, M10 comfort features, one commit each,
    updating this file after every milestone. Maps are not part of the run.
+
