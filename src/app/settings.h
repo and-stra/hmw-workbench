@@ -19,6 +19,9 @@ struct Settings {
 	int windowHeight = 900;
 	std::string lastWeapon;
 	CameraSettings camera;
+	float exposure = 1.0f;
+	float firstPersonFov = 65.0f;
+	float viewmodelFovScale = 1.25f;
 };
 
 // Defaults used when workbench.json does not exist yet.

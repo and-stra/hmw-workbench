@@ -15,6 +15,9 @@ public:
 	void SetDistance(float distance);
 	void SetFov(float fov);
 	void SetTarget(const XMFLOAT3& target);
+	void SetFirstPerson(const XMFLOAT3& eye, const XMFLOAT3& target);
+	void SetOrbitMode() { firstPerson_ = false; }
+	bool IsFirstPerson() const { return firstPerson_; }
 
 	float Yaw() const { return yaw_; }
 	float Pitch() const { return pitch_; }
@@ -38,6 +41,9 @@ private:
 	float pitch_ = 25.0f;
 	float distance_ = 20.0f;
 	float fov_ = 60.0f;
+	bool firstPerson_ = false;
+	XMFLOAT3 firstPersonEye_{0.0f, 0.0f, 0.0f};
+	XMFLOAT3 firstPersonTarget_{1.0f, 0.0f, 0.0f};
 };
 
 } // namespace wb

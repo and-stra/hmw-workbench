@@ -75,6 +75,9 @@ It does not start the next milestone until it gets the go-ahead.
 - Asset root scanning + `workbench.json`. `-screenshot` works with an empty scene.
 - Done when: builds clean from a fresh clone with `tools\build\build.bat`; `review\M0\empty.png` shows the grid.
 
+Architecture note for M2–M4: route the UI and the CLI through one **command layer** (load weapon/model, set hands,
+attachments, anim + time, camera, screenshot, get bones/tags). The MCP server in M4b is a thin layer on top of it.
+
 ### M1 – Static models
 - Readers: `.xmb`, `.xsb` (positions, normals, tangents, UVs, vertex weights/blend info, triangles, LOD 0),
   material json (texture names by semantic: color, normal, specular/gloss), `.h1Image` + streamed `.pixels`
@@ -114,6 +117,16 @@ It does not start the next milestone until it gets the go-ahead.
 - Missing tag: the attachment is drawn at the weapon origin in red, with a hint "weapon has no `tag_reflex`".
 - Done when: crossbow + `reflexmwr` shows "missing tag_reflex"; an HMW weapon with its own attachments mounts them
   correctly; screenshots.
+
+### M4b – MCP server (read-only)
+- `hmw-workbench.exe -mcp`: stdio MCP server, same pattern as `mwx.exe -mcp`. Tools call the shared command layer
+  (no logic of their own); every call returns within ~30 s.
+- Tools: `list_assets`, `load_weapon` (weapon, hands, attachments), `load_model`, `play_anim` / `set_anim_time`,
+  `screenshot` (view, camera, bones, wire; returns the PNG), `get_bones` / `get_tags`, `attachment_fit_report`
+  (per attachment: needed tag, found/missing, nearest similar tag), `compare_tags` (two weapons), `validate`.
+- Register it in opencode (`opencode.json` in this repo) and document it in `docs/mcp.md`.
+- Done when: Claude can load the crossbow with an HMW reflex, get the fit report and a screenshot through the MCP.
+- M5 later adds write tools (`move_tag`, `add_tag`, `save_model`) with the same `.bak` rule as the UI.
 
 ### M5 – Tag editing (fit attachments) and saving
 - `.xmb` writer. **First** a round-trip test: read → write every `.xmb` in all roots to a temp folder → byte-compare.

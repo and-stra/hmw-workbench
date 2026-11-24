@@ -126,6 +126,19 @@ XModelData LoadXModel(const std::filesystem::path& path) {
 				bone.tagPosition = DirectX::XMFLOAT3(tagPositions[tagIndex].x, tagPositions[tagIndex].y,
 				                                     tagPositions[tagIndex].z);
 				bone.hasTagPosition = true;
+			}
+		}
+
+		// Some dumps store tag positions in tagPositions, others only in baseMat. Prefer
+		// baseMat (model-space base pose); use tagPositions only when baseMat is empty for
+		// this bone and the tag position is non-zero.
+		if (bone.hasTagPosition) {
+			const float baseLength = bone.worldPos.x * bone.worldPos.x + bone.worldPos.y * bone.worldPos.y +
+			                         bone.worldPos.z * bone.worldPos.z;
+			const float tagLength = bone.tagPosition.x * bone.tagPosition.x +
+			                        bone.tagPosition.y * bone.tagPosition.y +
+			                        bone.tagPosition.z * bone.tagPosition.z;
+			if (baseLength < 1.0e-6f && tagLength > 1.0e-6f) {
 				bone.worldPos = bone.tagPosition;
 			}
 		}

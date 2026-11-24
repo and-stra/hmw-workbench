@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <map>
 #include <unordered_map>
 
@@ -34,28 +35,39 @@ int ScoreTexture(const std::string& image, std::uint8_t semantic) {
 	const std::string lower = ToLower(image);
 	int score = 0;
 	const auto has = [&lower](const char* needle) { return lower.find(needle) != std::string::npos; };
+	const auto ends = [&lower](const char* suffix) {
+		const std::size_t length = std::strlen(suffix);
+		return lower.size() >= length && lower.compare(lower.size() - length, length, suffix) == 0;
+	};
+	const bool camoOverlay = has("camo") || has("transparent");
 
 	if (semantic == 2) {
-		if (has("col")) {
+		if (ends("_c") || ends("_col") || ends("_color")) {
+			score += 10;
+		} else if (has("col")) {
 			score += 6;
 		}
-		if (has("mask") || has("detail") || has("camo") || has("spc") || has("nml") || has("occ") ||
+		if (camoOverlay || has("mask") || has("detail") || has("spc") || has("nml") || has("occ") ||
 		    has("env")) {
-			score -= 5;
+			score -= 15;
 		}
 	} else if (semantic == 5) {
-		if (has("nml") || has("normal")) {
+		if (ends("_n") || ends("_nml") || ends("_normal")) {
+			score += 10;
+		} else if (has("nml") || has("normal")) {
 			score += 6;
 		}
-		if (has("spc") || has("occ")) {
-			score -= 4;
+		if (camoOverlay || has("spc") || has("occ")) {
+			score -= 15;
 		}
 	} else if (semantic == 8) {
-		if (has("spc") || has("spec")) {
+		if (ends("_s") || ends("_spc") || ends("_spec")) {
+			score += 10;
+		} else if (has("spc") || has("spec")) {
 			score += 6;
 		}
-		if (has("occ") || has("env")) {
-			score -= 4;
+		if (camoOverlay || has("occ") || has("env")) {
+			score -= 15;
 		}
 	}
 	return score;

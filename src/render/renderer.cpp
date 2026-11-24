@@ -52,6 +52,7 @@ constexpr char kModelShader[] = R"(
 cbuffer ModelConstants : register(b0)
 {
     row_major float4x4 gViewProjection;
+    row_major float4x4 gWorld;
     float4 gCameraPosition;
     float4 gLightDirection;
     float4 gParams;
@@ -84,11 +85,11 @@ struct PSInput
 PSInput VSMain(VSInput input)
 {
     PSInput output;
-    output.position = mul(float4(input.position, 1.0f), gViewProjection);
-    output.worldPosition = input.position;
+    output.position = mul(mul(float4(input.position, 1.0f), gWorld), gViewProjection);
+    output.worldPosition = mul(float4(input.position, 1.0f), gWorld).xyz;
 
-    float3 n = normalize(input.normal);
-    float3 t = input.tangent - n * dot(n, input.tangent);
+    float3 n = normalize(mul(input.normal, (float3x3)gWorld));
+    float3 t = mul(input.tangent, (float3x3)gWorld);
     if (length(t) < 1.0e-5f)
     {
         t = (abs(n.z) < 0.9f) ? cross(n, float3(0.0f, 0.0f, 1.0f)) : cross(n, float3(0.0f, 1.0f, 0.0f));
@@ -117,10 +118,13 @@ float4 PSMain(PSInput input) : SV_TARGET
 
     float ndl = saturate(dot(n, lightDirection));
     float specularMask = gSpecMap.Sample(gLinear, input.uv).r;
-    float specular = pow(saturate(dot(n, halfVector)), gParams.x) * (0.12f + specularMask * 0.88f);
+    float specular = pow(saturate(dot(n, halfVector)), gParams.x) * (0.06f + specularMask * 0.94f);
 
-    float3 color = albedo * (0.42f + 0.82f * ndl) + specular * float3(0.85f, 0.88f, 0.92f);
-    return float4(color, 1.0f);
+    // Linear lighting, then exposure and gamma encoding into the UNORM scene target.
+    float3 linearColor = albedo * (0.65f + 1.15f * ndl) + specular * float3(0.9f, 0.93f, 0.98f);
+    linearColor *= gParams.y;
+    linearColor = pow(saturate(linearColor), 1.0f / 2.2f);
+    return float4(linearColor, 1.0f);
 }
 )";
 
@@ -131,13 +135,14 @@ struct GridVertex {
 
 struct alignas(16) ModelConstants {
 	DirectX::XMFLOAT4X4 viewProjection;
+	DirectX::XMFLOAT4X4 world;
 	DirectX::XMFLOAT4 cameraPosition;
 	DirectX::XMFLOAT4 lightDirection;
 	DirectX::XMFLOAT4 params;
 };
 
 static_assert(sizeof(assets::SurfaceVertex) == 48);
-static_assert(sizeof(ModelConstants) == 112);
+static_assert(sizeof(ModelConstants) == 176);
 
 bool CompileShader(const char* source, const char* entryPoint, const char* target, ID3DBlob** blob) {
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -178,6 +183,29 @@ void AddGridLevel(std::vector<GridVertex>& vertices, int step, int halfExtent,
 		const float offset = static_cast<float>(i);
 		AddLine(vertices, DirectX::XMFLOAT3(offset, -extent, 0.0f), DirectX::XMFLOAT3(offset, extent, 0.0f), color);
 		AddLine(vertices, DirectX::XMFLOAT3(-extent, offset, 0.0f), DirectX::XMFLOAT3(extent, offset, 0.0f), color);
+	}
+}
+
+} // namespace
+
+namespace {
+
+DXGI_FORMAT ToSrgbFormat(DXGI_FORMAT format) {
+	switch (format) {
+	case DXGI_FORMAT_BC1_UNORM:
+		return DXGI_FORMAT_BC1_UNORM_SRGB;
+	case DXGI_FORMAT_BC2_UNORM:
+		return DXGI_FORMAT_BC2_UNORM_SRGB;
+	case DXGI_FORMAT_BC3_UNORM:
+		return DXGI_FORMAT_BC3_UNORM_SRGB;
+	case DXGI_FORMAT_BC7_UNORM:
+		return DXGI_FORMAT_BC7_UNORM_SRGB;
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+		return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+		return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+	default:
+		return format;
 	}
 }
 
@@ -489,7 +517,7 @@ bool Renderer::CreateDefaultTextures() {
 	desc.Height = checkerSize;
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	desc.SampleDesc.Count = 1;
 	desc.Usage = D3D11_USAGE_IMMUTABLE;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -656,7 +684,8 @@ void Renderer::RenderGrid(const Camera& camera) {
 }
 
 void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
-                           const std::vector<bool>* visibleSurfaces) {
+                           const std::vector<bool>* visibleSurfaces, float exposure,
+                           const DirectX::XMFLOAT4X4* world) {
 	if (model.surfaces.empty() || sceneWidth_ <= 0 || sceneHeight_ <= 0) {
 		return;
 	}
@@ -664,10 +693,15 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	const float aspect = static_cast<float>(sceneWidth_) / static_cast<float>(sceneHeight_);
 	ModelConstants constants = {};
 	DirectX::XMStoreFloat4x4(&constants.viewProjection, camera.ViewProjection(aspect));
+	if (world != nullptr) {
+		constants.world = *world;
+	} else {
+		DirectX::XMStoreFloat4x4(&constants.world, DirectX::XMMatrixIdentity());
+	}
 	const DirectX::XMFLOAT3 eye = camera.Eye();
 	constants.cameraPosition = DirectX::XMFLOAT4(eye.x, eye.y, eye.z, 1.0f);
 	constants.lightDirection = DirectX::XMFLOAT4(0.35f, -0.45f, 0.82f, 0.0f);
-	constants.params = DirectX::XMFLOAT4(48.0f, 0.0f, 0.0f, 0.0f);
+	constants.params = DirectX::XMFLOAT4(48.0f, exposure, 0.0f, 0.0f);
 
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 	if (FAILED(context_->Map(modelConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
@@ -729,7 +763,8 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	context_->RSSetState(solidState_.Get());
 }
 
-ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(const assets::ImageData& image, std::string& error) {
+ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(const assets::ImageData& image, bool srgb,
+                                                          std::string& error) {
 	if (!image.available || image.pixels.empty()) {
 		error = image.note.empty() ? "no pixel data" : image.note;
 		return nullptr;
@@ -737,8 +772,9 @@ ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(const assets::ImageData
 
 	std::size_t rowPitch = 0;
 	std::size_t slicePitch = 0;
-	const HRESULT pitchResult = DirectX::ComputePitch(static_cast<DXGI_FORMAT>(image.format), image.width,
-	                                                  image.height, rowPitch, slicePitch);
+	const DXGI_FORMAT format =
+	    srgb ? ToSrgbFormat(static_cast<DXGI_FORMAT>(image.format)) : static_cast<DXGI_FORMAT>(image.format);
+	const HRESULT pitchResult = DirectX::ComputePitch(format, image.width, image.height, rowPitch, slicePitch);
 	if (FAILED(pitchResult) || slicePitch == 0) {
 		error = "unsupported texture format " + std::to_string(image.format);
 		return nullptr;
@@ -753,7 +789,7 @@ ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(const assets::ImageData
 	desc.Height = image.height;
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
-	desc.Format = static_cast<DXGI_FORMAT>(image.format);
+	desc.Format = format;
 	desc.SampleDesc.Count = 1;
 	desc.Usage = D3D11_USAGE_IMMUTABLE;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -788,19 +824,19 @@ std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model,
 		const assets::MaterialSlot& slot = model.materials[i];
 		GpuMaterial& material = gpu->materials[i];
 		std::string textureError;
-		const auto applyTexture = [&](int imageIndex, ComPtr<ID3D11ShaderResourceView>& target) {
+		const auto applyTexture = [&](int imageIndex, ComPtr<ID3D11ShaderResourceView>& target, bool srgb) {
 			if (imageIndex < 0 || imageIndex >= static_cast<int>(model.images.size())) {
 				return;
 			}
 			ComPtr<ID3D11ShaderResourceView> view =
-			    CreateTexture(model.images[static_cast<std::size_t>(imageIndex)], textureError);
+			    CreateTexture(model.images[static_cast<std::size_t>(imageIndex)], srgb, textureError);
 			if (view) {
 				target = std::move(view);
 			}
 		};
-		applyTexture(slot.colorImage, material.albedo);
-		applyTexture(slot.normalImage, material.normal);
-		applyTexture(slot.specularImage, material.specular);
+		applyTexture(slot.colorImage, material.albedo, true);
+		applyTexture(slot.normalImage, material.normal, false);
+		applyTexture(slot.specularImage, material.specular, false);
 	}
 
 	gpu->surfaces.resize(model.surfaceSet.surfaces.size());

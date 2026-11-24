@@ -50,6 +50,11 @@ Settings DefaultSettings() {
 	Settings settings;
 	settings.assetRoots = {
 	    std::string(kGameDir) + "\\zonetool\\mod",
+	    std::string(kGameDir) + "\\dump\\workbench_hmw_patch_common_mp",
+	    std::string(kGameDir) + "\\dump\\workbench_hmw_ar1",
+	    std::string(kGameDir) + "\\dump\\workbench_hmw_m4",
+	    std::string(kGameDir) + "\\dump\\workbench_hmw_attachments",
+	    std::string(kGameDir) + "\\dump\\workbench_hmw_post_gfx",
 	    "C:\\Games\\cod-hwm\\refs\\dumps\\hmw_patch_common_mp",
 	    "C:\\Games\\cod-hwm\\refs\\dumps\\patch_common_mp",
 	    "C:\\Games\\cod-hwm\\refs\\dumps\\*",
@@ -103,6 +108,18 @@ Settings LoadSettings(const std::filesystem::path& exeDir) {
 			settings.lastWeapon = json["lastWeapon"].get<std::string>();
 		}
 
+		if (json.contains("exposure") && json["exposure"].is_number()) {
+			settings.exposure = json["exposure"].get<float>();
+		}
+
+		if (json.contains("firstPersonFov") && json["firstPersonFov"].is_number()) {
+			settings.firstPersonFov = json["firstPersonFov"].get<float>();
+		}
+
+		if (json.contains("viewmodelFovScale") && json["viewmodelFovScale"].is_number()) {
+			settings.viewmodelFovScale = json["viewmodelFovScale"].get<float>();
+		}
+
 		if (json.contains("camera") && json["camera"].is_object()) {
 			const auto& camera = json["camera"];
 			if (camera.contains("yaw") && camera["yaw"].is_number()) {
@@ -128,6 +145,9 @@ Settings LoadSettings(const std::filesystem::path& exeDir) {
 	settings.camera.pitch = ClampFloat(settings.camera.pitch, -89.0f, 89.0f);
 	settings.camera.distance = ClampFloat(settings.camera.distance, 0.1f, 1000.0f);
 	settings.camera.fov = ClampFloat(settings.camera.fov, 10.0f, 140.0f);
+	settings.exposure = ClampFloat(settings.exposure, 0.1f, 4.0f);
+	settings.firstPersonFov = ClampFloat(settings.firstPersonFov, 40.0f, 120.0f);
+	settings.viewmodelFovScale = ClampFloat(settings.viewmodelFovScale, 1.0f, 1.6f);
 	return settings;
 }
 
@@ -136,6 +156,9 @@ void SaveSettings(const std::filesystem::path& exeDir, const Settings& settings)
 	json["assetRoots"] = settings.assetRoots;
 	json["window"] = {{"width", settings.windowWidth}, {"height", settings.windowHeight}};
 	json["lastWeapon"] = settings.lastWeapon;
+	json["exposure"] = settings.exposure;
+	json["firstPersonFov"] = settings.firstPersonFov;
+	json["viewmodelFovScale"] = settings.viewmodelFovScale;
 	json["camera"] = {
 	    {"yaw", settings.camera.yaw},
 	    {"pitch", settings.camera.pitch},

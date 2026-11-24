@@ -42,6 +42,7 @@ Application::Application(Settings& settings, AssetIndex& assets, Renderer& rende
 	camera_.SetDistance(settings_.camera.distance);
 	camera_.SetFov(settings_.camera.fov);
 	RebuildFilter();
+	RefreshHandsOptions();
 }
 
 void Application::Frame() {
@@ -72,6 +73,7 @@ void Application::Frame() {
 	ImGui::End();
 
 	DrawAssetsPanel();
+	UpdateViewCamera();
 	DrawViewportPanel();
 	DrawInspectorPanel();
 	DrawTimelinePanel();
@@ -79,7 +81,9 @@ void Application::Frame() {
 	settings_.camera.yaw = camera_.Yaw();
 	settings_.camera.pitch = camera_.Pitch();
 	settings_.camera.distance = camera_.Distance();
-	settings_.camera.fov = camera_.Fov();
+	if (!camera_.IsFirstPerson()) {
+		settings_.camera.fov = camera_.Fov();
+	}
 }
 
 void Application::BuildLayout(ImGuiID dockspaceId, const ImVec2& size) {
@@ -112,6 +116,9 @@ void Application::DrawMenuBar() {
 		}
 		if (ImGui::MenuItem("Reload model", nullptr, false, !loadedModelName_.empty())) {
 			ReloadModel();
+		}
+		if (ImGui::MenuItem("Reload weapon", nullptr, false, !loadedWeaponName_.empty())) {
+			ReloadWeapon();
 		}
 		if (ImGui::MenuItem("Save settings now")) {
 			SaveSettings(exeDir_, settings_);
@@ -203,8 +210,8 @@ void Application::DrawAssetsPanel() {
 					selected_ = entryIndex;
 					if (entry.kind == AssetKind::Weapon) {
 						settings_.lastWeapon = entry.name;
-					}
-					if (entry.kind == AssetKind::Model) {
+						LoadWeaponByName(entry.name);
+					} else if (entry.kind == AssetKind::Model) {
 						LoadSelectedModel();
 					}
 				}
@@ -249,8 +256,15 @@ void Application::DrawViewportPanel() {
 		return;
 	}
 	renderer_.RenderGrid(camera_);
-	if (gpuModel_ && modelVisible_) {
-		renderer_.RenderModel(*gpuModel_, camera_, wireframe_, &surfaceVisible_);
+	if (gpuGun_ && gpuHands_) {
+		renderer_.RenderModel(*gpuHands_, camera_, wireframe_, &handsSurfaceVisible_, settings_.exposure);
+		renderer_.RenderModel(*gpuGun_, camera_, wireframe_, &gunSurfaceVisible_, settings_.exposure,
+		                      &viewmodel_.gunTransform);
+	} else if (gpuGun_) {
+		renderer_.RenderModel(*gpuGun_, camera_, wireframe_, &gunSurfaceVisible_, settings_.exposure,
+		                      &viewmodel_.gunTransform);
+	} else if (gpuModel_ && modelVisible_) {
+		renderer_.RenderModel(*gpuModel_, camera_, wireframe_, &surfaceVisible_, settings_.exposure);
 	}
 
 	const ImVec2 imageOrigin = ImGui::GetCursorScreenPos();
@@ -289,7 +303,7 @@ void Application::HandleViewportInput(const ImVec2& viewportSize) {
 
 	if (active) {
 		const ImVec2 delta = io.MouseDelta;
-		if (delta.x != 0.0f || delta.y != 0.0f) {
+		if (!camera_.IsFirstPerson() && (delta.x != 0.0f || delta.y != 0.0f)) {
 			if (io.MouseDown[ImGuiMouseButton_Left]) {
 				camera_.Orbit(delta.x, delta.y);
 			} else if (io.MouseDown[ImGuiMouseButton_Right] || io.MouseDown[ImGuiMouseButton_Middle]) {
@@ -298,11 +312,11 @@ void Application::HandleViewportInput(const ImVec2& viewportSize) {
 		}
 	}
 
-	if (hovered && io.MouseWheel != 0.0f) {
+	if (hovered && io.MouseWheel != 0.0f && !camera_.IsFirstPerson()) {
 		camera_.Zoom(io.MouseWheel);
 	}
 
-	if (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false)) {
+	if (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false) && !camera_.IsFirstPerson()) {
 		FrameCamera();
 	}
 }
@@ -324,6 +338,9 @@ void Application::DrawInspectorPanel() {
 		ImGui::TextWrapped("Pick an xmodel in the Assets panel to load a model.");
 	}
 
+	ImGui::SeparatorText("Weapon");
+	DrawWeaponInspector();
+
 	ImGui::SeparatorText("Model");
 	DrawModelInspector();
 
@@ -331,8 +348,12 @@ void Application::DrawInspectorPanel() {
 	ImGui::Text("yaw %.1f   pitch %.1f", camera_.Yaw(), camera_.Pitch());
 	ImGui::Text("distance %.2f", camera_.Distance());
 	float fov = camera_.Fov();
-	if (ImGui::SliderFloat("FOV", &fov, 20.0f, 120.0f, "%.0f deg")) {
+	if (!camera_.IsFirstPerson() && ImGui::SliderFloat("FOV", &fov, 20.0f, 120.0f, "%.0f deg")) {
 		camera_.SetFov(fov);
+	}
+	float exposure = settings_.exposure;
+	if (ImGui::SliderFloat("Exposure", &exposure, 0.1f, 4.0f, "%.2f")) {
+		settings_.exposure = exposure;
 	}
 	if (ImGui::Button("Frame camera (F)")) {
 		FrameCamera();
@@ -492,12 +513,179 @@ void Application::RescanAssets() {
 	assets_.Scan(ResolveAssetRoots(settings_, exeDir_));
 	selected_ = -1;
 	RebuildFilter();
+	RefreshHandsOptions();
+}
+
+void Application::RefreshHandsOptions() {
+	const std::vector<std::filesystem::path> roots = ResolveAssetRoots(settings_, exeDir_);
+	handsOptions_ = scene::ListHandsModels(roots);
+	if (!handsOverride_.empty() &&
+	    std::find(handsOptions_.begin(), handsOptions_.end(), handsOverride_) == handsOptions_.end()) {
+		handsOptions_.insert(handsOptions_.begin(), handsOverride_);
+	}
+}
+
+void Application::UpdateViewCamera() {
+	if (!gpuGun_ || !weaponFirstPerson_) {
+		camera_.SetOrbitMode();
+		camera_.SetFov(settings_.camera.fov);
+		return;
+	}
+
+	DirectX::XMFLOAT3 eye = viewmodel_.viewOrigin;
+	if (!viewmodel_.viewOriginValid) {
+		eye = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+	}
+	const DirectX::XMFLOAT3 target(eye.x + 1.0f, eye.y, eye.z);
+	camera_.SetFirstPerson(eye, target);
+	camera_.SetFov(std::clamp(settings_.firstPersonFov * settings_.viewmodelFovScale, 20.0f, 140.0f));
+}
+
+void Application::LoadWeapon(const std::string& name, const std::string& hands, bool firstPerson) {
+	handsOverride_ = hands;
+	weaponFirstPerson_ = firstPerson;
+	LoadWeaponByName(name);
+}
+
+void Application::LoadWeaponByName(const std::string& name) {	weaponError_.clear();
+	loadedWeaponName_ = name;
+	gpuGun_.reset();
+	gpuHands_.reset();
+	viewmodel_ = scene::ViewmodelAsset{};
+	gunSurfaceVisible_.clear();
+	handsSurfaceVisible_.clear();
+
+	std::string error;
+	const std::vector<std::filesystem::path> roots = ResolveAssetRoots(settings_, exeDir_);
+	if (!scene::LoadViewmodel(name, handsOverride_, roots, viewmodel_, error)) {
+		weaponError_ = error;
+		return;
+	}
+
+	std::string uploadError;
+	gpuGun_ = renderer_.UploadModel(viewmodel_.gun, uploadError);
+	if (!gpuGun_) {
+		weaponError_ = "gun upload failed: " + uploadError;
+		return;
+	}
+	gunSurfaceVisible_.assign(viewmodel_.gun.surfaceSet.surfaces.size(), true);
+	if (viewmodel_.hasHands) {
+		gpuHands_ = renderer_.UploadModel(viewmodel_.hands, uploadError);
+		if (!gpuHands_) {
+			weaponError_ = "hands upload failed: " + uploadError;
+		}
+		handsSurfaceVisible_.assign(viewmodel_.hands.surfaceSet.surfaces.size(), true);
+	}
+
+	if (!weaponFirstPerson_) {
+		FrameCamera();
+	}
+	UpdateViewCamera();
+}
+
+void Application::LoadSelectedWeapon() {
+	const AssetEntry* entry = SelectedEntry();
+	if (entry != nullptr && entry->kind == AssetKind::Weapon) {
+		LoadWeaponByName(entry->name);
+	}
+}
+
+void Application::ReloadWeapon() {
+	if (!loadedWeaponName_.empty()) {
+		LoadWeaponByName(loadedWeaponName_);
+	}
+}
+
+void Application::DrawWeaponInspector() {
+	if (!weaponError_.empty()) {
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", weaponError_.c_str());
+	}
+	if (!gpuGun_) {
+		ImGui::TextDisabled("Select a weapon in Assets.");
+		return;
+	}
+
+	ImGui::Text("%s", viewmodel_.weapon.name.c_str());
+	ImGui::TextDisabled("gun: %s", viewmodel_.weapon.gunModel.c_str());
+	ImGui::TextDisabled("handModel: %s", viewmodel_.weapon.handModel.empty()
+	                                         ? "(none)"
+	                                         : viewmodel_.weapon.handModel.c_str());
+	if (viewmodel_.weapon.handModel == "viewmodel_base_viewhands") {
+		ImGui::TextWrapped("handModel is the placeholder viewmodel_base_viewhands; the game replaces it with "
+		                   "the faction viewmodel via setviewmodel (see docs/viewmodel.md).");
+	}
+	ImGui::TextDisabled("hands: %s (%s)", viewmodel_.handsName.empty() ? "(none)" : viewmodel_.handsName.c_str(),
+	                    viewmodel_.handsSource.c_str());
+
+	if (ImGui::Button("Reload weapon")) {
+		ReloadWeapon();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Frame weapon")) {
+		FrameCamera();
+	}
+
+	int viewMode = weaponFirstPerson_ ? 1 : 0;
+	if (ImGui::RadioButton("Orbit", &viewMode, 0) || ImGui::RadioButton("First person", &viewMode, 1)) {
+		weaponFirstPerson_ = viewMode == 1;
+		UpdateViewCamera();
+		if (!weaponFirstPerson_) {
+			FrameCamera();
+		}
+	}
+
+	if (weaponFirstPerson_) {
+		float fov = settings_.firstPersonFov;
+		if (ImGui::SliderFloat("Viewmodel FOV", &fov, 40.0f, 120.0f, "%.0f deg")) {
+			settings_.firstPersonFov = fov;
+			UpdateViewCamera();
+		}
+		float scale = settings_.viewmodelFovScale;
+		if (ImGui::SliderFloat("FOV scale", &scale, 1.0f, 1.6f, "%.2f")) {
+			settings_.viewmodelFovScale = scale;
+			UpdateViewCamera();
+		}
+	}
+
+	const char* preview = handsOverride_.empty()
+	                          ? (viewmodel_.handsName.empty() ? "(auto)" : viewmodel_.handsName.c_str())
+	                          : handsOverride_.c_str();
+	if (ImGui::BeginCombo("Hands", preview)) {
+		if (ImGui::Selectable("(auto)", handsOverride_.empty())) {
+			handsOverride_.clear();
+			ReloadWeapon();
+		}
+		for (const std::string& name : handsOptions_) {
+			const bool selected = name == handsOverride_;
+			if (ImGui::Selectable(name.c_str(), selected)) {
+				handsOverride_ = name;
+				ReloadWeapon();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (!viewmodel_.warnings.empty()) {
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "%zu warnings", viewmodel_.warnings.size());
+		if (ImGui::IsItemHovered()) {
+			ImGui::BeginTooltip();
+			for (const std::string& warning : viewmodel_.warnings) {
+				ImGui::TextWrapped("%s", warning.c_str());
+			}
+			ImGui::EndTooltip();
+		}
+	}
 }
 
 void Application::FrameCamera() {
-	if (gpuModel_) {
+	if (gpuGun_) {
+		camera_.SetOrbitMode();
+		camera_.Frame(viewmodel_.boundsCenter, BoundsRadius(viewmodel_.boundsHalf));
+	} else if (gpuModel_) {
+		camera_.SetOrbitMode();
 		camera_.Frame(model_.boundsCenter, BoundsRadius(model_.boundsHalf));
 	} else {
+		camera_.SetOrbitMode();
 		camera_.Frame(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 7.0f);
 	}
 }

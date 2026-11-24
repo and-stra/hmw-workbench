@@ -25,6 +25,7 @@
 #include "assets/model_asset.h"
 #include "render/camera.h"
 #include "render/renderer.h"
+#include "scene/viewmodel.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT message, WPARAM wParam,
                                                              LPARAM lParam);
@@ -49,6 +50,10 @@ struct Options {
 	Mode mode = Mode::Window;
 	std::filesystem::path screenshotPath;
 	std::string modelName;
+	std::string weaponName;
+	std::string handsName;
+	bool viewFirstPerson = false;
+	bool hasView = false;
 	std::string infoName;
 	bool bones = false;
 	bool wire = false;
@@ -62,6 +67,8 @@ struct Options {
 	float pitch = 0.0f;
 	float distance = 0.0f;
 	float fov = 0.0f;
+	bool hasExposure = false;
+	float exposure = 1.0f;
 };
 
 void OpenConsoleStreams() {
@@ -97,9 +104,10 @@ void PrintUsage() {
 	    "usage:\n"
 	    "  hmw-workbench.exe\n"
 	    "      Open the window.\n"
-	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel>] [-bones] [-wire]\n"
+	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel> | -weapon <name>]\n"
+	    "                    [-hands <viewhands>] [-view firstperson|orbit] [-bones] [-wire]\n"
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
-	    "                    [-dist <units>] [-fov <deg>]\n"
+	    "                    [-dist <units>] [-fov <deg>] [-exposure <n>]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
 	    "  hmw-workbench.exe -info <xmodel>\n"
 	    "      Text dump: bones, tags, surfaces, materials, bounds.\n"
@@ -212,7 +220,7 @@ void DrawHeadlessBoneOverlay(wb::Renderer& renderer, const wb::assets::ModelAsse
 }
 
 int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& settings, const Options& options) {
-	std::printf("hmw-workbench M1 (headless)\n");
+	std::printf("hmw-workbench M2 (headless)\n");
 
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 	wb::AssetIndex assets;
@@ -233,8 +241,67 @@ int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& setting
 	wb::Camera camera;
 	wb::assets::ModelAsset model;
 	std::unique_ptr<wb::GpuModel> gpuModel;
+	wb::scene::ViewmodelAsset viewmodel;
+	std::unique_ptr<wb::GpuModel> gpuHands;
+	std::unique_ptr<wb::GpuModel> gpuGun;
+	const float exposure = options.hasExposure ? options.exposure : settings.exposure;
 
-	if (!options.modelName.empty()) {
+	if (!options.weaponName.empty()) {
+		std::string error;
+		if (!wb::scene::LoadViewmodel(options.weaponName, options.handsName, roots, viewmodel, error)) {
+			std::fprintf(stderr, "cannot load weapon %s: %s\n", options.weaponName.c_str(), error.c_str());
+			return 1;
+		}
+		std::string uploadError;
+		gpuGun = renderer.UploadModel(viewmodel.gun, uploadError);
+		if (!gpuGun) {
+			std::fprintf(stderr, "cannot upload gun %s: %s\n", viewmodel.weapon.gunModel.c_str(),
+			             uploadError.c_str());
+			return 1;
+		}
+		if (viewmodel.hasHands) {
+			gpuHands = renderer.UploadModel(viewmodel.hands, uploadError);
+			if (!gpuHands) {
+				std::fprintf(stderr, "cannot upload hands %s: %s\n", viewmodel.handsName.c_str(),
+				             uploadError.c_str());
+			}
+		}
+		std::printf("weapon: %s | gun: %s | hands: %s (%s)\n", viewmodel.weapon.name.c_str(),
+		            viewmodel.weapon.gunModel.c_str(),
+		            viewmodel.handsName.empty() ? "(none)" : viewmodel.handsName.c_str(),
+		            viewmodel.handsSource.c_str());
+		for (const std::string& warning : viewmodel.warnings) {
+			std::printf("warning: %s\n", warning.c_str());
+		}
+
+		if (options.viewFirstPerson) {
+			const DirectX::XMFLOAT3 eye = viewmodel.viewOriginValid
+			                                  ? viewmodel.viewOrigin
+			                                  : DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+			const float yaw = DirectX::XMConvertToRadians(options.hasYaw ? options.yaw : 0.0f);
+			const float pitch = DirectX::XMConvertToRadians(options.hasPitch ? options.pitch : 0.0f);
+			const DirectX::XMFLOAT3 target(eye.x + std::cos(pitch) * std::cos(yaw),
+			                               eye.y + std::cos(pitch) * std::sin(yaw),
+			                               eye.z + std::sin(pitch));
+			camera.SetFirstPerson(eye, target);
+			camera.SetFov(options.hasFov
+			                  ? options.fov
+			                  : std::clamp(settings.firstPersonFov * settings.viewmodelFovScale, 20.0f, 140.0f));
+			if (!viewmodel.viewOriginValid) {
+				std::printf("warning: no tag_view on the hands model, first-person origin at (0,0,0)\n");
+			}
+		} else {
+			camera.SetFov(options.hasFov ? options.fov : settings.camera.fov);
+			camera.Frame(viewmodel.boundsCenter, CameraRadius(viewmodel.boundsHalf));
+			if (options.hasYaw || options.hasPitch) {
+				camera.SetYawPitch(options.hasYaw ? options.yaw : camera.Yaw(),
+				                   options.hasPitch ? options.pitch : camera.Pitch());
+			}
+			if (options.hasDistance) {
+				camera.SetDistance(options.distance);
+			}
+		}
+	} else if (!options.modelName.empty()) {
 		std::string error;
 		if (!wb::assets::LoadModelAsset(options.modelName, roots, model, error, true)) {
 			std::fprintf(stderr, "cannot load model %s: %s\n", options.modelName.c_str(), error.c_str());
@@ -271,8 +338,13 @@ int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& setting
 		return 1;
 	}
 	renderer.RenderGrid(camera);
-	if (gpuModel) {
-		renderer.RenderModel(*gpuModel, camera, options.wire, nullptr);
+	if (gpuGun) {
+		if (gpuHands) {
+			renderer.RenderModel(*gpuHands, camera, options.wire, nullptr, exposure);
+		}
+		renderer.RenderModel(*gpuGun, camera, options.wire, nullptr, exposure, &viewmodel.gunTransform);
+	} else if (gpuModel) {
+		renderer.RenderModel(*gpuModel, camera, options.wire, nullptr, exposure);
 		if (options.bones) {
 			DrawHeadlessBoneOverlay(renderer, model, camera, options.width, options.height, true);
 		}
@@ -386,7 +458,9 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 
 	const bool restoreLayout = std::filesystem::exists(exeDir / "imgui.ini");
 	wb::Application app(settings, assets, renderer, exeDir, restoreLayout);
-	if (!options.modelName.empty()) {
+	if (!options.weaponName.empty()) {
+		app.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson);
+	} else if (!options.modelName.empty()) {
 		app.LoadModelByName(options.modelName);
 	}
 
@@ -496,6 +570,35 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			} else {
 				options.modelName = std::filesystem::path(value).string();
 			}
+		} else if (arg == L"-weapon") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-weapon needs a weapon name\n", stderr);
+				valid = false;
+			} else {
+				options.weaponName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-hands") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-hands needs a viewhands model name\n", stderr);
+				valid = false;
+			} else {
+				options.handsName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-view") {
+			const wchar_t* value = nextValue();
+			const std::wstring view = value != nullptr ? value : L"";
+			if (view == L"firstperson" || view == L"fp") {
+				options.viewFirstPerson = true;
+				options.hasView = true;
+			} else if (view == L"orbit") {
+				options.viewFirstPerson = false;
+				options.hasView = true;
+			} else {
+				std::fputs("-view needs 'firstperson' or 'orbit'\n", stderr);
+				valid = false;
+			}
 		} else if (arg == L"-bones") {
 			options.bones = true;
 		} else if (arg == L"-wire") {
@@ -516,6 +619,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		} else if (arg == L"-fov") {
 			valid = ParseFloatArg(nextValue(), options.fov);
 			options.hasFov = valid;
+		} else if (arg == L"-exposure") {
+			valid = ParseFloatArg(nextValue(), options.exposure) && options.exposure > 0.0f;
+			options.hasExposure = valid;
 		} else if (arg == L"-help" || arg == L"--help" || arg == L"-h" || arg == L"/?") {
 			EnsureHeadlessConsole();
 			PrintUsage();
@@ -536,9 +642,18 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		CoUninitialize();
 		return 2;
 	}
+	if (!options.modelName.empty() && !options.weaponName.empty()) {
+		EnsureHeadlessConsole();
+		std::fputs("-model and -weapon cannot be combined\n", stderr);
+		CoUninitialize();
+		return 2;
+	}
 
 	const std::filesystem::path exeDir = ExeDirectory();
 	wb::Settings settings = wb::LoadSettings(exeDir);
+	if (options.hasExposure) {
+		settings.exposure = options.exposure;
+	}
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 
 	int result = 0;

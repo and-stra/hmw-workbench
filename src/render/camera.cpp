@@ -33,7 +33,16 @@ void Camera::SetTarget(const XMFLOAT3& target) {
 	target_ = target;
 }
 
+void Camera::SetFirstPerson(const XMFLOAT3& eye, const XMFLOAT3& target) {
+	firstPerson_ = true;
+	firstPersonEye_ = eye;
+	firstPersonTarget_ = target;
+}
+
 DirectX::XMFLOAT3 Camera::Eye() const {
+	if (firstPerson_) {
+		return firstPersonEye_;
+	}
 	// Game space is Z-up: X forward, Y left, Z up.
 	const float yaw = DirectX::XMConvertToRadians(yaw_);
 	const float pitch = DirectX::XMConvertToRadians(pitch_);
@@ -46,7 +55,8 @@ DirectX::XMFLOAT3 Camera::Eye() const {
 DirectX::XMMATRIX Camera::View() const {
 	const DirectX::XMFLOAT3 eye = Eye();
 	const DirectX::XMVECTOR eyeVector = DirectX::XMLoadFloat3(&eye);
-	const DirectX::XMVECTOR targetVector = DirectX::XMLoadFloat3(&target_);
+	const DirectX::XMVECTOR targetVector = firstPerson_ ? DirectX::XMLoadFloat3(&firstPersonTarget_)
+	                                                   : DirectX::XMLoadFloat3(&target_);
 	const DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	return DirectX::XMMatrixLookAtLH(eyeVector, targetVector, up);
 }
@@ -55,7 +65,8 @@ DirectX::XMMATRIX Camera::Projection(float aspect) const {
 	if (aspect <= 0.0f) {
 		aspect = 1.0f;
 	}
-	return DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(fov_), aspect, 0.05f, 20000.0f);
+	return DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(fov_), aspect,
+	                                         firstPerson_ ? 0.02f : 0.05f, 20000.0f);
 }
 
 DirectX::XMMATRIX Camera::ViewProjection(float aspect) const {

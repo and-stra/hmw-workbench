@@ -56,7 +56,8 @@ public:
 	bool BeginScene(int width, int height);
 	void RenderGrid(const Camera& camera);
 	void RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
-	                 const std::vector<bool>* visibleSurfaces);
+	                 const std::vector<bool>* visibleSurfaces, float exposure = 1.0f,
+	                 const DirectX::XMFLOAT4X4* world = nullptr);
 	bool SaveSceneToPng(const std::filesystem::path& path);
 
 	std::unique_ptr<GpuModel> UploadModel(const assets::ModelAsset& model, std::string& error);
@@ -80,7 +81,7 @@ private:
 	bool CreateDefaultTextures();
 	bool EnsureSceneTarget(int width, int height);
 	void ReleaseSceneTarget();
-	ComPtr<ID3D11ShaderResourceView> CreateTexture(const assets::ImageData& image, std::string& error);
+	ComPtr<ID3D11ShaderResourceView> CreateTexture(const assets::ImageData& image, bool srgb, std::string& error);
 
 	ComPtr<ID3D11Device> device_;
 	ComPtr<ID3D11DeviceContext> context_;
