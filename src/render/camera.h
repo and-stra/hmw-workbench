@@ -24,6 +24,8 @@ public:
 	float Distance() const { return distance_; }
 	float Fov() const { return fov_; }
 	XMFLOAT3 Target() const { return target_; }
+	// The point the camera looks at: the orbit target, or the first-person look target.
+	XMFLOAT3 LookTarget() const { return firstPerson_ ? firstPersonTarget_ : target_; }
 	XMFLOAT3 Eye() const;
 
 	XMMATRIX View() const;

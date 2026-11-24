@@ -58,7 +58,8 @@ public:
 	void RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
 	                 const std::vector<bool>* visibleSurfaces, float exposure = 1.0f,
 	                 const DirectX::XMFLOAT4X4* world = nullptr,
-	                 const std::vector<DirectX::XMFLOAT4X4>* bonePalette = nullptr);
+	                 const std::vector<DirectX::XMFLOAT4X4>* bonePalette = nullptr,
+	                 const DirectX::XMFLOAT4* tint = nullptr, bool onTop = false);
 	bool SaveSceneToPng(const std::filesystem::path& path);
 
 	// Copies the current scene target into CPU memory (BGRA/RGBA bytes as stored by D3D).
@@ -117,6 +118,7 @@ private:
 	ComPtr<ID3D11Buffer> boneConstantBuffer_;
 	ComPtr<ID3D11RasterizerState> solidState_;
 	ComPtr<ID3D11RasterizerState> wireframeState_;
+	ComPtr<ID3D11DepthStencilState> overlayDepthState_;
 	ComPtr<ID3D11SamplerState> samplerState_;
 	ComPtr<ID3D11ShaderResourceView> checkerTexture_;
 	ComPtr<ID3D11ShaderResourceView> flatNormalTexture_;

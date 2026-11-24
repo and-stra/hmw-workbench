@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -11,6 +12,7 @@
 
 #include "app/settings.h"
 #include "assets/asset_index.h"
+#include "assets/attachment.h"
 #include "assets/model_asset.h"
 #include "assets/xanim.h"
 #include "render/camera.h"
@@ -19,6 +21,42 @@
 #include "scene/viewmodel.h"
 
 namespace wb::commands {
+
+// A mounted viewmodel attachment. The attachment model's root bone is the weapon tag
+// it mounts on; `world` maps the attachment model space into viewmodel space.
+struct AttachmentMount {
+	std::string name; // attachment asset name (file stem)
+	std::string internalName;
+	std::string viewModel;
+	std::string requiredTag;
+	bool tagFound = false;
+	bool hidden = false;
+	std::string error;
+	assets::AttachmentAsset attachment;
+	assets::ModelAsset model;
+	std::unique_ptr<GpuModel> gpu;
+	std::vector<assets::ModelAsset> reticles;
+	std::vector<std::unique_ptr<GpuModel>> reticleGpus;
+	std::vector<DirectX::XMFLOAT4X4> reticleWorlds;
+	DirectX::XMFLOAT4X4 world{};
+};
+
+struct AttachmentFitEntry {
+	std::string name;
+	std::string viewModel;
+	std::string requiredTag;
+	bool found = false;
+	std::vector<std::string> nearest;
+	std::string note;
+};
+
+struct AttachmentFitReport {
+	std::string weapon;
+	std::string gunModel;
+	std::string handsModel;
+	std::vector<std::string> weaponTags;
+	std::vector<AttachmentFitEntry> attachments;
+};
 
 // Plain scene/command layer shared by the UI, the CLI and (later) the MCP server.
 // No ImGui types and no direct loader calls live above this layer: every asset is
@@ -47,6 +85,23 @@ public:
 	bool LoadModel(const std::string& model, std::string& error);
 	bool ReloadModel(std::string& error);
 	bool SetHands(const std::string& hands, std::string& error);
+
+	// ---- attachments ----
+	bool Attach(const std::string& attachment, std::string& error);
+	bool Detach(const std::string& attachment);
+	void DetachAll();
+	bool IsAttached(const std::string& attachment) const;
+	const std::vector<AttachmentMount>& Attachments() const { return attachments_; }
+	const std::vector<std::string>& AvailableAttachments() const { return attachmentNames_; }
+	const std::vector<std::string>& HiddenTags() const { return hiddenTags_; }
+	void RefreshAttachmentList();
+	const std::vector<AttachmentFitEntry>& AttachmentCatalog();
+	// The effective anim for a weapon state after attachment `szXAnims` fields and the
+	// weapon's animOverrides (the crossbow's AW optic overrides) have been applied.
+	std::string EffectiveAnimForState(const std::string& state) const;
+	bool IsAnimOverrideActive(const assets::WeaponAnimOverride& entry) const {
+		return OverrideAppliesToAttachment(entry);
+	}
 
 	// ---- animation ----
 	bool PlayAnim(const std::string& anim, std::string& error);
@@ -128,6 +183,13 @@ public:
 private:
 	void ClearWeapon();
 	void ClearModel();
+	void ClearAttachments();
+	void RebuildHiddenTags();
+	void UpdateAttachmentWorlds();
+	bool AlignAdsToReticle();
+	void BuildAttachmentCatalog();
+	bool OverrideAppliesToAttachment(const assets::WeaponAnimOverride& entry) const;
+	void LoadAdsAnim();
 	void RefreshAnimLists();
 	void AutoPlayIdle();
 	void UpdateViewCamera();
@@ -161,6 +223,12 @@ private:
 
 	std::vector<AnimStateEntry> animStates_;
 	std::vector<assets::WeaponAnimOverride> animOverrides_;
+
+	std::vector<std::string> attachmentNames_;
+	std::vector<AttachmentMount> attachments_;
+	std::vector<std::string> hiddenTags_;
+	std::vector<AttachmentFitEntry> attachmentCatalog_;
+	bool attachmentCatalogValid_ = false;
 
 	std::string animName_;
 	std::optional<assets::XAnimData> primaryAnim_;
@@ -196,5 +264,16 @@ bool LoadAnimForInfo(const std::vector<std::filesystem::path>& roots, const std:
                      assets::XAnimData& out, std::string& error);
 bool LoadModelForInfo(const std::vector<std::filesystem::path>& roots, const std::string& name,
                       assets::ModelAsset& out, std::string& error);
+
+// Attachment fit report as plain data (used by `-fit-report` and the M4b MCP). Loads the
+// weapon view model and every attachment view model in the roots, reads the attachment
+// root bone (= required weapon tag), and reports found/missing plus the nearest weapon tags.
+bool BuildFitReport(const std::vector<std::filesystem::path>& roots, const std::string& weapon,
+                    const std::string& hands, const std::vector<std::string>& attachmentFilter,
+                    AttachmentFitReport& out, std::string& error);
+void PrintFitReport(const AttachmentFitReport& report, std::FILE* out);
+
+// Direct mapping used by the Inspector for animOverrides[].animTreeType.
+std::string AnimStateForTreeType(int type);
 
 } // namespace wb::commands

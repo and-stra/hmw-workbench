@@ -595,6 +595,93 @@ void Application::DrawWeaponInspector() {
 			ImGui::EndTooltip();
 		}
 	}
+
+	ImGui::SeparatorText("Attachments");
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputTextWithHint("##attach_search", "Filter attachments...", attachmentSearch_,
+	                         sizeof(attachmentSearch_));
+	const std::vector<commands::AttachmentFitEntry>& catalog = workbench_.AttachmentCatalog();
+	const std::string attachNeedle = ToLower(attachmentSearch_);
+	ImGui::TextDisabled("%zu attachment assets  |  %zu mounted", catalog.size(),
+	                    workbench_.Attachments().size());
+	ImGui::SameLine();
+	if (ImGui::SmallButton("Detach all")) {
+		workbench_.DetachAll();
+	}
+	ImGui::BeginChild("##attachment_list", ImVec2(0.0f, 220.0f), ImGuiChildFlags_Borders);
+	int shownAttachments = 0;
+	std::string attachErrorText;
+	for (const commands::AttachmentFitEntry& entry : catalog) {
+		if (!MatchesFilter(entry.name, attachNeedle)) {
+			continue;
+		}
+		++shownAttachments;
+		ImGui::PushID(entry.name.c_str());
+		bool attached = workbench_.IsAttached(entry.name);
+		if (ImGui::Checkbox("##attached", &attached)) {
+			std::string error;
+			if (attached) {
+				if (!workbench_.Attach(entry.name, error)) {
+					attachErrorText = entry.name + ": " + error;
+				}
+			} else {
+				workbench_.Detach(entry.name);
+			}
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("mount / unmount this attachment");
+		}
+		ImGui::SameLine();
+		if (entry.note.empty()) {
+			if (entry.found) {
+				ImGui::Text("%s", entry.name.c_str());
+			} else {
+				ImGui::TextColored(ImVec4(1.0f, 0.42f, 0.42f, 1.0f), "%s", entry.name.c_str());
+			}
+		} else {
+			ImGui::TextDisabled("%s  (%s)", entry.name.c_str(), entry.note.c_str());
+		}
+		ImGui::Indent(26.0f);
+		if (!entry.viewModel.empty()) {
+			if (entry.found) {
+				ImGui::TextDisabled("vm %s   needs %s   found", entry.viewModel.c_str(),
+				                    entry.requiredTag.c_str());
+			} else {
+				std::string nearest;
+				for (std::size_t i = 0; i < entry.nearest.size(); ++i) {
+					if (i > 0) {
+						nearest += ", ";
+					}
+					nearest += entry.nearest[i];
+				}
+				ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.45f, 1.0f),
+				                   "vm %s   needs %s   MISSING (nearest %s)", entry.viewModel.c_str(),
+				                   entry.requiredTag.c_str(), nearest.c_str());
+			}
+		}
+		ImGui::Unindent(26.0f);
+		ImGui::PopID();
+	}
+	if (shownAttachments == 0) {
+		ImGui::TextDisabled("No attachments match.");
+	}
+	ImGui::EndChild();
+	if (!attachErrorText.empty()) {
+		ImGui::TextColored(ImVec4(1.0f, 0.42f, 0.42f, 1.0f), "%s", attachErrorText.c_str());
+	}
+	if (!workbench_.HiddenTags().empty()) {
+		std::string hidden;
+		for (const std::string& tag : workbench_.HiddenTags()) {
+			hidden += hidden.empty() ? tag : (", " + tag);
+		}
+		ImGui::TextDisabled("hidden tags (hideTags/showTags): %s", hidden.c_str());
+	}
+	for (const commands::AttachmentMount& mount : workbench_.Attachments()) {
+		if (!mount.tagFound) {
+			ImGui::TextColored(ImVec4(1.0f, 0.42f, 0.42f, 1.0f), "weapon has no %s (%s drawn at the weapon origin)",
+			                   mount.requiredTag.c_str(), mount.name.c_str());
+		}
+	}
 }
 
 void Application::DrawAnimInspector() {
@@ -643,9 +730,12 @@ void Application::DrawAnimInspector() {
 		ImGui::BeginChild("##anim_overrides", ImVec2(0.0f, 150.0f), ImGuiChildFlags_Borders);
 		for (const assets::WeaponAnimOverride& entry : workbench_.AnimOverrides()) {
 			ImGui::PushID(entry.anim.c_str());
-			char label[320];
-			std::snprintf(label, sizeof(label), "att %d  tree %d  %s", entry.attachment1, entry.animTreeType,
-			              entry.anim.c_str());
+			const std::string state = commands::AnimStateForTreeType(entry.animTreeType);
+			const bool active = workbench_.IsAnimOverrideActive(entry);
+			char label[360];
+			std::snprintf(label, sizeof(label), "att %d  tree %d%s%s%s  %s", entry.attachment1,
+			              entry.animTreeType, state.empty() ? "" : " -> ", state.c_str(),
+			              active ? "  [active]" : "", entry.anim.c_str());
 			if (ImGui::Selectable(label, entry.anim == workbench_.AnimName())) {
 				std::string error;
 				workbench_.PlayAnim(entry.anim, error);

@@ -1,0 +1,111 @@
+weapon: iw5_exocrossbow_mp
+gun: vm_crossbow_base
+hands: viewhands_tf141
+weapon tags (33): tag_acog_2 tag_clip tag_directhack tag_eotech tag_flash tag_lasersight tag_loot tag_parabolic_mic tag_red_dot tag_scope tag_sight_off tag_sight_on tag_target_enhancer tag_thermal_scope tag_tracker tag_ui_ammo tag_vrd tag_origin tag_dof tag_sync tag_view tag_ads tag_cambone tag_camera tag_torso tag_gasmask tag_gasmask2 tag_player tag_weapon tag_knife_attach tag_knife_attach2 tag_weapon_left tag_weapon_right
+
+attachments: 104 (mount tag = attachment view model root bone)
+  attachment                       view model                               needed tag             status   nearest weapon tags
+  acog                             -                                        -                      -          no view model
+  acogmwr                          attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrak47                      attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrak74u                     attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraprast                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraprsmg                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraugast                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwraugsmg                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrbarrett                   attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrdmr25                     attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrdragunov                  attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrfeblmg                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrfebsmg                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrg3                        attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrg36c                      attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrjunlmg                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrjunsnp                    attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm14                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm16                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm21                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm4                        attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm40a3                     attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrm60e4                     attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrmp5                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrp90                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrremington700              attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrrpd                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrsaw                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrskorpion                  attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwruzi                       attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  acogmwrxmlar                     attach_h1_scope_acog_vm                  tag_acog               MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  akimbo                           -                                        -                      -          no view model
+  akimbomwrhidden                  -                                        -                      -          no view model
+  augscope                         attach_h2_aug_scope_vm                   tag_steyr_scope        MISSING  tag_acog_2, tag_scope, tag_thermal_scope
+  bloodmwr                         -                                        -                      -          no view model
+  f2000scope                       -                                        -                      -          no view model
+  fastfire                         -                                        -                      -          no view model
+  fmj                              -                                        -                      -          no view model
+  foregrip                         -                                        -                      -          no view model
+  gl                               -                                        -                      -          no view model
+  glak47                           -                                        -                      -          no view model
+  glmwraprast                      attach_h1_launcher_m203_nooptics_vm      tag_m203               MISSING  
+  glmwraugast                      attach_h1_launcher_m203_nooptics_vm      tag_m203               MISSING  
+  glmwrg36c                        attach_h1_launcher_m203_nooptics_vm      tag_m203               MISSING  
+  glmwrm14                         attach_h1_launcher_m203_nooptics_vm      tag_m203               MISSING  
+  glmwrxmlar                       attach_h1_launcher_m203_nooptics_vm      tag_m203               MISSING  
+  glpre                            -                                        -                      -          no view model
+  glpremwraugast                   -                                        -                      -          no view model
+  gripmwrfeblmg                    -                                        -                      -          no view model
+  gripmwrjunlmg                    -                                        -                      -          no view model
+  gripmwrkam12                     -                                        -                      -          no view model
+  heartbeat                        attach_h2_heartbeat_vm                   tag_heartbeat          MISSING  
+  holo                             -                                        -                      -          no view model
+  mars                             -                                        -                      -          no view model
+  ogscope                          -                                        -                      -          no view model
+  reflex                           -                                        -                      -          no view model
+  reflexmwr                        attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrak47                    attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrak74u                   attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwraprsmg                  attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwraugast                  attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwraugsmg                  attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrfeblmg                  attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrg3                      attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrg36c                    attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrjunlmg                  attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm1014                   attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm14                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm16                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm4                      attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrm60e4                   attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrmp5                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrp90                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrrpd                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrsaw                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrskorpion                attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwruzi                     attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  reflexmwrwinchester1200          attach_h1_optic_reflex_vm                tag_reflex             MISSING  tag_red_dot, tag_eotech
+  sho                              -                                        -                      -          no view model
+  shopre                           -                                        -                      -          no view model
+  silencerar                       -                                        -                      -          no view model
+  silencerlmg                      attach_jup_silencer_lmg                  tag_silencer1          MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencermwraprast                attach_h1_silencer_556_vm                tag_silencer           MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencermwraprpst                attach_h1_silencer_pistol_vm             tag_silencer           MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencermwraprsmg                attach_h1_silencer_mp5_vm                tag_silencer           MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencermwraugast                attach_h1_silencer_556_vm                tag_silencer           MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencermwraugsmg                attach_h1_silencer_mp5_vm                tag_silencer           MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencermwrxmlar                 attach_h1_silencer_556_vm                tag_silencer           MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencerpistol                   attach_jup_silencer_pistol               tag_silencer1          MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencershotgun                  attach_jup_silencer_shotgun              tag_silencer1          MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencersmg                      attach_jup_silencer_smg                  tag_silencer1          MISSING  tag_flash, tag_sight_off, tag_sight_on
+  silencersniper                   attach_jup_silencer_sni                  tag_silencer1          MISSING  tag_flash, tag_sight_off, tag_sight_on
+  tacknifecolt44                   -                                        -                      -          no view model
+  tacknifecolt45                   -                                        -                      -          no view model
+  tacknifedeagle                   wpn_h2_bolo_knife_vm                     tag_weapon_left        found    
+  tacknifem9                       -                                        -                      -          no view model
+  tacknifemwrdeserteagle           -                                        -                      -          no view model
+  tacknifeusp                      -                                        -                      -          no view model
+  thermal                          -                                        -                      -          no view model
+  thermalmwr                       attach_h1_scope_thermal_vm_mp            tag_thermal_scope      found    
+  thermalmwrm60e4                  attach_h1_scope_thermal_vm_mp            tag_thermal_scope      found    
+  thermalmwrrpd                    attach_h1_scope_thermal_vm_mp            tag_thermal_scope      found    
+  thermalmwrsaw                    attach_h1_scope_thermal_vm_mp            tag_thermal_scope      found    
+  xmag                             -                                        -                      -          no view model

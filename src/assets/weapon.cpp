@@ -44,6 +44,24 @@ WeaponAsset LoadWeapon(const std::filesystem::path& path) {
 	weapon.camoViewModelMaterialOverride = json.value("camoViewModelMaterialOverride", "");
 	weapon.adsZoomFov = json.value("adsZoomFov", 50.0f);
 
+	if (json.contains("hideTags") && json["hideTags"].is_array()) {
+		for (const auto& value : json["hideTags"]) {
+			if (value.is_string() && !value.get<std::string>().empty()) {
+				weapon.hideTags.push_back(value.get<std::string>());
+			}
+		}
+	}
+	if (json.contains("attachments") && json["attachments"].is_array()) {
+		for (const auto& value : json["attachments"]) {
+			if (value.is_string()) {
+				const std::string name = value.get<std::string>();
+				if (!name.empty()) {
+					weapon.attachments.push_back(name);
+				}
+			}
+		}
+	}
+
 	if (json.contains("szXAnims") && json["szXAnims"].is_object()) {
 		for (const auto& [state, value] : json["szXAnims"].items()) {
 			if (value.is_string()) {

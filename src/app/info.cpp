@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "app/commands.h"
 #include "assets/material.h"
@@ -84,6 +85,27 @@ bool PrintModelInfo(const std::string& name, const std::vector<std::filesystem::
 		std::printf("  [%2zu] verts=%-6u tris=%-6u flags=0x%04X rigid=%u  material=%s\n", i,
 		            surface.vertexCount, surface.triangleCount, surface.flags, surface.rigidVertListCount,
 		            surface.materialName.c_str());
+		if (!surface.vertexWeights.empty() && !data.bones.empty()) {
+			std::vector<double> totals(data.bones.size(), 0.0);
+			for (const assets::VertexWeights& weights : surface.vertexWeights) {
+				for (int influence = 0; influence < 4; ++influence) {
+					if (weights.boneIndex[influence] < totals.size() && weights.weight[influence] > 0.0f) {
+						totals[weights.boneIndex[influence]] += weights.weight[influence];
+					}
+				}
+			}
+			const auto dominant =
+			    std::max_element(totals.begin(), totals.end());
+			double sum = 0.0;
+			for (double value : totals) {
+				sum += value;
+			}
+			if (dominant != totals.end() && *dominant > 0.0 && sum > 0.0) {
+				const std::size_t boneIndex = static_cast<std::size_t>(dominant - totals.begin());
+				std::printf("       weights: %.0f%% bone %zu %s\n", 100.0 * *dominant / sum, boneIndex,
+				            data.bones[boneIndex].name.c_str());
+			}
+		}
 		if (!surface.blendWeightsRaw.empty() || !surface.blendTableRaw.empty()) {
 			std::printf("       blend weights=%zu bytes (XBlendInfo), table=%zu bytes\n",
 			            surface.blendWeightsRaw.size(), surface.blendTableRaw.size());

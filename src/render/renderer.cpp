@@ -56,6 +56,7 @@ cbuffer ModelConstants : register(b0)
     float4 gCameraPosition;
     float4 gLightDirection;
     float4 gParams;
+    float4 gTint;
 };
 
 #define MAX_BONES 256
@@ -160,7 +161,7 @@ float4 PSMain(PSInput input) : SV_TARGET
     float3 linearColor = albedo * (0.65f + 1.15f * ndl) + specular * float3(0.9f, 0.93f, 0.98f);
     linearColor *= gParams.y;
     linearColor = pow(saturate(linearColor), 1.0f / 2.2f);
-    return float4(linearColor, 1.0f);
+    return float4(linearColor * gTint.rgb, 1.0f);
 }
 )";
 
@@ -175,10 +176,11 @@ struct alignas(16) ModelConstants {
 	DirectX::XMFLOAT4 cameraPosition;
 	DirectX::XMFLOAT4 lightDirection;
 	DirectX::XMFLOAT4 params;
+	DirectX::XMFLOAT4 tint;
 };
 
 static_assert(sizeof(assets::SurfaceVertex) == 72);
-static_assert(sizeof(ModelConstants) == 176);
+static_assert(sizeof(ModelConstants) == 192);
 constexpr UINT kMaxBones = 256;
 
 bool CompileShader(const char* source, const char* entryPoint, const char* target, ID3DBlob** blob) {
@@ -269,6 +271,7 @@ void Renderer::Shutdown() {
 	samplerState_.Reset();
 	wireframeState_.Reset();
 	solidState_.Reset();
+	overlayDepthState_.Reset();
 	modelConstantBuffer_.Reset();
 	modelInputLayout_.Reset();
 	modelPs_.Reset();
@@ -532,6 +535,16 @@ bool Renderer::CreateModelResources() {
 		return false;
 	}
 
+	D3D11_DEPTH_STENCIL_DESC overlayDepthDesc = {};
+	overlayDepthDesc.DepthEnable = FALSE;
+	overlayDepthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	overlayDepthDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	overlayDepthDesc.StencilEnable = FALSE;
+	hr = device_->CreateDepthStencilState(&overlayDepthDesc, &overlayDepthState_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
 	D3D11_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -737,7 +750,8 @@ void Renderer::RenderGrid(const Camera& camera) {
 void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
                            const std::vector<bool>* visibleSurfaces, float exposure,
                            const DirectX::XMFLOAT4X4* world,
-                           const std::vector<DirectX::XMFLOAT4X4>* bonePalette) {
+                           const std::vector<DirectX::XMFLOAT4X4>* bonePalette,
+                           const DirectX::XMFLOAT4* tint, bool onTop) {
 	if (model.surfaces.empty() || sceneWidth_ <= 0 || sceneHeight_ <= 0) {
 		return;
 	}
@@ -786,6 +800,7 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	}
 	constants.lightDirection = DirectX::XMFLOAT4(light.x, light.y, light.z, 0.0f);
 	constants.params = DirectX::XMFLOAT4(48.0f, exposure, 0.0f, 0.0f);
+	constants.tint = tint != nullptr ? *tint : DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 	if (FAILED(context_->Map(modelConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
@@ -821,7 +836,7 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	ID3D11ShaderResourceView* textures[3] = {checkerTexture_.Get(), flatNormalTexture_.Get(), blackTexture_.Get()};
 	ID3D11SamplerState* sampler = samplerState_.Get();
 
-	context_->OMSetDepthStencilState(nullptr, 0);
+	context_->OMSetDepthStencilState(onTop ? overlayDepthState_.Get() : nullptr, 0);
 	context_->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
 	context_->RSSetState(wireframe ? wireframeState_.Get() : solidState_.Get());
 	context_->IASetInputLayout(modelInputLayout_.Get());
@@ -868,6 +883,7 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 		context_->DrawIndexed(surface.indexCount, 0, 0);
 	}
 
+	context_->OMSetDepthStencilState(nullptr, 0);
 	context_->RSSetState(solidState_.Get());
 }
 

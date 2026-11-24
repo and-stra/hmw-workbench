@@ -31,6 +31,8 @@ struct WeaponAsset {
 	std::string handModel;
 	std::string camoViewModelMaterialOverride;
 	float adsZoomFov = 50.0f;
+	std::vector<std::string> hideTags;
+	std::vector<std::string> attachments;
 	std::vector<std::string> attachmentOverrides;
 	std::vector<WeaponAnimState> animStates;
 	std::vector<WeaponAnimOverride> animOverrides;

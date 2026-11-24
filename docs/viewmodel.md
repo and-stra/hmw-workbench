@@ -119,6 +119,28 @@ Verified rules for applying an animation to the combined skeleton:
   Palette per model bone: `inverse(bindWorld) * animatedWorld`; bind poses are the xmodel
   `baseMat` world transforms.
 
+## Attachments (M4)
+
+- Attachment view models mount by their **first bone name**, which is the weapon tag:
+  `attach_h1_optic_reflex_vm` -> `tag_reflex`, `attach_h1_scope_acog_vm` -> `tag_acog`,
+  `attach_h1_scope_thermal_vm_mp` -> `tag_thermal_scope`, `attach_jup_silencer_lmg` ->
+  `tag_silencer1`. Reticle view models' root is `tag_reticle_attach`, mounted on the
+  attachment's own `tag_reticle_attach` (reflex: (0.591, 0, 1.264)).
+- The mount transform is `inverse(attachment root bind) * pose(tag)` (row-vector convention), so
+  rigid attachment vertices in model space land on the animated tag. Missing tags draw the
+  attachment at the weapon origin (`j_gun`) in red, on top.
+- `hideTags`/`showTags`: weapon + active attachment tags are hidden by zeroing the bone's
+  palette matrix (rigid vertices collapse); attachments mounted on hidden tags are skipped.
+- `animOverrides[].attachment1` indexes `WeaponDef::attachments` (x64-zt `weapondef.cpp`). The
+  AW crossbow's list is empty while its overrides use 1..7; the workbench uses the family map
+  derived from the override names (1 acog, 2 eotech, 3 red_dot, 4 thermal, 5 vrd,
+  6 target_enhancer, 7 scope). `animTreeType` 128/129 are treated as ADS_UP/ADS_DOWN (AW enum).
+- Attachment `fields` `szXAnims` values are string replacements on the state's anim name
+  (`_ads` -> `_reflex_ads`); the result is used only if the `.xab` exists.
+- ADS with a mounted reticle aligns `tag_ads` so the reticle centre is on the camera axis (the
+  game's `_reflex_ads`/`_acog_ads` anims are missing for the H2 M4). M4 iron sights use the
+  plain ADS_UP end pose.
+
 ## Limitations
 
 - Additive animations are an approximation (delta local rotations/translations multiplied onto
@@ -135,8 +157,9 @@ Verified rules for applying an animation to the combined skeleton:
 - The crossbow anims are IW5-authored and the workbench plays them on the MWR `viewhands_tf141`
   by matching bone names. Their rest pose/hierarchy must stay compatible; a rig with different
   bone names or parent order would need a retarget step.
-- Only the gun root is attached. HMW attachment models and per-attachment anim overrides are
-  listed but not mounted yet; that is M4.
+- Attachment view models and reticles are mounted (M4). They are rigid: attachment-specific
+  animations/notetracks are not played, and their `.xab` anims are only used through the
+  weapon's `animOverrides`/attachment `fields` state resolution.
 - Left-handed/dual-wield weapons (`tag_weapon_left`) are placed on `tag_weapon` as well.
 - The faction hands are a user choice in the workbench (Hands dropdown). The game's choice depends on the
   player's team and weapon class; the script table above is what the game uses.

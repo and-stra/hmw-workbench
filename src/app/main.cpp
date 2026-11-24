@@ -21,6 +21,7 @@
 
 #include "app/application.h"
 #include "app/commands.h"
+#include "app/diag.h"
 #include "app/info.h"
 #include "app/model_overlay.h"
 #include "app/settings.h"
@@ -83,6 +84,15 @@ struct Options {
 	bool hasGrid = false;
 	bool gridEnabled = true;
 	bool ads = false;
+	bool poseDump = false;
+	std::filesystem::path poseDumpPath;
+	bool crosshair = false;
+	bool markTags = false;
+	std::vector<int> hideSurfaces;
+	std::vector<std::string> attachNames;
+	bool fitReport = false;
+	std::filesystem::path fitReportPath;
+	std::string caption;
 };
 
 void OpenConsoleStreams() {
@@ -120,13 +130,21 @@ void PrintUsage() {
 	    "      Open the window.\n"
 	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel> | -weapon <name>]\n"
 	    "                    [-hands <viewhands>] [-view firstperson|orbit] [-ads]\n"
+	    "                    [-attach <attachment>]... [-hidesurface <i,i,...>]\n"
 	    "                    [-anim <xanim>] [-time <seconds|fraction>] [-frac]\n"
 	    "                    [-sheet <n>] [-bones] [-wire] [-grid|-nogrid]\n"
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
 	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
+	    "                    [-crosshair] [-marktags]\n"
+	    "                    [-caption <text>]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
+	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>]\n"
+	    "      Text report: every attachment's view model, needed weapon tag, found/missing,\n"
+	    "      and the nearest weapon tags for missing ones.\n"
 	    "  hmw-workbench.exe -info <xmodel|xanim>\n"
 	    "      Text dump: model bones/tags/surfaces/materials, or anim frames/notetracks.\n"
+	    "  hmw-workbench.exe -posedump [-weapon <name>| -model <xmodel>] [-anim <xanim>] [-time <s>] [file]\n"
+	    "      Text dump of the posed hands+gun skeleton (world positions, anim channels, bounds).\n"
 	    "  hmw-workbench.exe -validate\n"
 	    "      Parse every .xmb in all roots plus its .xsb surface sets and material json.\n"
 	    "\n"
@@ -254,6 +272,72 @@ void DrawHeadlessCaption(wb::Renderer& renderer, int width, int height, const st
 	ImGui::NewFrame();
 	ImGui::GetBackgroundDrawList()->AddText(ImVec2(10.0f, 8.0f), IM_COL32(255, 255, 255, 235),
 	                                       caption.c_str());
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	ImGui_ImplDX11_Shutdown();
+	ImGui::DestroyContext();
+}
+
+void DrawHeadlessDebugOverlay(wb::Renderer& renderer, const wb::commands::Workbench& workbench, int width,
+                              int height, bool crosshair, bool markTags) {
+	if (!crosshair && !markTags) {
+		return;
+	}
+	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr;
+	io.DisplaySize = displaySize;
+	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+
+	if (!ImGui_ImplDX11_Init(renderer.Device(), renderer.Context())) {
+		ImGui::DestroyContext();
+		return;
+	}
+	ImGui_ImplDX11_NewFrame();
+	ImGui::NewFrame();
+
+	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+	if (crosshair) {
+		const float cx = displaySize.x * 0.5f;
+		const float cy = displaySize.y * 0.5f;
+		const ImU32 colour = IM_COL32(120, 255, 120, 235);
+		const float gap = 8.0f;
+		const float arm = 22.0f;
+		drawList->AddLine(ImVec2(cx - arm, cy), ImVec2(cx - gap, cy), colour, 1.5f);
+		drawList->AddLine(ImVec2(cx + gap, cy), ImVec2(cx + arm, cy), colour, 1.5f);
+		drawList->AddLine(ImVec2(cx, cy - arm), ImVec2(cx, cy - gap), colour, 1.5f);
+		drawList->AddLine(ImVec2(cx, cy + gap), ImVec2(cx, cy + arm), colour, 1.5f);
+		drawList->AddCircle(ImVec2(cx, cy), 2.0f, IM_COL32(255, 255, 255, 235), 8, 1.0f);
+	}
+
+	const wb::scene::ViewmodelAsset* viewmodel = workbench.Viewmodel();
+	if (markTags && viewmodel != nullptr) {
+		const DirectX::XMMATRIX viewProjection =
+		    workbench.GetCamera().ViewProjection(displaySize.x / displaySize.y);
+		const wb::scene::SkeletonPose& pose = workbench.Pose();
+		for (std::size_t i = 0; i < viewmodel->gun.model.bones.size(); ++i) {
+			const wb::assets::BoneData& bind = viewmodel->gun.model.bones[i];
+			if (!bind.IsTag()) {
+				continue;
+			}
+			const int poseIndex = i < pose.gunBoneToPose.size() ? pose.gunBoneToPose[i] : -1;
+			if (poseIndex < 0 || static_cast<std::size_t>(poseIndex) >= pose.bones.size()) {
+				continue;
+			}
+			const DirectX::XMFLOAT3& world = pose.bones[static_cast<std::size_t>(poseIndex)].worldPos;
+			const DirectX::XMVECTOR clip =
+			    DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&world), viewProjection);
+			DirectX::XMFLOAT3 ndc;
+			DirectX::XMStoreFloat3(&ndc, clip);
+			const float x = (ndc.x * 0.5f + 0.5f) * displaySize.x;
+			const float y = (1.0f - (ndc.y * 0.5f + 0.5f)) * displaySize.y;
+			drawList->AddCircle(ImVec2(x, y), 5.0f, IM_COL32(255, 210, 80, 240), 12, 1.5f);
+			drawList->AddText(ImVec2(x + 7.0f, y - 6.0f), IM_COL32(255, 220, 120, 240),
+			                  bind.name.c_str());
+		}
+	}
+
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	ImGui_ImplDX11_Shutdown();
@@ -408,6 +492,37 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 		for (const std::string& warning : viewmodel->warnings) {
 			std::printf("warning: %s\n", warning.c_str());
 		}
+		for (const int surface : options.hideSurfaces) {
+			std::vector<bool>& visible = workbench.GunSurfaceVisible();
+			if (surface >= 0 && static_cast<std::size_t>(surface) < visible.size()) {
+				visible[static_cast<std::size_t>(surface)] = false;
+			}
+		}
+		for (const std::string& attachment : options.attachNames) {
+			std::string attachError;
+			if (workbench.Attach(attachment, attachError)) {
+				const wb::commands::AttachmentMount* mount = nullptr;
+				for (const auto& candidate : workbench.Attachments()) {
+					if (candidate.name == attachment || candidate.internalName == attachment ||
+					    candidate.viewModel == attachment) {
+						mount = &candidate;
+						break;
+					}
+				}
+				if (mount == nullptr && !workbench.Attachments().empty()) {
+					mount = &workbench.Attachments().back();
+				}
+				if (mount != nullptr) {
+					std::printf("attached: %s | vm %s | tag %s (%s)\n", mount->name.c_str(),
+					            mount->viewModel.c_str(), mount->requiredTag.c_str(),
+					            mount->tagFound ? "found" : "MISSING");
+				} else {
+					std::printf("attached: %s\n", attachment.c_str());
+				}
+			} else {
+				std::fprintf(stderr, "attach %s: %s\n", attachment.c_str(), attachError.c_str());
+			}
+		}
 		hasAsset = true;
 	} else if (!options.modelName.empty()) {
 		std::string error;
@@ -456,6 +571,26 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 		std::printf("time: %.4f s  frame %.2f\n", workbench.AnimTime(), workbench.AnimFrame());
 	}
 
+	if (options.poseDump) {
+		std::FILE* out = stdout;
+		std::FILE* file = nullptr;
+		if (!options.poseDumpPath.empty()) {
+			if (_wfopen_s(&file, options.poseDumpPath.c_str(), L"w") == 0 && file != nullptr) {
+				out = file;
+			} else {
+				std::fprintf(stderr, "posedump: cannot write %s\n",
+				             options.poseDumpPath.string().c_str());
+			}
+		}
+		wb::PrintPoseDump(workbench, wb::DefaultPoseDumpBones(), options.width, options.height, out);
+		if (file != nullptr) {
+			std::fclose(file);
+		}
+		if (options.screenshotPath.empty()) {
+			return 0;
+		}
+	}
+
 	const std::filesystem::path& output = options.screenshotPath;
 	if (options.sheet > 0) {
 		return RenderContactSheet(workbench, renderer, options) ? 0 : 1;
@@ -470,6 +605,13 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 		if (model != nullptr) {
 			DrawHeadlessBoneOverlay(renderer, *model, workbench.GetCamera(), options.width, options.height, true);
 		}
+	}
+	if (options.crosshair || options.markTags) {
+		DrawHeadlessDebugOverlay(renderer, workbench, options.width, options.height, options.crosshair,
+		                         options.markTags);
+	}
+	if (!options.caption.empty()) {
+		DrawHeadlessCaption(renderer, options.width, options.height, options.caption);
 	}
 
 	std::error_code ec;
@@ -742,6 +884,59 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.bones = true;
 		} else if (arg == L"-ads") {
 			options.ads = true;
+		} else if (arg == L"-posedump") {
+			options.poseDump = true;
+			if (i + 1 < argc && argv[i + 1][0] != L'-') {
+				options.poseDumpPath = std::filesystem::path(argv[++i]);
+			}
+		} else if (arg == L"-crosshair") {
+			options.crosshair = true;
+		} else if (arg == L"-fit-report") {
+			options.fitReport = true;
+			if (i + 1 < argc && argv[i + 1][0] != L'-') {
+				options.fitReportPath = std::filesystem::path(argv[++i]);
+			}
+		} else if (arg == L"-caption") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-caption needs text\n", stderr);
+				valid = false;
+			} else {
+				options.caption = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-attach") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-attach needs an attachment name\n", stderr);
+				valid = false;
+			} else {
+				options.attachNames.emplace_back(std::filesystem::path(value).string());
+			}
+		} else if (arg == L"-marktags") {
+			options.markTags = true;
+		} else if (arg == L"-hidesurface") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-hidesurface needs a comma separated surface index list\n", stderr);
+				valid = false;
+			} else {
+				std::wstring list = value;
+				std::size_t start = 0;
+				while (start <= list.size()) {
+					const std::size_t comma = list.find(L',', start);
+					const std::wstring token =
+					    list.substr(start, comma == std::wstring::npos ? std::wstring::npos : comma - start);
+					int index = 0;
+					valid = valid && ParseIntArg(token.c_str(), index) && index >= 0;
+					if (valid) {
+						options.hideSurfaces.push_back(index);
+					}
+					if (comma == std::wstring::npos) {
+						break;
+					}
+					start = comma + 1;
+				}
+			}
 		} else if (arg == L"-wire") {
 			options.wire = true;
 		} else if (arg == L"-grid") {
@@ -791,13 +986,16 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		CoUninitialize();
 		return 2;
 	}
+	if (options.poseDump && options.mode == Mode::Window) {
+		options.mode = Mode::Screenshot;
+	}
 	if (!options.modelName.empty() && !options.weaponName.empty()) {
 		EnsureHeadlessConsole();
 		std::fputs("-model and -weapon cannot be combined\n", stderr);
 		CoUninitialize();
 		return 2;
 	}
-	if (options.mode == Mode::Screenshot && options.screenshotPath.empty()) {
+	if (options.mode == Mode::Screenshot && options.screenshotPath.empty() && !options.poseDump) {
 		EnsureHeadlessConsole();
 		std::fputs("-screenshot needs a file name\n", stderr);
 		CoUninitialize();
@@ -810,6 +1008,38 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		settings.exposure = options.exposure;
 	}
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
+
+	if (options.fitReport) {
+		EnsureHeadlessConsole();
+		if (options.weaponName.empty()) {
+			std::fputs("-fit-report needs -weapon <name>\n", stderr);
+			CoUninitialize();
+			return 2;
+		}
+		wb::commands::AttachmentFitReport report;
+		std::string error;
+		if (!wb::commands::BuildFitReport(roots, options.weaponName, options.handsName, {}, report, error)) {
+			std::fprintf(stderr, "fit report: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		std::FILE* out = stdout;
+		std::FILE* file = nullptr;
+		if (!options.fitReportPath.empty()) {
+			if (_wfopen_s(&file, options.fitReportPath.c_str(), L"w") == 0 && file != nullptr) {
+				out = file;
+			} else {
+				std::fprintf(stderr, "fit report: cannot write %s\n",
+				             options.fitReportPath.string().c_str());
+			}
+		}
+		wb::commands::PrintFitReport(report, out);
+		if (file != nullptr) {
+			std::fclose(file);
+		}
+		CoUninitialize();
+		return 0;
+	}
 
 	int result = 0;
 	if (options.mode == Mode::Info) {

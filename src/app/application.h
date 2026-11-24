@@ -69,6 +69,7 @@ private:
 	std::string handsSelection_;
 	std::vector<std::string> handsOptions_;
 	bool firstPersonRequested_ = false;
+	char attachmentSearch_[96] = {};
 };
 
 } // namespace wb
