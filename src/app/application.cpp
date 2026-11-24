@@ -367,6 +367,9 @@ void Application::DrawInspectorPanel() {
 	ImGui::SeparatorText("Model");
 	DrawModelInspector();
 
+	ImGui::SeparatorText("Character");
+	DrawCharacterSection();
+
 	if (workbench_.GpuWeaponGun() != nullptr || workbench_.GpuStandaloneModel() != nullptr) {
 		ImGui::SeparatorText("Camo");
 		DrawCamoSection();
@@ -556,6 +559,88 @@ void Application::DrawCamoSection() {
 		if (ImGui::SliderFloat("UV scale", &scale, 0.25f, 4.0f, "%.2f")) {
 			workbench_.SetCamoScale(scale);
 		}
+	}
+}
+
+void Application::DrawCharacterSection() {
+	const assets::CharacterFaction* current = workbench_.CharacterFaction();
+	const std::string preview = current != nullptr ? current->display : std::string("(none)");
+	std::vector<std::filesystem::path> roots;
+	roots.reserve(assets_.Roots().size());
+	for (const AssetRoot& root : assets_.Roots()) {
+		if (root.exists) {
+			roots.push_back(root.path);
+		}
+	}
+
+	if (ImGui::BeginCombo("Faction", preview.c_str())) {
+		for (const assets::CharacterFaction& faction : assets::CharacterFactions()) {
+			const assets::CharacterAvailability availability = assets::CheckCharacterFaction(faction, roots);
+			std::string label = faction.display;
+			if (!availability.usable) {
+				label += "  (body missing)";
+			} else if (!availability.headFound) {
+				label += "  (head missing)";
+			}
+			if (ImGui::Selectable(label.c_str(), current != nullptr && current->id == faction.id)) {
+				LoadCharacter(faction.id, characterWeapon_);
+			}
+		}
+		ImGui::EndCombo();
+	}
+	if (!characterError_.empty()) {
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", characterError_.c_str());
+	}
+	if (current == nullptr) {
+		ImGui::TextDisabled("Select an HMW character body (see docs/milestones/M9.md for the dumped ones).");
+		return;
+	}
+
+	const assets::ModelAsset* body = workbench_.CharacterBody();
+	const assets::ModelAsset* head = workbench_.CharacterHead();
+	ImGui::TextDisabled("body: %s", body != nullptr ? body->model.name.c_str() : "-");
+	ImGui::TextDisabled("head: %s", head != nullptr ? head->model.name.c_str() : "(body only)");
+	ImGui::TextDisabled("weapon: %s (tag %s, %s)",
+	                    workbench_.CharacterWeaponName().empty() ? "(none)"
+	                                                             : workbench_.CharacterWeaponName().c_str(),
+	                    workbench_.CharacterWeaponTag().empty() ? "-" : workbench_.CharacterWeaponTag().c_str(),
+	                    workbench_.CharacterWeaponFound() ? "found" : "missing");
+	for (const std::string& missing : workbench_.CharacterMissing()) {
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "missing: %s", missing.c_str());
+	}
+	for (const std::string& warning : workbench_.CharacterWarnings()) {
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "%s", warning.c_str());
+	}
+
+	ImGui::SetNextItemWidth(-120.0f);
+	ImGui::InputTextWithHint("##character_weapon", "world weapon json (e.g. h2_m4_mp)", characterWeapon_,
+	                         sizeof(characterWeapon_));
+	ImGui::SameLine();
+	if (ImGui::Button("Mount weapon")) {
+		std::string error;
+		if (!workbench_.SetCharacterWeapon(characterWeapon_, error)) {
+			characterError_ = error;
+		} else {
+			characterError_.clear();
+		}
+	}
+	if (ImGui::SmallButton("IDLE (mp_jug_maniac_idle)")) {
+		std::string error;
+		(void)workbench_.PlayAnim("mp_jug_maniac_idle", error);
+	}
+	ImGui::SameLine();
+	if (ImGui::SmallButton("AIM (mp_jug_maniac_aim_1)")) {
+		std::string error;
+		(void)workbench_.PlayAnim("mp_jug_maniac_aim_1", error);
+	}
+	ImGui::SameLine();
+	if (ImGui::SmallButton("HOLD (pb_jug_maniac_grenade_hold)")) {
+		std::string error;
+		(void)workbench_.PlayAnim("pb_jug_maniac_grenade_hold", error);
+	}
+	if (ImGui::SmallButton("Clear character")) {
+		workbench_.ClearCharacter();
+		characterFaction_.clear();
 	}
 }
 
@@ -1231,6 +1316,17 @@ void Application::LoadWeapon(const std::string& name, const std::string& hands, 
 			selected_ = static_cast<int>(i);
 			break;
 		}
+	}
+}
+
+void Application::LoadCharacter(const std::string& faction, const std::string& weapon) {
+	characterFaction_ = faction;
+	std::snprintf(characterWeapon_, sizeof(characterWeapon_), "%s", weapon.c_str());
+	std::string error;
+	if (!workbench_.LoadCharacter(faction, weapon, error)) {
+		characterError_ = error;
+	} else {
+		characterError_.clear();
 	}
 }
 

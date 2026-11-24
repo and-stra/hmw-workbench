@@ -272,14 +272,24 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
 	std::vector<DirectX::XMFLOAT4X4> palette(model.bones.size());
 	for (std::size_t i = 0; i < model.bones.size(); ++i) {
 		const assets::BoneData& bind = model.bones[i];
+		DirectX::XMVECTOR bindQuat = DirectX::XMLoadFloat4(&bind.worldQuat);
+		if (DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(bindQuat)) < 1.0e-8f) {
+			bindQuat = DirectX::XMQuaternionIdentity();
+		}
+		bindQuat = DirectX::XMQuaternionNormalize(bindQuat);
 		const DirectX::XMMATRIX bindWorld =
-		    DirectX::XMMatrixRotationQuaternion(DirectX::XMLoadFloat4(&bind.worldQuat)) *
+		    DirectX::XMMatrixRotationQuaternion(bindQuat) *
 		    DirectX::XMMatrixTranslation(bind.worldPos.x, bind.worldPos.y, bind.worldPos.z);
 		const int poseIndex = i < boneMap.size() ? boneMap[i] : -1;
 		DirectX::XMMATRIX animatedWorld = bindWorld;
 		if (poseIndex >= 0 && static_cast<std::size_t>(poseIndex) < pose.bones.size()) {
 			const PoseBone& animated = pose.bones[static_cast<std::size_t>(poseIndex)];
-			animatedWorld = DirectX::XMMatrixRotationQuaternion(DirectX::XMLoadFloat4(&animated.worldQuat)) *
+			DirectX::XMVECTOR animatedQuat = DirectX::XMLoadFloat4(&animated.worldQuat);
+			if (DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(animatedQuat)) < 1.0e-8f) {
+				animatedQuat = DirectX::XMQuaternionIdentity();
+			}
+			animatedQuat = DirectX::XMQuaternionNormalize(animatedQuat);
+			animatedWorld = DirectX::XMMatrixRotationQuaternion(animatedQuat) *
 			                DirectX::XMMatrixTranslation(animated.worldPos.x, animated.worldPos.y,
 			                                             animated.worldPos.z);
 		}
@@ -291,5 +301,18 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
 }
 
 void RecomputeWorld(SkeletonPose& pose) { ComposeWorld(pose); }
+
+std::vector<int> MapBonesByName(const assets::XModelData& model, const SkeletonPose& pose) {
+	std::vector<int> map(model.bones.size(), -1);
+	for (std::size_t i = 0; i < model.bones.size(); ++i) {
+		for (std::size_t j = 0; j < pose.bones.size(); ++j) {
+			if (pose.bones[j].name == model.bones[i].name) {
+				map[i] = static_cast<int>(j);
+				break;
+			}
+		}
+	}
+	return map;
+}
 
 } // namespace wb::scene

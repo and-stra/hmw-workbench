@@ -13,6 +13,7 @@
 #include "app/settings.h"
 #include "assets/asset_index.h"
 #include "assets/attachment.h"
+#include "assets/character.h"
 #include "assets/model_asset.h"
 #include "assets/weapon.h"
 #include "assets/xanim.h"
@@ -123,6 +124,29 @@ public:
 	bool SetHands(const std::string& hands, std::string& error);
 	bool IsWorldModel() const { return worldModel_; }
 	bool SetWorldModel(bool world, std::string& error);
+
+	// ---- player characters (M9) ----
+	bool LoadCharacter(const std::string& faction, const std::string& weapon, std::string& error);
+	bool LoadCharacterParts(const std::string& body, const std::string& head, const std::string& weapon,
+	                        std::string& error);
+	bool SetCharacterWeapon(const std::string& weapon, std::string& error);
+	void ClearCharacter();
+	bool HasCharacter() const { return hasCharacter_; }
+	const assets::CharacterFaction* CharacterFaction() const {
+		return hasCharacter_ ? &characterFaction_ : nullptr;
+	}
+	const assets::ModelAsset* CharacterBody() const { return hasCharacter_ ? &characterBody_ : nullptr; }
+	const assets::ModelAsset* CharacterHead() const { return characterHasHead_ ? &characterHead_ : nullptr; }
+	GpuModel* GpuCharacterBody() { return gpuCharacterBody_.get(); }
+	GpuModel* GpuCharacterHead() { return gpuCharacterHead_.get(); }
+	GpuModel* GpuCharacterWeapon() { return gpuCharacterWeapon_.get(); }
+	const std::vector<std::string>& CharacterMissing() const { return characterMissing_; }
+	const std::vector<std::string>& CharacterWarnings() const { return characterWarnings_; }
+	const std::string& CharacterWeaponName() const { return characterWeaponName_; }
+	const std::string& CharacterWeaponTag() const { return characterWeaponTag_; }
+	DirectX::XMFLOAT3 CharacterWeaponTagWorld() const { return characterWeaponTagWorld_; }
+	bool CharacterWeaponFound() const { return characterWeaponFound_; }
+	const std::vector<DirectX::XMFLOAT4X4>& CharacterBodyPalette() const { return characterBodyPalette_; }
 
 	// ---- attachments ----
 	bool Attach(const std::string& attachment, std::string& error);
@@ -261,8 +285,7 @@ private:
 	void LoadEditableDocumentForModel(const std::string& modelName);
 	void SyncDocumentToScene();
 	void ApplyCamo();
-	void RebuildHiddenTags();
-	void UpdateAttachmentWorlds();
+	void RebuildHiddenTags();	void UpdateAttachmentWorlds();
 	bool AlignAdsToReticle();
 	void BuildAttachmentCatalog();
 	bool OverrideAppliesToAttachment(const assets::WeaponAnimOverride& entry) const;
@@ -273,6 +296,8 @@ private:
 	void BuildPose();
 	double SelectedDuration() const;
 	bool LoadAnimAsset(const std::string& name, std::optional<assets::XAnimData>& out, std::string& error) const;
+	bool LoadCharacterInternal(const assets::CharacterFaction& faction, const std::string& weapon,
+	                           std::string& error);
 
 	Settings& settings_;
 	AssetIndex& assets_;
@@ -310,6 +335,27 @@ private:
 	std::unique_ptr<assets::XModelDocument> document_;
 	bool documentIsWeapon_ = false;
 	bool adsAutoAlign_ = true;
+
+	// character (body + optional head + world weapon on a hand tag)
+	bool hasCharacter_ = false;
+	assets::CharacterFaction characterFaction_;
+	assets::ModelAsset characterBody_;
+	assets::ModelAsset characterHead_;
+	assets::ModelAsset characterWeaponModel_;
+	bool characterHasHead_ = false;
+	std::unique_ptr<GpuModel> gpuCharacterBody_;
+	std::unique_ptr<GpuModel> gpuCharacterHead_;
+	std::unique_ptr<GpuModel> gpuCharacterWeapon_;
+	std::vector<DirectX::XMFLOAT4X4> characterBodyPalette_;
+	std::vector<DirectX::XMFLOAT4X4> characterHeadPalette_;
+	DirectX::XMFLOAT4X4 characterHeadWorld_{};
+	DirectX::XMFLOAT4X4 characterWeaponWorld_{};
+	std::string characterWeaponName_;
+	std::string characterWeaponTag_;
+	DirectX::XMFLOAT3 characterWeaponTagWorld_{};
+	bool characterWeaponFound_ = false;
+	std::vector<std::string> characterMissing_;
+	std::vector<std::string> characterWarnings_;
 
 	std::vector<std::string> camoNames_;
 	std::string camoName_;

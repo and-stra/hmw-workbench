@@ -13,9 +13,9 @@ and `git log --oneline -5`; then continue with the first open item below.
 | M5 tag editing | **done** | 23c650c + bc8365e | all checks pass, copy-save 14/14 |
 | M6 camos | **done** | a419bbb | research + preview, 3 camos on M4/crossbow |
 | M7 hardening | **done** | 33595c1 | 80/80 regression, window test 5/5 |
-| M8 world models | **done** | see M8.md | world model + world attachments, fit report |
-| M9 player models | not started | – | |
-| M10 comfort features | not started | – | |
+| M8 world models | **done** | 0779ae7 | world model + world attachments, fit report |
+| M9 player models | **done with asset gap** | see M9.md | 2 complete factions; missing assets listed |
+| M10 comfort features | not started | - | |
 
 Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit includes
 `docs\porting\aw.md` updated by Claude and `docs\OVERNIGHT-TASK.md`.
@@ -96,6 +96,20 @@ Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit incl
   (`review\M8\`), M4 world reflex found on `tag_reflex`, crossbow world reflex missing
   (nearest `tag_red_dot`) - the M5 tags are VM-only, documented. MCP world test **7/7**.
 - Build clean (0 warnings). Files changed outside the repo: none.
+
+## M9 - player models
+
+- Faction table from `refs\dumps\hmw_files\scripts\mp_patches\custom_teams.gsc` (body/head/
+  viewhands), availability check and dropdown; `-character` / `-character-weapon`; MCP
+  `load_character` (faction or body+head); world weapon on `tag_weapon_right` (verified: parent
+  `j_wrist_ri`; `tag_inhand` is the chest tag); third-person `mp_jug_maniac_idle` +
+  `mp_jug_maniac_stand_hold_throw` play on the player skeleton.
+- Asset gap: only `body_hazmat` and `body_infect` are complete in the dumps;
+  `body_usmc_desert_assault_mp_camo` is missing its xsurface and the HMW faction bodies/heads
+  are not dumped. Full list in `review\M9\missing-factions.txt`; no outside-repo dump was made.
+- Self-check: 2 textured factions + the missing-asset list, MCP character test **8/8**,
+  screenshots in `review\M9\`. Build clean.
+- Files changed outside the repo: none.
 
 ## M5 open issues / notes
 

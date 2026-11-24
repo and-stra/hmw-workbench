@@ -260,6 +260,18 @@ private:
 		       {"properties", {{"model", str("Xmodel name.")},
 		                       {"camo", str("Camo material or name (camo_h1_<name>).")}}},
 		       {"required", {"model"}}}}},
+		    {{"name", "load_character"},
+		     {"description",
+		      "Load an HMW player character (faction or body+head), mount a world weapon on "
+		      "tag_weapon_right/tag_inhand and optionally play a third-person anim."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"faction", str("Faction id (tf141, opfor, spetsnaz, rangers, seals, militia, hazmat, infect, ...).")},
+		                       {"body", str("Body xmodel when faction is omitted.")},
+		                       {"head", str("Head xmodel (optional).")},
+		                       {"weapon", str("World weapon json to mount in the hand.")},
+		                       {"anim", str("Third-person xanim, e.g. mp_jug_maniac_idle.")},
+		                       {"time", number("Anim time in seconds.")}}}}}},
 		    {{"name", "set_anim"},
 		     {"description", "Play an animation (xanim name or weapon state such as IDLE/ADS_UP), set time/fraction and ADS."},
 		     {"inputSchema",
@@ -357,6 +369,9 @@ private:
 		}
 		if (name == "load_model") {
 			return LoadModel(args);
+		}
+		if (name == "load_character") {
+			return LoadCharacter(args);
 		}
 		if (name == "set_anim") {
 			return SetAnim(args);
@@ -540,8 +555,57 @@ private:
 		            {"bounds_half", Vec3(asset->boundsHalf)}};
 	}
 
-	json SetAnim(const json& args) {
-		const std::string requested = args.value("name", "");
+	json LoadCharacter(const json& args) {
+		const std::string faction = args.value("faction", "");
+		const std::string body = args.value("body", "");
+		const std::string head = args.value("head", "");
+		const std::string weapon = args.value("weapon", "");
+		std::string error;
+		const bool ok = !faction.empty() ? workbench_.LoadCharacter(faction, weapon, error)
+		                                 : workbench_.LoadCharacterParts(body, head, weapon, error);
+		if (!ok) {
+			return json{{"error", error}};
+		}
+		const assets::CharacterFaction* loadedFaction = workbench_.CharacterFaction();
+		const assets::ModelAsset* loadedBody = workbench_.CharacterBody();
+		const assets::ModelAsset* loadedHead = workbench_.CharacterHead();
+		json missing = json::array();
+		for (const std::string& item : workbench_.CharacterMissing()) {
+			missing.push_back(item);
+		}
+		json warnings = json::array();
+		for (const std::string& item : workbench_.CharacterWarnings()) {
+			warnings.push_back(item);
+		}
+		json result{{"faction", loadedFaction != nullptr ? loadedFaction->id : std::string()},
+		            {"display", loadedFaction != nullptr ? loadedFaction->display : std::string()},
+		            {"body", loadedBody != nullptr ? loadedBody->model.name : std::string()},
+		            {"head", loadedHead != nullptr ? loadedHead->model.name : std::string()},
+		            {"weapon", workbench_.CharacterWeaponName()},
+		            {"weapon_tag", workbench_.CharacterWeaponTag()},
+		            {"weapon_tag_world", Vec3(workbench_.CharacterWeaponTagWorld())},
+		            {"weapon_found", workbench_.CharacterWeaponFound()},
+		            {"missing", missing},
+		            {"warnings", warnings}};
+		const std::string anim = args.value("anim", "");
+		if (!anim.empty()) {
+			const std::string resolved = workbench_.PlayAnim(anim, error) ? anim : std::string();
+			if (resolved.empty()) {
+				result["anim_error"] = error;
+			} else {
+				if (args.contains("time") && args["time"].is_number()) {
+					workbench_.SetAnimTime(args["time"].get<double>());
+				}
+				const assets::XAnimData* data = workbench_.Anim();
+				result["anim"] = data != nullptr ? data->name : resolved;
+				result["frames"] = data != nullptr ? data->frameCount : 0;
+				result["time"] = workbench_.AnimTime();
+			}
+		}
+		return result;
+	}
+
+	json SetAnim(const json& args) {		const std::string requested = args.value("name", "");
 		if (requested.empty()) {
 			return json{{"error", "name is required"}};
 		}
@@ -578,8 +642,9 @@ private:
 	}
 
 	json Screenshot(const json& args) {
-		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr) {
-			return json{{"error", "no weapon or model loaded"}};
+		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr &&
+		    !workbench_.HasCharacter()) {
+			return json{{"error", "no weapon, model or character loaded"}};
 		}
 		ShotOptions shot;
 		shot.width = std::clamp(args.value("width", 1920), 1, 7680);
@@ -653,13 +718,15 @@ private:
 	}
 
 	json GetBones(const json& args) {
-		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr) {
-			return json{{"error", "no weapon or model loaded"}};
+		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr &&
+		    !workbench_.HasCharacter()) {
+			return json{{"error", "no weapon, model or character loaded"}};
 		}
 		const std::string needle = ToLower(args.value("name", ""));
 		const bool tagsOnly = args.value("tags_only", false);
 		const int limit = std::clamp(args.value("limit", 1000), 1, 5000);
 		const bool standalone = workbench_.Viewmodel() == nullptr;
+		const bool character = workbench_.HasCharacter();
 		const scene::SkeletonPose& pose = workbench_.Pose();
 		json bones = json::array();
 		int total = 0;
@@ -680,7 +747,9 @@ private:
 			        : std::string();
 			bones.emplace_back(json{{"name", bone.name},
 			                        {"parent", parent},
-			                        {"source", standalone ? "model" : (bone.fromHands ? "hands" : "gun")},
+			                        {"source", character ? "character"
+			                                             : (standalone ? "model"
+			                                                           : (bone.fromHands ? "hands" : "gun"))},
 			                        {"local_pos", Vec3(bone.localPos)},
 			                        {"world_pos", Vec3(bone.worldPos)},
 			                        {"local_quat", Vec4(bone.localQuat)},
@@ -690,8 +759,9 @@ private:
 	}
 
 	json GetTags(const json& args) {
-		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr) {
-			return json{{"error", "no weapon or model loaded"}};
+		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr &&
+		    !workbench_.HasCharacter()) {
+			return json{{"error", "no weapon, model or character loaded"}};
 		}
 		const std::string needle = ToLower(args.value("name", ""));
 		const scene::SkeletonPose& pose = workbench_.Pose();

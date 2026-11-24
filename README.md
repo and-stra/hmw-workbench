@@ -110,6 +110,7 @@ relative to the current working directory unless they are absolute.
 | `-hidesurface <i,i,...>` | hide weapon surfaces by index |
 | `-camo <camo_h1_name\|name>` | apply a camo (M6); `-camo-strength 0..1`, `-camo-scale n` |
 | `-world` | load the weapon's world model (no hands, orbit) and its attachments' world models |
+| `-character <faction>` | load an HMW player character (body + optional head); `-character-weapon <weapon>` mounts its world model on `tag_weapon_right` |
 | `-bones` / `-wire` / `-crosshair` / `-marktags` / `-grid` / `-nogrid` | overlays |
 | `-yaw <deg>` / `-pitch <deg>` / `-dist <units>` / `-fov <vertical deg>` | camera |
 | `-exposure <n>` | lighting exposure |
@@ -142,10 +143,10 @@ hmw-workbench.exe -roundtrip review\roundtrip.txt
 
 `hmw-workbench.exe -mcp` is a newline-delimited JSON-RPC MCP server over the same command layer
 (load weapons/models, attachments, anims, tags, camos, screenshots, fit report, validate). Tools:
-`list_assets`, `load_weapon`, `load_model`, `set_anim`, `screenshot`, `get_bones`, `get_tags`,
-`posedump`, `attachment_fit_report`, `compare_tags`, `validate`, `info`, `move_tag`, `add_tag`,
-`revert_tags`, `save_model`. Every tool and parameter, client configuration and a smoke test are
-in [docs/mcp.md](docs/mcp.md).
+`list_assets`, `load_weapon`, `load_model`, `load_character`, `set_anim`, `screenshot`, `get_bones`,
+`get_tags`, `posedump`, `attachment_fit_report`, `compare_tags`, `validate`, `info`, `move_tag`,
+`add_tag`, `revert_tags`, `save_model`. Every tool and parameter, client configuration and a smoke
+test are in [docs/mcp.md](docs/mcp.md).
 
 ## Porting a weapon
 

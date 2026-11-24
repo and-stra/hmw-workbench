@@ -14,13 +14,21 @@ constexpr float kMinSpeed = 0.1f;
 constexpr float kMaxSpeed = 2.0f;
 
 DirectX::XMMATRIX BoneMatrix(const assets::BoneData& bone) {
-	const DirectX::XMVECTOR quaternion = DirectX::XMLoadFloat4(&bone.worldQuat);
+	DirectX::XMVECTOR quaternion = DirectX::XMLoadFloat4(&bone.worldQuat);
+	if (DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(quaternion)) < 1.0e-8f) {
+		quaternion = DirectX::XMQuaternionIdentity();
+	}
+	quaternion = DirectX::XMQuaternionNormalize(quaternion);
 	return DirectX::XMMatrixRotationQuaternion(quaternion) *
 	       DirectX::XMMatrixTranslation(bone.worldPos.x, bone.worldPos.y, bone.worldPos.z);
 }
 
 DirectX::XMMATRIX PoseBoneMatrix(const scene::PoseBone& bone) {
-	const DirectX::XMVECTOR quaternion = DirectX::XMLoadFloat4(&bone.worldQuat);
+	DirectX::XMVECTOR quaternion = DirectX::XMLoadFloat4(&bone.worldQuat);
+	if (DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(quaternion)) < 1.0e-8f) {
+		quaternion = DirectX::XMQuaternionIdentity();
+	}
+	quaternion = DirectX::XMQuaternionNormalize(quaternion);
 	return DirectX::XMMatrixRotationQuaternion(quaternion) *
 	       DirectX::XMMatrixTranslation(bone.worldPos.x, bone.worldPos.y, bone.worldPos.z);
 }
@@ -256,6 +264,160 @@ void Workbench::ClearModel() {
 void Workbench::ClearAttachments() {
 	attachments_.clear();
 	hiddenTags_.clear();
+}
+
+void Workbench::ClearCharacter() {
+	hasCharacter_ = false;
+	characterFaction_ = assets::CharacterFaction{};
+	characterBody_ = assets::ModelAsset{};
+	characterHead_ = assets::ModelAsset{};
+	characterWeaponModel_ = assets::ModelAsset{};
+	characterHasHead_ = false;
+	gpuCharacterBody_.reset();
+	gpuCharacterHead_.reset();
+	gpuCharacterWeapon_.reset();
+	characterBodyPalette_.clear();
+	characterHeadPalette_.clear();
+	DirectX::XMStoreFloat4x4(&characterHeadWorld_, DirectX::XMMatrixIdentity());
+	DirectX::XMStoreFloat4x4(&characterWeaponWorld_, DirectX::XMMatrixIdentity());
+	characterWeaponName_.clear();
+	characterWeaponTag_.clear();
+	characterWeaponFound_ = false;
+	characterMissing_.clear();
+	characterWarnings_.clear();
+}
+
+bool Workbench::LoadCharacterInternal(const assets::CharacterFaction& faction, const std::string& weapon,
+                                      std::string& error) {
+	ClearWeapon();
+	ClearModel();
+	ClearCharacter();
+
+	assets::ModelAsset body;
+	assets::ModelAsset head;
+	bool hasHead = false;
+	std::vector<std::string> missing;
+	std::vector<std::string> warnings;
+	if (!assets::LoadCharacter(faction, roots_, body, head, hasHead, missing, warnings, error)) {
+		characterMissing_ = missing;
+		return false;
+	}
+
+	std::string uploadError;
+	std::unique_ptr<GpuModel> gpuBody = renderer_.UploadModel(body, uploadError);
+	if (!gpuBody) {
+		error = "character body upload: " + uploadError;
+		return false;
+	}
+	std::unique_ptr<GpuModel> gpuHead;
+	if (hasHead) {
+		gpuHead = renderer_.UploadModel(head, uploadError);
+		if (!gpuHead) {
+			warnings.push_back("head upload failed: " + uploadError);
+			hasHead = false;
+		}
+	}
+
+	characterFaction_ = faction;
+	characterBody_ = std::move(body);
+	characterHead_ = std::move(head);
+	characterHasHead_ = hasHead;
+	gpuCharacterBody_ = std::move(gpuBody);
+	gpuCharacterHead_ = std::move(gpuHead);
+	characterMissing_ = std::move(missing);
+	characterWarnings_ = std::move(warnings);
+	hasCharacter_ = true;
+
+	primaryAnim_.reset();
+	idleAnim_.reset();
+	adsAnim_.reset();
+	animName_.clear();
+	time_ = 0.0;
+	playing_ = false;
+	additive_ = false;
+	ads_ = false;
+	viewMode_ = ViewMode::Orbit;
+	showGrid_ = true;
+	FrameCamera();
+	UpdateViewCamera();
+	BuildPose();
+
+	if (!weapon.empty()) {
+		std::string weaponError;
+		if (!SetCharacterWeapon(weapon, weaponError)) {
+			characterWarnings_.push_back("weapon " + weapon + ": " + weaponError);
+		}
+	}
+	return true;
+}
+
+bool Workbench::LoadCharacter(const std::string& factionName, const std::string& weapon, std::string& error) {
+	const assets::CharacterFaction* faction = assets::FindCharacterFaction(factionName);
+	if (faction == nullptr) {
+		error = "unknown character faction: " + factionName;
+		return false;
+	}
+	return LoadCharacterInternal(*faction, weapon, error);
+}
+
+bool Workbench::LoadCharacterParts(const std::string& body, const std::string& head, const std::string& weapon,
+                                   std::string& error) {
+	if (body.empty()) {
+		error = "character body model is required";
+		return false;
+	}
+	assets::CharacterFaction faction;
+	faction.id = "custom";
+	faction.display = "custom (" + body + ")";
+	faction.body = body;
+	faction.head = head;
+	return LoadCharacterInternal(faction, weapon, error);
+}
+
+bool Workbench::SetCharacterWeapon(const std::string& weapon, std::string& error) {
+	if (!hasCharacter_) {
+		error = "no character loaded";
+		return false;
+	}
+	if (weapon.empty() || ToLower(weapon) == "none") {
+		characterWeaponModel_ = assets::ModelAsset{};
+		gpuCharacterWeapon_.reset();
+		characterWeaponName_.clear();
+		characterWeaponTag_.clear();
+		characterWeaponFound_ = false;
+		BuildPose();
+		return true;
+	}
+	const std::optional<std::filesystem::path> weaponPath = assets::FindWeaponFile(roots_, weapon);
+	if (!weaponPath.has_value()) {
+		error = "weapon json not found: weapons/" + weapon + ".json";
+		return false;
+	}
+	assets::WeaponAsset weaponAsset;
+	try {
+		weaponAsset = assets::LoadWeapon(*weaponPath);
+	} catch (const std::exception& e) {
+		error = e.what();
+		return false;
+	}
+	const std::string modelName =
+	    weaponAsset.worldModel.empty() ? weaponAsset.gunModel : weaponAsset.worldModel;
+	assets::ModelAsset model;
+	if (!assets::LoadModelAsset(modelName, roots_, model, error, true)) {
+		error = "character weapon " + modelName + ": " + error;
+		return false;
+	}
+	std::string uploadError;
+	std::unique_ptr<GpuModel> gpu = renderer_.UploadModel(model, uploadError);
+	if (!gpu) {
+		error = "character weapon upload: " + uploadError;
+		return false;
+	}
+	characterWeaponModel_ = std::move(model);
+	gpuCharacterWeapon_ = std::move(gpu);
+	characterWeaponName_ = weaponAsset.name.empty() ? weapon : weaponAsset.name;
+	BuildPose();
+	return true;
 }
 
 const std::vector<std::string>& Workbench::CamoNames() {
@@ -1028,6 +1190,7 @@ std::string Workbench::EffectiveAnimForState(const std::string& state) const {
 bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson,
                            std::string& error, bool world) {
 	ClearWeapon();
+	ClearCharacter();
 	worldModel_ = world;
 	primaryAnim_.reset();
 	idleAnim_.reset();
@@ -1123,6 +1286,7 @@ bool Workbench::LoadModel(const std::string& model, std::string& error) {
 		error = modelError_;
 		return false;
 	}
+	ClearCharacter();
 	ClearModel();
 	modelName_ = model;
 	assets::ModelAsset loaded;
@@ -1344,7 +1508,9 @@ const assets::XAnimData* Workbench::BaseAnim() const {
 
 void Workbench::FrameCamera() {
 	camera_.SetOrbitMode();
-	if (hasWeapon_) {
+	if (hasCharacter_) {
+		camera_.Frame(characterBody_.boundsCenter, BoundsRadius(characterBody_.boundsHalf));
+	} else if (hasWeapon_) {
 		camera_.Frame(viewmodel_.boundsCenter, BoundsRadius(viewmodel_.boundsHalf));
 	} else if (hasModel_) {
 		camera_.Frame(model_.boundsCenter, BoundsRadius(model_.boundsHalf));
@@ -1569,6 +1735,59 @@ void Workbench::BuildPose() {
 	}
 	const float additiveTime = static_cast<float>(time_);
 
+	if (hasCharacter_) {
+		pose_ = scene::BuildModelPose(characterBody_.model, base, baseTime, additive, additiveTime);
+		characterBodyPalette_ = scene::BuildBonePalette(characterBody_.model, pose_, pose_.modelBoneToPose);
+		characterHeadPalette_.clear();
+		DirectX::XMStoreFloat4x4(&characterHeadWorld_, DirectX::XMMatrixIdentity());
+		if (characterHasHead_ && !characterHead_.model.bones.empty()) {
+			const std::vector<int> headMap = scene::MapBonesByName(characterHead_.model, pose_);
+			characterHeadPalette_ = scene::BuildBonePalette(characterHead_.model, pose_, headMap);
+			int headBone = FindPoseBone(pose_, "j_head");
+			if (headBone < 0) {
+				headBone = FindPoseBone(pose_, "tag_head");
+			}
+			if (headBone < 0) {
+				headBone = FindPoseBone(pose_, "j_neck");
+			}
+			if (headBone < 0) {
+				headBone = FindPoseBone(pose_, "tag_neck");
+			}
+			if (headBone >= 0) {
+				const DirectX::XMMATRIX headRootBind = BoneMatrix(characterHead_.model.bones.front());
+				const DirectX::XMMATRIX inverseRoot = DirectX::XMMatrixInverse(nullptr, headRootBind);
+				const DirectX::XMMATRIX headWorld =
+				    inverseRoot * PoseBoneMatrix(pose_.bones[static_cast<std::size_t>(headBone)]);
+				DirectX::XMStoreFloat4x4(&characterHeadWorld_, headWorld);
+			}
+		}
+
+		characterWeaponFound_ = false;
+		characterWeaponTag_.clear();
+		characterWeaponTagWorld_ = {0.0f, 0.0f, 0.0f};
+		DirectX::XMStoreFloat4x4(&characterWeaponWorld_, DirectX::XMMatrixIdentity());
+		if (gpuCharacterWeapon_ && !characterWeaponModel_.model.bones.empty()) {
+			int weaponBone = -1;
+			for (const char* tag : {"tag_weapon_right", "tag_inhand", "tag_weapon"}) {
+				weaponBone = FindPoseBone(pose_, tag);
+				if (weaponBone >= 0) {
+					characterWeaponTag_ = tag;
+					break;
+				}
+			}
+			if (weaponBone >= 0) {
+				characterWeaponFound_ = true;
+				characterWeaponTagWorld_ = pose_.bones[static_cast<std::size_t>(weaponBone)].worldPos;
+				const DirectX::XMMATRIX rootBind = BoneMatrix(characterWeaponModel_.model.bones.front());
+				const DirectX::XMMATRIX inverseRoot = DirectX::XMMatrixInverse(nullptr, rootBind);
+				const DirectX::XMMATRIX weaponWorld =
+				    inverseRoot * PoseBoneMatrix(pose_.bones[static_cast<std::size_t>(weaponBone)]);
+				DirectX::XMStoreFloat4x4(&characterWeaponWorld_, weaponWorld);
+			}
+		}
+		return;
+	}
+
 	if (hasWeapon_) {
 		pose_ = scene::BuildViewmodelPose(viewmodel_, base, baseTime, additive, additiveTime);
 		if (ads_ && adsAnim_) {
@@ -1626,7 +1845,26 @@ bool Workbench::RenderScene(int width, int height) {
 
 	BuildPose();
 
-	if (gpuGun_) {
+	if (hasCharacter_) {
+		if (gpuCharacterBody_) {
+			renderer_.RenderModel(*gpuCharacterBody_, camera_, wireframe_, nullptr, settings_.exposure, nullptr,
+			                      &characterBodyPalette_);
+		}
+		if (gpuCharacterHead_) {
+			renderer_.RenderModel(*gpuCharacterHead_, camera_, wireframe_, nullptr, settings_.exposure,
+			                      &characterHeadWorld_, &characterHeadPalette_);
+		}
+		if (gpuCharacterWeapon_) {
+			DirectX::XMFLOAT4 tint = {1.0f, 1.0f, 1.0f, 1.0f};
+			const DirectX::XMFLOAT4* tintPtr = nullptr;
+			if (!characterWeaponFound_) {
+				tint = {0.95f, 0.12f, 0.12f, 1.0f};
+				tintPtr = &tint;
+			}
+			renderer_.RenderModel(*gpuCharacterWeapon_, camera_, wireframe_, nullptr, settings_.exposure,
+			                      &characterWeaponWorld_, nullptr, tintPtr, !characterWeaponFound_);
+		}
+	} else if (gpuGun_) {
 		if (gpuHands_) {
 			renderer_.RenderModel(*gpuHands_, camera_, wireframe_, &handsSurfaceVisible_, settings_.exposure,
 			                      nullptr, &handsPalette_);

@@ -74,6 +74,23 @@ Load a standalone xmodel (unloads the weapon, switches to orbit).
 `{"model":"vm_crossbow_base"}` → `{model,bones,surfaces,materials,camo,bounds_mid,bounds_half}`.
 The optional `camo` parameter works like `load_weapon` (`"none"` clears it).
 
+### `load_character`
+
+Load an HMW player character from a faction or from explicit body/head xmodels, optionally mount
+a world weapon in the hand and play a third-person anim.
+
+| parameter | type | meaning |
+|---|---|---|
+| `faction` | string | faction id: `tf141`, `opfor`, `spetsnaz`, `rangers`, `seals`, `militia`, `gign`, `pmc`, `ic`, `africa`, `delta`, `usmc_desert`, `hazmat`, `infect` |
+| `body` / `head` | string | explicit xmodel names (when `faction` is omitted; head optional) |
+| `weapon` | string | weapon json whose `worldModel` is mounted |
+| `anim` / `time` | string/number | third-person xanim and seconds |
+
+Returns `{faction, display, body, head, weapon, weapon_tag, weapon_tag_world, weapon_found,
+missing, warnings, anim?, frames?, time?}`. The weapon mounts on `tag_weapon_right` (the right
+wrist tag; `tag_inhand` is the chest/in-hand tag) with the same root-bone rule as attachments.
+The faction table and which bodies are actually in the dumps are in `docs/milestones/M9.md`.
+
 ### `set_anim`
 
 Play an xanim, or a weapon state name (`IDLE`, `ADS_UP`, `RELOAD`, ...) with the weapon's

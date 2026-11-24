@@ -1,0 +1,24 @@
+﻿M9 character faction availability (dumps in the current asset roots)
+date: 
+2026-11-24 23:21:07
+
+id           display                body       head       viewhands
+tf141        TF141                  MISSING    MISSING    found
+opfor        OpFor                  MISSING    MISSING    found
+spetsnaz     Spetsnaz               MISSING    MISSING    found
+rangers      Rangers                MISSING    MISSING    found
+seals        SEALs                  MISSING    MISSING    found
+militia      Militia                MISSING    MISSING    found
+gign         GIGN                   MISSING    MISSING    MISSING
+pmc          PMC                    MISSING    MISSING    MISSING
+ic           Inner Circle           MISSING    MISSING    MISSING
+africa       African Militia        MISSING    MISSING    MISSING
+delta        Delta Force            MISSING    MISSING    MISSING
+usmc_desert  USMC desert (H1)       found      (in body)  found
+hazmat       Hazmat                 found      (in body)  found
+infect       Infected               found      (in body)  found
+
+Notes:
+  - Only body_hazmat and body_infect are dumped complete (body includes the head).
+  - body_usmc_desert_assault_mp_camo.xmb is dumped but its surface set usmc_desert_assault_body_mp_lod0300.xsb is not in any root.
+  - The HMW faction bodies/heads (body_h2_*, head_h2_*, mp_body_*, head_*) are not in the current dumps; they live in HMW .ff zones that were not dumped. No new dump was written (outside-repo writes are not allowed in this run).

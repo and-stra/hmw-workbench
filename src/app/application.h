@@ -24,6 +24,7 @@ public:
 	bool WantsClose() const { return wantsClose_; }
 	void LoadModelByName(const std::string& name);
 	void LoadWeapon(const std::string& name, const std::string& hands, bool firstPerson);
+	void LoadCharacter(const std::string& faction, const std::string& weapon);
 
 private:
 	void DrawMenuBar();
@@ -34,6 +35,7 @@ private:
 	void DrawModelInspector();
 	void DrawWeaponInspector();
 	void DrawCamoSection();
+	void DrawCharacterSection();
 	void DrawTagEditor();
 	void DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspect);
 	void DrawAnimInspector();
@@ -74,6 +76,9 @@ private:
 	bool firstPersonRequested_ = false;
 	char attachmentSearch_[96] = {};
 	char camoSearch_[64] = {};
+	char characterWeapon_[64] = {};
+	std::string characterFaction_;
+	std::string characterError_;
 	std::string selectedTag_;
 	int gizmoMode_ = 0; // 0 = translate, 1 = rotate
 	bool showGizmo_ = true;

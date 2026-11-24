@@ -10,7 +10,11 @@ namespace wb::scene {
 namespace {
 
 DirectX::XMMATRIX BoneMatrix(const assets::BoneData& bone) {
-	const DirectX::XMVECTOR quaternion = DirectX::XMLoadFloat4(&bone.worldQuat);
+	DirectX::XMVECTOR quaternion = DirectX::XMLoadFloat4(&bone.worldQuat);
+	if (DirectX::XMVectorGetX(DirectX::XMVector4LengthSq(quaternion)) < 1.0e-8f) {
+		quaternion = DirectX::XMQuaternionIdentity();
+	}
+	quaternion = DirectX::XMQuaternionNormalize(quaternion);
 	return DirectX::XMMatrixRotationQuaternion(quaternion) *
 	       DirectX::XMMatrixTranslation(bone.worldPos.x, bone.worldPos.y, bone.worldPos.z);
 }

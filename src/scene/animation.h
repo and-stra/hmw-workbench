@@ -48,6 +48,10 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
                                                   const SkeletonPose& pose,
                                                   const std::vector<int>& boneMap);
 
+// Maps a second model's bones onto an existing pose by bone name (used for character heads,
+// which are separate xmodels sharing the player skeleton). -1 for bones not in the pose.
+std::vector<int> MapBonesByName(const assets::XModelData& model, const SkeletonPose& pose);
+
 // Recomputes worldQuat/worldPos after a caller overrides a local bone transform
 // (used for the ADS tag_ads overlay).
 void RecomputeWorld(SkeletonPose& pose);

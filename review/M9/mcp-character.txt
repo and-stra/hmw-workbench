@@ -1,0 +1,186 @@
+﻿hmw-workbench M9 MCP character test
+date: 2026-11-24 23:20:57
+> initialize -> hmw-workbench
+
+> tools/call load_character {"time":0.5,"anim":"mp_jug_maniac_idle","faction":"hazmat","weapon":"h2_m4_mp"}
+< {
+  "anim": "mp_jug_maniac_idle",
+  "body": "body_hazmat",
+  "display": "Hazmat",
+  "faction": "hazmat",
+  "frames": 195,
+  "head": "",
+  "missing": [],
+  "time": 0.5,
+  "warnings": [],
+  "weapon": "h2_m4_mp",
+  "weapon_found": true,
+  "weapon_tag": "tag_weapon_right",
+  "weapon_tag_world": [
+    9.965466499328613,
+    -29.093461990356445,
+    39.14210510253906
+  ]
+}
+
+> tools/call get_bones {"limit":200,"tags_only":true}
+< {
+  "bones": [
+    {
+      "local_pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "local_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "tag_origin",
+      "parent": "",
+      "source": "character",
+      "world_pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "world_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "local_pos": [
+        -0.0022799998987466097,
+        0.0,
+        0.0
+      ],
+      "local_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "tag_sync",
+      "parent": "tag_origin",
+      "source": "character",
+      "world_pos": [
+        -0.0022799998987466097,
+        0.0,
+        0.0
+      ],
+      "world_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "local_pos": [
+        26.759296417236328,
+        -2.3382997512817383,
+        21.335243225097656
+      ],
+      "local_quat": [
+        0.6248251795768738,
+        0.0025635105557739735,
+        0.41501402854919434,
+        0.661324679851532
+      ],
+      "name": "tag_inhand",
+      "parent": "j_spine4",
+      "source": "character",
+      "world_pos": [
+        27.02630043029785,
+        10.48019027709961,
+        30.66329574584961
+      ],
+      "world_quat": [
+        -0.268930584192276,
+        -0.15320135653018951,
+        -0.08601198345422745,
+        0.9469992518424988
+      ]
+    },
+    {
+      "local_pos": [
+        -1.0781104564666748,
+        -7.177724361419678,
+        -3.4468002319335938
+      ],
+      "local_quat": [
+        0.0007019340991973877,
+        0.9951778650283813,
+        0.08883936703205109,
+        0.041566237807273865
+      ],
+      "name": "tag_stowed_back",
+      "parent": "j_spine4",
+      "source": "ch ...[truncated]
+
+> tools/call screenshot {"dist":80,"width":1200,"yaw":30,"path":"review/M9/hazmat_idle_via_mcp.png","pitch":10,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M9/hazmat_idle_via_mcp.png (1200x900, 281737 bytes)
+
+> tools/call load_character {"time":0.5,"anim":"mp_jug_maniac_idle","faction":"infect","weapon":"h2_m4_mp"}
+< {
+  "anim": "mp_jug_maniac_idle",
+  "body": "body_infect",
+  "display": "Infected",
+  "faction": "infect",
+  "frames": 195,
+  "head": "",
+  "missing": [],
+  "time": 0.5,
+  "warnings": [],
+  "weapon": "h2_m4_mp",
+  "weapon_found": true,
+  "weapon_tag": "tag_weapon_right",
+  "weapon_tag_world": [
+    10.48776626586914,
+    -28.518720626831055,
+    38.93195724487305
+  ]
+}
+
+> tools/call screenshot {"dist":80,"width":1200,"yaw":30,"path":"review/M9/infect_idle_via_mcp.png","pitch":10,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M9/infect_idle_via_mcp.png (1200x900, 248969 bytes)
+
+> tools/call load_character {"body":"body_hazmat","head":"","weapon":"iw5_exocrossbow_mp"}
+< {
+  "body": "body_hazmat",
+  "display": "custom (body_hazmat)",
+  "faction": "custom",
+  "head": "",
+  "missing": [],
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp",
+  "weapon_found": true,
+  "weapon_tag": "tag_weapon_right",
+  "weapon_tag_world": [
+    9.965466499328613,
+    -29.093461990356445,
+    39.14210510253906
+  ]
+}
+
+> tools/call load_character {"faction":"tf141"}
+< {
+  "error": "character TF141: body model body_h2_tf141_assault is not in any asset root"
+}
+
+checks:
+  PASS load_character hazmat: body_hazmat, M4 on tag_weapon_right at z 39.1
+  PASS third-person idle anim (195 frames)
+  PASS character tags: tag_weapon_right (hand) and tag_inhand present
+  PASS screenshot hazmat via MCP
+  PASS load_character infect + weapon
+  PASS screenshot infect via MCP
+  PASS load_character body+head form (body_hazmat + crossbow world)
+  PASS missing faction tf141 reports an error (body_h2_tf141_assault)
+
+result: 8 passed, 0 failed

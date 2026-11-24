@@ -100,6 +100,8 @@ struct Options {
 	bool fitCrossbow = false;
 	bool noAdsAlign = false;
 	std::string camoName;
+	std::string characterName;
+	std::string characterWeapon;
 	bool hasCamoStrength = false;
 	float camoStrength = 1.0f;
 	bool hasCamoScale = false;
@@ -156,6 +158,10 @@ void PrintUsage() {
 	    "                    [-camo <camo_h1_name|name>] [-camo-strength <0..1>] [-camo-scale <n>]\n"
 	    "                    [-world] [-caption <text>] [-no-ads-align]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
+	    "  hmw-workbench.exe -character <faction> [-character-weapon <weapon>]\n"
+	    "                    [-anim <xanim>] [-time <s>] [-view orbit] [-screenshot <file.png>]\n"
+	    "      Load an HMW player character (body + optional head) and mount a world weapon on\n"
+	    "      tag_weapon_right/tag_inhand; third-person anims play on the player skeleton.\n"
 	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>] [-world]\n"
 	    "      Text report: every attachment's view model, needed weapon tag, found/missing,\n"
 	    "      and the nearest weapon tags for missing ones. -world uses the world models.\n"
@@ -373,7 +379,33 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 
 	wb::commands::Workbench workbench(settings, assets, renderer, roots);
 	bool hasAsset = false;
-	if (!options.weaponName.empty()) {
+	if (!options.characterName.empty()) {
+		std::string error;
+		if (!workbench.LoadCharacter(options.characterName, options.characterWeapon, error)) {
+			std::fprintf(stderr, "cannot load character %s: %s\n", options.characterName.c_str(),
+			             error.c_str());
+			return 1;
+		}
+		const wb::assets::CharacterFaction* faction = workbench.CharacterFaction();
+		const wb::assets::ModelAsset* body = workbench.CharacterBody();
+		const wb::assets::ModelAsset* head = workbench.CharacterHead();
+		const std::string bodyText =
+		    body->model.name + (head != nullptr ? " + head " + head->model.name : std::string());
+		std::printf("character: %s | body: %s | weapon: %s (tag %s, %s)\n", faction->display.c_str(),
+		            bodyText.c_str(),
+		            workbench.CharacterWeaponName().empty() ? "(none)" : workbench.CharacterWeaponName().c_str(),
+		            workbench.CharacterWeaponTag().empty() ? "-" : workbench.CharacterWeaponTag().c_str(),
+		            workbench.CharacterWeaponFound() ? "found" : "MISSING");
+		const DirectX::XMFLOAT3 tagWorld = workbench.CharacterWeaponTagWorld();
+		std::printf("weapon tag world: (%.3f %.3f %.3f)\n", tagWorld.x, tagWorld.y, tagWorld.z);
+		for (const std::string& warning : workbench.CharacterWarnings()) {
+			std::printf("warning: %s\n", warning.c_str());
+		}
+		for (const std::string& missing : workbench.CharacterMissing()) {
+			std::printf("missing: %s\n", missing.c_str());
+		}
+		hasAsset = true;
+	} else if (!options.weaponName.empty()) {
 		std::string error;
 		if (!workbench.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson, error,
 		                          options.worldModel)) {
@@ -730,7 +762,9 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 	wb::commands::Workbench workbench(settings, assets, renderer, roots);
 	const bool restoreLayout = std::filesystem::exists(exeDir / "imgui.ini");
 	wb::Application app(settings, assets, renderer, workbench, exeDir, restoreLayout);
-	if (!options.weaponName.empty()) {
+	if (!options.characterName.empty()) {
+		app.LoadCharacter(options.characterName, options.characterWeapon);
+	} else if (!options.weaponName.empty()) {
 		app.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson);
 	} else if (!options.modelName.empty()) {
 		app.LoadModelByName(options.modelName);
@@ -974,6 +1008,22 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.hasCamoScale = valid;
 		} else if (arg == L"-world") {
 			options.worldModel = true;
+		} else if (arg == L"-character") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-character needs a faction id\n", stderr);
+				valid = false;
+			} else {
+				options.characterName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-character-weapon") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-character-weapon needs a weapon name\n", stderr);
+				valid = false;
+			} else {
+				options.characterWeapon = std::filesystem::path(value).string();
+			}
 		} else if (arg == L"-fit-report") {
 			options.fitReport = true;
 			if (i + 1 < argc && argv[i + 1][0] != L'-') {
