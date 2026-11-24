@@ -1,5 +1,5 @@
 ﻿hmw-workbench M6 MCP camo test
-date: 2026-11-24 23:02:00
+date: 2026-11-24 23:34:07
 > initialize -> hmw-workbench
 
 > tools/call load_weapon {"first_person":true,"camo":"camo_h1_blue_jade","weapon":"h2_m4_mp"}
@@ -14,12 +14,14 @@ date: 2026-11-24 23:02:00
   "gun_model": "wpn_h2_m4a1_vm",
   "hands": "viewhands_tf141",
   "hands_source": "faction",
+  "loaded_model": "wpn_h2_m4a1_vm",
   "warnings": [],
-  "weapon": "h2_m4_mp"
+  "weapon": "h2_m4_mp",
+  "world_model": false
 }
 
 > tools/call screenshot {"path":"review/M6/m4_blue_jade_via_mcp.png","view":"firstperson","height":900,"width":1600}
-< saved to C:\Games\cod-hwm\hmw-workbench\review/M6/m4_blue_jade_via_mcp.png (1600x900, 290703 bytes)
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M6/m4_blue_jade_via_mcp.png (1600x900, 290698 bytes)
 
 > tools/call load_model {"model":"vm_crossbow_base","camo":"camo_h1_red_wash"}
 < {
@@ -81,8 +83,10 @@ date: 2026-11-24 23:02:00
   "gun_model": "wpn_h2_m4a1_vm",
   "hands": "viewhands_tf141",
   "hands_source": "faction",
+  "loaded_model": "wpn_h2_m4a1_vm",
   "warnings": [],
-  "weapon": "h2_m4_mp"
+  "weapon": "h2_m4_mp",
+  "world_model": false
 }
 
 checks:

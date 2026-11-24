@@ -1,6 +1,6 @@
 ﻿hmw-workbench MCP smoke test
 exe: C:\Games\cod-hwm\hmw-workbench\build\bin\Release\hmw-workbench.exe
-date: 2026-11-24 23:01:19
+date: 2026-11-24 23:34:03
 
 > initialize
 < {"id":1,"jsonrpc":"2.0","result":{"capabilities":{"tools":{}},"instructions":"hmw-workbench: load HMW/MWR weapons, models and attachments, pose animations, answer tag/fit questions and render offscreen PNG screenshots. All positions are game/viewmodel space (X forward, Y left, Z up).","protocolVersion":"2025-06-18","serverInfo":{"name":"hmw-workbench","version":"0.1"}}}
@@ -8,7 +8,7 @@ date: 2026-11-24 23:01:19
 > notifications/initialized
 
 > tools/list
-< tools: list_assets, load_weapon, load_model, set_anim, screenshot, get_bones, get_tags, posedump, attachment_fit_report, compare_tags, validate, info, move_tag, add_tag, revert_tags, save_model
+< tools: list_assets, load_weapon, load_model, load_character, set_anim, screenshot, compare_screenshot, get_bones, get_tags, posedump, attachment_fit_report, compare_tags, validate, info, move_tag, add_tag, revert_tags, save_model, hot_reload, rename_map, compare_bones
 
 > tools/call list_assets {"kind":"weapon","name":"crossbow"}
 < {
@@ -63,8 +63,10 @@ date: 2026-11-24 23:01:19
   "gun_model": "vm_crossbow_base",
   "hands": "viewhands_tf141",
   "hands_source": "explicit",
+  "loaded_model": "vm_crossbow_base",
   "warnings": [],
-  "weapon": "iw5_exocrossbow_mp"
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": false
 }
 
 > tools/call attachment_fit_report {"hands":"viewhands_tf141","attachments":["reflexmwr","acogmwr","thermalmwr"],"weapon":"iw5_exocrossbow_mp"}
@@ -228,7 +230,7 @@ date: 2026-11-24 23:01:19
 }
 
 > tools/call screenshot {"path":"review/M4b/crossbow_hip_via_mcp.png","view":"firstperson","height":1016,"width":1920}
-< image image/png, 479136 base64 chars; saved to C:\Games\cod-hwm\hmw-workbench\review/M4b/crossbow_hip_via_mcp.png (1920x1016, 359351 bytes)
+< image image/png, 479148 base64 chars; saved to C:\Games\cod-hwm\hmw-workbench\review/M4b/crossbow_hip_via_mcp.png (1920x1016, 359360 bytes)
 
 > tools/call set_anim {"time":0.5,"name":"RELOAD"}
 < {
@@ -244,7 +246,7 @@ date: 2026-11-24 23:01:19
 }
 
 > tools/call screenshot {"sheet":8,"path":"review/M4b/crossbow_reload_sheet_via_mcp.png","width":480,"height":270}
-< image image/png, 553704 base64 chars; saved to C:\Games\cod-hwm\hmw-workbench\review/M4b/crossbow_reload_sheet_via_mcp.png (1920x540, 415277 bytes)
+< image image/png, 553708 base64 chars; saved to C:\Games\cod-hwm\hmw-workbench\review/M4b/crossbow_reload_sheet_via_mcp.png (1920x540, 415281 bytes)
 
 > tools/call load_model {"model":"vm_crossbow_base"}
 < {
@@ -345,8 +347,10 @@ date: 2026-11-24 23:01:19
   "gun_model": "vm_crossbow_base",
   "hands": "viewhands_tf141",
   "hands_source": "explicit",
+  "loaded_model": "vm_crossbow_base",
   "warnings": [],
-  "weapon": "iw5_exocrossbow_mp"
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": false
 }
 
 > tools/call set_anim {"time":0,"name":"IDLE","ads":false}
@@ -363,7 +367,7 @@ date: 2026-11-24 23:01:19
 }
 
 > tools/call screenshot {"caption":"crossbow + reflexmwr via MCP: tag_reflex fitted in M5","width":1920,"path":"review/M4b/crossbow_reflexmwr_via_mcp.png","pitch":-18,"height":1016,"view":"firstperson"}
-< image image/png, 1044172 base64 chars; saved to C:\Games\cod-hwm\hmw-workbench\review/M4b/crossbow_reflexmwr_via_mcp.png (1920x1016, 783128 bytes)
+< image image/png, 1044204 base64 chars; saved to C:\Games\cod-hwm\hmw-workbench\review/M4b/crossbow_reflexmwr_via_mcp.png (1920x1016, 783153 bytes)
 
 > tools/call load_weapon {"attachments":["reflexmwrm4"],"weapon":"h2_m4_mp"}
 < {
@@ -380,8 +384,10 @@ date: 2026-11-24 23:01:19
   "gun_model": "wpn_h2_m4a1_vm",
   "hands": "viewhands_tf141",
   "hands_source": "faction",
+  "loaded_model": "wpn_h2_m4a1_vm",
   "warnings": [],
-  "weapon": "h2_m4_mp"
+  "weapon": "h2_m4_mp",
+  "world_model": false
 }
 
 > tools/call set_anim {"time":0,"name":"IDLE","ads":true}
@@ -402,7 +408,7 @@ date: 2026-11-24 23:01:19
 
 checks:
   PASS initialize
-  PASS tools/list (16 tools)
+  PASS tools/list (21 tools)
   PASS list_assets
   PASS list_assets: 6 hits
   PASS load_weapon

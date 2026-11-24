@@ -1,5 +1,5 @@
 ﻿hmw-workbench M9 MCP character test
-date: 2026-11-24 23:20:57
+date: 2026-11-24 23:34:10
 > initialize -> hmw-workbench
 
 > tools/call load_character {"time":0.5,"anim":"mp_jug_maniac_idle","faction":"hazmat","weapon":"h2_m4_mp"}

@@ -1,5 +1,5 @@
 ﻿hmw-workbench M8 MCP world-model test
-date: 2026-11-24 23:08:50
+date: 2026-11-24 23:34:08
 > initialize -> hmw-workbench
 
 > tools/call load_weapon {"first_person":true,"world":true,"weapon":"iw5_exocrossbow_mp"}
@@ -93,7 +93,7 @@ date: 2026-11-24 23:08:50
 }
 
 > tools/call screenshot {"dist":40,"width":1600,"yaw":35,"path":"review/M8/m4_world_reflex_via_mcp.png","pitch":18,"height":900,"view":"orbit"}
-< saved to C:\Games\cod-hwm\hmw-workbench\review/M8/m4_world_reflex_via_mcp.png (1600x900, 242127 bytes)
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M8/m4_world_reflex_via_mcp.png (1600x900, 242130 bytes)
 
 > tools/call attachment_fit_report {"world":true,"attachments":["reflexmwr","acogmwr"],"weapon":"h2_m4_mp"}
 < {

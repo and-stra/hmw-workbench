@@ -1,5 +1,5 @@
 ﻿hmw-workbench M5 MCP copy-save test
-date: 2026-11-24 23:01:43
+date: 2026-11-24 23:34:16
 copy exe: C:\Games\cod-hwm\hmw-workbench\build\edit_test\hmw-workbench.exe
 copy root: C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root (first asset root in build\edit_test\workbench.json)
 pristine copy: 5208 bytes, sha256 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D
