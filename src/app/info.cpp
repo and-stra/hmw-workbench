@@ -9,6 +9,7 @@
 #include "app/commands.h"
 #include "assets/material.h"
 #include "assets/model_asset.h"
+#include "assets/weapon.h"
 #include "assets/xanim.h"
 #include "assets/xsurface.h"
 
@@ -276,6 +277,52 @@ bool PrintAnimInfo(const std::string& name, const std::vector<std::filesystem::p
 		            anim.deltaTranslations.size());
 	} else {
 		std::printf("delta parts: none\n");
+	}
+	return true;
+}
+
+bool PrintWeaponInfo(const std::string& name, const std::vector<std::filesystem::path>& roots) {
+	const std::optional<std::filesystem::path> path = assets::FindWeaponFile(roots, name);
+	if (!path.has_value()) {
+		std::fprintf(stderr, "-info %s: weapon json not found\n", name.c_str());
+		return false;
+	}
+	assets::WeaponAsset weapon;
+	try {
+		weapon = assets::LoadWeapon(*path);
+	} catch (const std::exception& e) {
+		std::fprintf(stderr, "-info %s: %s\n", name.c_str(), e.what());
+		return false;
+	}
+	std::printf("weapon: %s\n", weapon.name.c_str());
+	std::printf("internal: %s\n", weapon.internalName.c_str());
+	std::printf("gun model: %s\n", weapon.gunModel.c_str());
+	std::printf("world model: %s\n", weapon.worldModel.c_str());
+	std::printf("hand model: %s\n", weapon.handModel.empty() ? "(none)" : weapon.handModel.c_str());
+	std::printf("adsZoomFov: %.3f\n", weapon.adsZoomFov);
+	std::printf("camo view material: %s\n",
+	            weapon.camoViewModelMaterialOverride.empty() ? "(none)"
+	                                                        : weapon.camoViewModelMaterialOverride.c_str());
+	std::printf("hideTags (%zu):", weapon.hideTags.size());
+	for (const std::string& tag : weapon.hideTags) {
+		std::printf(" %s", tag.c_str());
+	}
+	std::printf("\n");
+	std::printf("attachments (%zu):", weapon.attachments.size());
+	for (const std::string& attachment : weapon.attachments) {
+		std::printf(" %s", attachment.c_str());
+	}
+	std::printf("\n\n");
+	std::printf("anim states: %zu\n", weapon.animStates.size());
+	for (const assets::WeaponAnimState& state : weapon.animStates) {
+		std::printf("  %-28s %s\n", state.state.c_str(), state.anim.c_str());
+	}
+	std::printf("\nanimOverrides: %zu\n", weapon.animOverrides.size());
+	for (const assets::WeaponAnimOverride& entry : weapon.animOverrides) {
+		const std::string state = commands::AnimStateForTreeType(entry.animTreeType);
+		std::printf("  att %-3d tree %-4d %-34s %s%s%s\n", entry.attachment1, entry.animTreeType,
+		            entry.anim.c_str(), state.empty() ? "" : "-> ", state.c_str(),
+		            entry.altmodeAnim.empty() ? "" : "  (alt)");
 	}
 	return true;
 }

@@ -23,7 +23,9 @@
 #include "app/commands.h"
 #include "app/diag.h"
 #include "app/info.h"
+#include "app/mcp.h"
 #include "app/model_overlay.h"
+#include "app/review.h"
 #include "app/settings.h"
 #include "assets/asset_index.h"
 #include "assets/model_asset.h"
@@ -49,7 +51,7 @@ int g_clientHeight = 0;
 
 bool g_consoleAttached = false;
 
-enum class Mode { Window, Screenshot, Info, Validate };
+enum class Mode { Window, Screenshot, Info, Validate, Mcp };
 
 struct Options {
 	Mode mode = Mode::Window;
@@ -147,6 +149,8 @@ void PrintUsage() {
 	    "      Text dump of the posed hands+gun skeleton (world positions, anim channels, bounds).\n"
 	    "  hmw-workbench.exe -validate\n"
 	    "      Parse every .xmb in all roots plus its .xsb surface sets and material json.\n"
+	    "  hmw-workbench.exe -mcp\n"
+	    "      Stdio MCP server: load weapons/models/attachments, pose anims and render offscreen PNGs.\n"
 	    "\n"
 	    "workbench.json next to the exe configures asset roots, window size and camera.\n",
 	    stdout);
@@ -224,126 +228,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
-void DrawHeadlessBoneOverlay(wb::Renderer& renderer, const wb::assets::ModelAsset& model,
-                             const wb::Camera& camera, int width, int height, bool showAllNames) {
-	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.IniFilename = nullptr;
-	io.DisplaySize = displaySize;
-	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-
-	if (!ImGui_ImplDX11_Init(renderer.Device(), renderer.Context())) {
-		std::fprintf(stderr, "overlay: ImGui_ImplDX11_Init failed\n");
-		ImGui::DestroyContext();
-		return;
-	}
-
-	ImGui_ImplDX11_NewFrame();
-	ImGui::NewFrame();
-
-	const float aspect = displaySize.x / displaySize.y;
-	DirectX::XMFLOAT4X4 viewProjection = {};
-	DirectX::XMStoreFloat4x4(&viewProjection, camera.ViewProjection(aspect));
-	wb::DrawModelOverlay(ImGui::GetBackgroundDrawList(), ImVec2(0.0f, 0.0f), displaySize, viewProjection,
-	                     model.model, -1, showAllNames);
-
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	ImGui_ImplDX11_Shutdown();
-	ImGui::DestroyContext();
-}
-
-void DrawHeadlessCaption(wb::Renderer& renderer, int width, int height, const std::string& caption) {
-	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.IniFilename = nullptr;
-	io.DisplaySize = displaySize;
-	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-	io.FontGlobalScale = 1.4f;
-
-	if (!ImGui_ImplDX11_Init(renderer.Device(), renderer.Context())) {
-		ImGui::DestroyContext();
-		return;
-	}
-	ImGui_ImplDX11_NewFrame();
-	ImGui::NewFrame();
-	ImGui::GetBackgroundDrawList()->AddText(ImVec2(10.0f, 8.0f), IM_COL32(255, 255, 255, 235),
-	                                       caption.c_str());
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	ImGui_ImplDX11_Shutdown();
-	ImGui::DestroyContext();
-}
-
-void DrawHeadlessDebugOverlay(wb::Renderer& renderer, const wb::commands::Workbench& workbench, int width,
-                              int height, bool crosshair, bool markTags) {
-	if (!crosshair && !markTags) {
-		return;
-	}
-	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.IniFilename = nullptr;
-	io.DisplaySize = displaySize;
-	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-
-	if (!ImGui_ImplDX11_Init(renderer.Device(), renderer.Context())) {
-		ImGui::DestroyContext();
-		return;
-	}
-	ImGui_ImplDX11_NewFrame();
-	ImGui::NewFrame();
-
-	ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-	if (crosshair) {
-		const float cx = displaySize.x * 0.5f;
-		const float cy = displaySize.y * 0.5f;
-		const ImU32 colour = IM_COL32(120, 255, 120, 235);
-		const float gap = 8.0f;
-		const float arm = 22.0f;
-		drawList->AddLine(ImVec2(cx - arm, cy), ImVec2(cx - gap, cy), colour, 1.5f);
-		drawList->AddLine(ImVec2(cx + gap, cy), ImVec2(cx + arm, cy), colour, 1.5f);
-		drawList->AddLine(ImVec2(cx, cy - arm), ImVec2(cx, cy - gap), colour, 1.5f);
-		drawList->AddLine(ImVec2(cx, cy + gap), ImVec2(cx, cy + arm), colour, 1.5f);
-		drawList->AddCircle(ImVec2(cx, cy), 2.0f, IM_COL32(255, 255, 255, 235), 8, 1.0f);
-	}
-
-	const wb::scene::ViewmodelAsset* viewmodel = workbench.Viewmodel();
-	if (markTags && viewmodel != nullptr) {
-		const DirectX::XMMATRIX viewProjection =
-		    workbench.GetCamera().ViewProjection(displaySize.x / displaySize.y);
-		const wb::scene::SkeletonPose& pose = workbench.Pose();
-		for (std::size_t i = 0; i < viewmodel->gun.model.bones.size(); ++i) {
-			const wb::assets::BoneData& bind = viewmodel->gun.model.bones[i];
-			if (!bind.IsTag()) {
-				continue;
-			}
-			const int poseIndex = i < pose.gunBoneToPose.size() ? pose.gunBoneToPose[i] : -1;
-			if (poseIndex < 0 || static_cast<std::size_t>(poseIndex) >= pose.bones.size()) {
-				continue;
-			}
-			const DirectX::XMFLOAT3& world = pose.bones[static_cast<std::size_t>(poseIndex)].worldPos;
-			const DirectX::XMVECTOR clip =
-			    DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&world), viewProjection);
-			DirectX::XMFLOAT3 ndc;
-			DirectX::XMStoreFloat3(&ndc, clip);
-			const float x = (ndc.x * 0.5f + 0.5f) * displaySize.x;
-			const float y = (1.0f - (ndc.y * 0.5f + 0.5f)) * displaySize.y;
-			drawList->AddCircle(ImVec2(x, y), 5.0f, IM_COL32(255, 210, 80, 240), 12, 1.5f);
-			drawList->AddText(ImVec2(x + 7.0f, y - 6.0f), IM_COL32(255, 220, 120, 240),
-			                  bind.name.c_str());
-		}
-	}
-
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	ImGui_ImplDX11_Shutdown();
-	ImGui::DestroyContext();
-}
-
 void ApplyWorkbenchView(wb::commands::Workbench& workbench, const Options& options,
                         const wb::Settings& settings, bool hasAsset) {
 	if (!hasAsset) {
@@ -369,92 +253,6 @@ void ApplyWorkbenchView(wb::commands::Workbench& workbench, const Options& optio
 	if (options.hasGrid) {
 		workbench.SetShowGrid(options.gridEnabled);
 	}
-}
-
-bool RenderContactSheet(wb::commands::Workbench& workbench, wb::Renderer& renderer, const Options& options) {
-	const wb::assets::XAnimData* anim = workbench.Anim();
-	if (anim == nullptr) {
-		std::fprintf(stderr, "-sheet needs an animation (-anim <name>)\n");
-		return false;
-	}
-	if (options.sheet <= 0) {
-		return false;
-	}
-	const int cells = options.sheet;
-	const int columns = cells <= 2 ? cells : (cells == 4 ? 2 : (cells <= 6 ? 3 : 4));
-	const int rows = (cells + columns - 1) / columns;
-	const int cellWidth = options.hasWidth ? options.width : 480;
-	const int cellHeight = options.hasHeight ? options.height : 270;
-	const double duration = anim->Duration();
-
-	std::vector<std::uint8_t> sheetPixels;
-	int sheetWidth = 0;
-	int sheetHeight = 0;
-	DXGI_FORMAT sheetFormat = DXGI_FORMAT_UNKNOWN;
-
-	for (int index = 0; index < cells; ++index) {
-		double t = 0.0;
-		if (cells > 1) {
-			const double step = anim->looping ? static_cast<double>(index) / cells
-			                                  : static_cast<double>(index) / (cells - 1);
-			t = duration * step;
-		}
-		workbench.SetAnimTime(t);
-		if (!workbench.RenderScene(cellWidth, cellHeight)) {
-			std::fprintf(stderr, "sheet: failed to render cell %d\n", index);
-			return false;
-		}
-		char caption[160];
-		std::snprintf(caption, sizeof(caption), "%s   frame %.1f   %.3f s", anim->name.c_str(),
-		              t * anim->frameRate, t);
-		DrawHeadlessCaption(renderer, cellWidth, cellHeight, caption);
-
-		std::vector<std::uint8_t> cell;
-		int capturedWidth = 0;
-		int capturedHeight = 0;
-		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
-		if (!renderer.CaptureScene(cell, capturedWidth, capturedHeight, format)) {
-			std::fprintf(stderr, "sheet: failed to capture cell %d\n", index);
-			return false;
-		}
-		if (sheetPixels.empty()) {
-			sheetWidth = columns * capturedWidth;
-			sheetHeight = rows * capturedHeight;
-			sheetFormat = format;
-			const std::size_t bpp = DirectX::BitsPerPixel(format) / 8;
-			sheetPixels.assign(static_cast<std::size_t>(sheetWidth) * sheetHeight * bpp, 0);
-			if (bpp == 4) {
-				for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(sheetWidth) * sheetHeight; ++pixel) {
-					sheetPixels[pixel * bpp + 3] = 255;
-				}
-			}
-		}
-		const std::size_t bpp = DirectX::BitsPerPixel(format) / 8;
-		const int column = index % columns;
-		const int row = index / columns;
-		const std::size_t sheetRowBytes = static_cast<std::size_t>(sheetWidth) * bpp;
-		const std::size_t cellRowBytes = static_cast<std::size_t>(capturedWidth) * bpp;
-		for (int y = 0; y < capturedHeight; ++y) {
-			const std::size_t dest =
-			    (static_cast<std::size_t>(row) * capturedHeight + static_cast<std::size_t>(y)) * sheetRowBytes +
-			    static_cast<std::size_t>(column) * capturedWidth * bpp;
-			const std::size_t source = static_cast<std::size_t>(y) * cellRowBytes;
-			std::memcpy(sheetPixels.data() + dest, cell.data() + source, cellRowBytes);
-		}
-	}
-
-	std::error_code ec;
-	const std::filesystem::path parent = options.screenshotPath.parent_path();
-	if (!parent.empty()) {
-		std::filesystem::create_directories(parent, ec);
-	}
-	if (!renderer.SavePixelsToPng(options.screenshotPath, sheetPixels, sheetWidth, sheetHeight, sheetFormat)) {
-		std::fprintf(stderr, "sheet: failed to save %s\n", options.screenshotPath.string().c_str());
-		return false;
-	}
-	std::printf("wrote %s (%dx%d, %d cells of %dx%d, %s)\n", options.screenshotPath.string().c_str(),
-	            sheetWidth, sheetHeight, cells, cellWidth, cellHeight, anim->name.c_str());
-	return true;
 }
 
 int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, const Options& options) {
@@ -592,40 +390,29 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 	}
 
 	const std::filesystem::path& output = options.screenshotPath;
-	if (options.sheet > 0) {
-		return RenderContactSheet(workbench, renderer, options) ? 0 : 1;
-	}
-
-	if (!workbench.RenderScene(options.width, options.height)) {
-		std::fprintf(stderr, "failed to begin the scene\n");
-		return 1;
-	}
-	if (options.bones) {
-		const wb::assets::ModelAsset* model = workbench.Model();
-		if (model != nullptr) {
-			DrawHeadlessBoneOverlay(renderer, *model, workbench.GetCamera(), options.width, options.height, true);
-		}
-	}
-	if (options.crosshair || options.markTags) {
-		DrawHeadlessDebugOverlay(renderer, workbench, options.width, options.height, options.crosshair,
-		                         options.markTags);
-	}
-	if (!options.caption.empty()) {
-		DrawHeadlessCaption(renderer, options.width, options.height, options.caption);
-	}
-
-	std::error_code ec;
-	const std::filesystem::path parent = output.parent_path();
-	if (!parent.empty()) {
-		std::filesystem::create_directories(parent, ec);
-	}
-	if (!renderer.SaveSceneToPng(output)) {
+	wb::ShotOptions shot;
+	shot.width = options.width;
+	shot.height = options.height;
+	shot.bones = options.bones;
+	shot.wire = options.wire;
+	shot.crosshair = options.crosshair;
+	shot.markTags = options.markTags;
+	shot.caption = options.caption;
+	shot.sheet = options.sheet;
+	std::string shotError;
+	if (!wb::RenderShot(workbench, renderer, shot, output, shotError)) {
+		std::fprintf(stderr, "screenshot: %s\n", shotError.c_str());
 		return 1;
 	}
 
 	const wb::Camera& camera = workbench.GetCamera();
-	std::printf("wrote %s (%dx%d, yaw %.1f pitch %.1f dist %.2f)\n", output.string().c_str(), options.width,
-	            options.height, camera.Yaw(), camera.Pitch(), camera.Distance());
+	if (options.sheet > 0) {
+		std::printf("wrote %s (sheet, %d cells of %dx%d)\n", output.string().c_str(), options.sheet,
+		            options.width, options.height);
+	} else {
+		std::printf("wrote %s (%dx%d, yaw %.1f pitch %.1f dist %.2f)\n", output.string().c_str(),
+		            options.width, options.height, camera.Yaw(), camera.Pitch(), camera.Distance());
+	}
 	return 0;
 }
 
@@ -828,6 +615,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			}
 		} else if (arg == L"-validate") {
 			options.mode = Mode::Validate;
+		} else if (arg == L"-mcp") {
+			options.mode = Mode::Mcp;
 		} else if (arg == L"-model") {
 			const wchar_t* value = nextValue();
 			if (value == nullptr) {
@@ -1052,6 +841,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 	} else if (options.mode == Mode::Validate) {
 		EnsureHeadlessConsole();
 		result = wb::RunValidate(roots) == 0 ? 0 : 1;
+	} else if (options.mode == Mode::Mcp) {
+		result = wb::RunMcp(exeDir, settings);
 	} else if (options.mode == Mode::Screenshot) {
 		EnsureHeadlessConsole();
 		result = RunHeadless(exeDir, settings, options);

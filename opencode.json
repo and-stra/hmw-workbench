@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "hmw-workbench": {
+        "type": "local",
+        "command": [
+          "C:\\Games\\cod-hwm\\hmw-workbench\\build\\bin\\Release\\hmw-workbench.exe",
+          "-mcp"
+        ]
+      }
+    }
+  }
+}

@@ -81,6 +81,7 @@ public:
 
 	// ---- loading ----
 	bool LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson, std::string& error);
+	void UnloadWeapon() { ClearWeapon(); }
 	bool ReloadWeapon(std::string& error);
 	bool LoadModel(const std::string& model, std::string& error);
 	bool ReloadModel(std::string& error);

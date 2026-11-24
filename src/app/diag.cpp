@@ -211,6 +211,25 @@ void PrintPoseDump(const commands::Workbench& workbench, const std::vector<std::
 		for (const std::string& name : names) {
 			PrintChannel(out, *anim, name, 0.0f);
 		}
+
+		std::unordered_map<std::string, int> poseNames;
+		for (const scene::PoseBone& bone : pose.bones) {
+			poseNames.emplace(bone.name, 1);
+		}
+		std::vector<std::string> unmatched;
+		std::size_t matched = 0;
+		for (const std::string& name : anim->boneNames) {
+			if (poseNames.find(name) != poseNames.end()) {
+				++matched;
+			} else {
+				unmatched.push_back(name);
+			}
+		}
+		std::fprintf(out, "\nanim coverage: %zu/%zu channels matched, %zu unmatched\n", matched,
+		             anim->boneNames.size(), unmatched.size());
+		for (const std::string& name : unmatched) {
+			std::fprintf(out, "  unmatched: %s\n", name.c_str());
+		}
 	}
 	std::fprintf(out, "\ngun tags (posed, viewmodel space), distance to the camera eye and screen px:\n");
 	for (std::size_t i = 0; i < viewmodel->gun.model.bones.size(); ++i) {
