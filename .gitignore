@@ -1,0 +1,22 @@
+# Build output
+build/
+bin/
+obj/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+.vs/
+*.log
+*.pdb
+*.ilk
+*.obj
+
+# Local settings (generated next to the exe)
+workbench.json
+imgui.ini
+
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
