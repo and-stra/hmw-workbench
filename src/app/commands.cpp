@@ -13,6 +13,14 @@ float BoundsRadius(const DirectX::XMFLOAT3& halfSize) {
 	return std::max({halfSize.x, halfSize.y, halfSize.z, 0.25f}) * 1.1f;
 }
 
+// H1 cg_fov is the horizontal FOV of a 4:3 view. The engine widens it horizontally
+// for wider aspect ratios (Hor+), so the vertical FOV is independent of aspect:
+// fovY = 2 * atan(tan(fovX / 2) * 3/4).
+float VerticalFovFromCgFov(float cgFov) {
+	const float half = DirectX::XMConvertToRadians(std::clamp(cgFov, 1.0f, 179.0f) * 0.5f);
+	return DirectX::XMConvertToDegrees(2.0f * std::atan(std::tan(half) * 0.75f));
+}
+
 bool FindAnimState(const std::vector<AnimStateEntry>& states, const std::string& state, std::string& anim) {
 	for (const AnimStateEntry& entry : states) {
 		if (entry.state == state) {
@@ -66,6 +74,9 @@ bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, 
 	time_ = 0.0;
 	playing_ = false;
 	additive_ = false;
+	ads_ = false;
+	adsAnim_.reset();
+	adsTime_ = 0.0f;
 	weaponName_ = weapon;
 	handsOverride_ = hands;
 
@@ -368,20 +379,50 @@ void Workbench::UpdateViewCamera() {
 		                                  eye.y + std::cos(pitch) * std::sin(yaw),
 		                                  eye.z + std::sin(pitch)};
 		camera_.SetFirstPerson(eye, target);
-		const float fov = fpFovOverride_ > 0.0f
-		                      ? fpFovOverride_
-		                      : std::clamp(settings_.firstPersonFov * settings_.viewmodelFovScale, 20.0f, 140.0f);
-		camera_.SetFov(fov);
+		camera_.SetFov(fpFovOverride_ > 0.0f ? fpFovOverride_ : ViewmodelFov());
 		return;
 	}
 	camera_.SetOrbitMode();
 	camera_.SetFov(orbitFovOverride_ > 0.0f ? orbitFovOverride_ : settings_.camera.fov);
 }
 
+float Workbench::CgFov() const {
+	if (ads_ && hasWeapon_ && viewmodel_.weapon.adsZoomFov > 1.0f) {
+		return viewmodel_.weapon.adsZoomFov;
+	}
+	return settings_.firstPersonFov;
+}
+
+float Workbench::ViewmodelFov() const {
+	// The viewmodel is rendered with the cg_fov-derived vertical FOV scaled by
+	// cg_fovScale. The default is 1.0, i.e. the same FOV as the world.
+	return std::clamp(VerticalFovFromCgFov(CgFov()) * settings_.viewmodelFovScale, 10.0f, 140.0f);
+}
+
 void Workbench::SetViewMode(ViewMode mode) {
 	viewMode_ = mode;
 	showGrid_ = mode == ViewMode::Orbit;
 	UpdateViewCamera();
+}
+
+void Workbench::SetAds(bool ads) {
+	if (ads_ == ads) {
+		return;
+	}
+	ads_ = ads;
+	if (ads_ && hasWeapon_ && !adsAnim_) {
+		std::string anim;
+		if (FindAnimState(animStates_, "ADS_UP", anim)) {
+			std::optional<assets::XAnimData> loaded;
+			std::string error;
+			if (LoadAnimAsset(anim, loaded, error)) {
+				adsAnim_ = std::move(loaded);
+				adsTime_ = adsAnim_->Duration();
+			}
+		}
+	}
+	UpdateViewCamera();
+	BuildPose();
 }
 
 void Workbench::SetOrbitView(float yawDegrees, float pitchDegrees, float distance, float fovDegrees) {
@@ -421,6 +462,23 @@ void Workbench::BuildPose() {
 
 	if (hasWeapon_) {
 		pose_ = scene::BuildViewmodelPose(viewmodel_, base, baseTime, additive, additiveTime);
+		if (ads_ && adsAnim_) {
+			for (scene::PoseBone& bone : pose_.bones) {
+				if (bone.name != "tag_ads") {
+					continue;
+				}
+				DirectX::XMFLOAT4 rotation;
+				if (adsAnim_->SampleRotation("tag_ads", adsTime_, rotation)) {
+					bone.localQuat = rotation;
+				}
+				DirectX::XMFLOAT3 translation;
+				if (adsAnim_->SampleTranslation("tag_ads", adsTime_, translation)) {
+					bone.localPos = translation;
+				}
+				scene::RecomputeWorld(pose_);
+				break;
+			}
+		}
 		handsPalette_ = scene::BuildBonePalette(viewmodel_.hands.model, pose_, pose_.handsBoneToPose);
 		gunPalette_ = scene::BuildBonePalette(viewmodel_.gun.model, pose_, pose_.gunBoneToPose);
 	} else if (hasModel_) {

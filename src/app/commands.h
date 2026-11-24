@@ -89,6 +89,10 @@ public:
 	const Camera& GetCamera() const { return camera_; }
 	void FrameCamera();
 	void RefreshCamera() { UpdateViewCamera(); }
+	void SetAds(bool ads);
+	bool Aiming() const { return ads_; }
+	float CgFov() const;
+	float ViewmodelFov() const;
 	void SetOrbitView(float yawDegrees, float pitchDegrees, float distance, float fovDegrees);
 	void SetFirstPersonView(float yawDegrees, float pitchDegrees, float fovDegrees);
 
@@ -161,16 +165,19 @@ private:
 	std::string animName_;
 	std::optional<assets::XAnimData> primaryAnim_;
 	std::optional<assets::XAnimData> idleAnim_;
+	std::optional<assets::XAnimData> adsAnim_;
 	bool additive_ = false;
 	bool playing_ = true;
 	bool looping_ = true;
 	float speed_ = 1.0f;
 	double time_ = 0.0;
+	float adsTime_ = 0.0f;
 
 	ViewMode viewMode_ = ViewMode::Orbit;
 	bool showGrid_ = true;
 	bool wireframe_ = false;
 	bool modelVisible_ = true;
+	bool ads_ = false;
 	float fpYaw_ = 0.0f;
 	float fpPitch_ = 0.0f;
 	float fpFovOverride_ = 0.0f;

@@ -20,8 +20,9 @@ struct Settings {
 	std::string lastWeapon;
 	CameraSettings camera;
 	float exposure = 1.0f;
+	// H1 cg_fov is the horizontal FOV for a 4:3 view; cg_fovScale scales the viewmodel.
 	float firstPersonFov = 65.0f;
-	float viewmodelFovScale = 1.25f;
+	float viewmodelFovScale = 1.0f;
 };
 
 // Defaults used when workbench.json does not exist yet.

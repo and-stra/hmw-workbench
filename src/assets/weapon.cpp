@@ -42,6 +42,7 @@ WeaponAsset LoadWeapon(const std::filesystem::path& path) {
 	weapon.worldModel = firstString("worldModel");
 	weapon.handModel = json.value("handModel", "");
 	weapon.camoViewModelMaterialOverride = json.value("camoViewModelMaterialOverride", "");
+	weapon.adsZoomFov = json.value("adsZoomFov", 50.0f);
 
 	if (json.contains("szXAnims") && json["szXAnims"].is_object()) {
 		for (const auto& [state, value] : json["szXAnims"].items()) {

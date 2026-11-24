@@ -62,9 +62,27 @@ animated `tag_weapon` and `j_gun` channels while both models are drawn with an i
 The view origin is the hands model's `tag_view` bone (fallbacks `tag_camera`, `tag_cambone`). In the HMW hands
 models `tag_view`/`tag_camera` are at `(0,0,60)` with identity rotation, i.e. 60 units above the origin in
 viewmodel space, X forward, Y left, Z up. The workbench puts the camera at that point looking along +X, with
-Z up and a near plane of 0.02 (viewmodel FOV default 65, adjustable). The weapon and hands stay in viewmodel
-space; no additional first-person offset is applied. `-view firstperson` / the Inspector radio button switch
-between this and the orbit camera (orbit target = combined weapon+hands bounds).
+Z up and a near plane of 0.02. The camera uses a right-handed view/projection so that +Y (game "left") appears
+on the left of the screen; an earlier left-handed camera mirrored the viewmodel.
+
+H1's `cg_fov` is the **horizontal** FOV of a 4:3 view; the engine widens it horizontally for widescreen
+(Hor+). The HMW defaults (registered in `cod-mwx/src/client/component/patches.cpp`) are
+`cg_fov = 65`, `cg_fovScale = 1.0`, `cg_fovMin = 1.0`. The workbench computes
+
+```
+fovY = 2 * atan(tan(cg_fov / 2) * 0.75)          // 51.077 deg for cg_fov 65
+fovX = 2 * atan(tan(fovY / 2) * aspect)           // 84.16 deg at 1920x1016
+```
+
+and multiplies the viewmodel FOV by `cg_fovScale`. The defaults are `firstPersonFov = 65` and
+`viewmodelFovScale = 1.0`; the Inspector labels them `cg_fov (4:3 H)` and `cg_fovScale`.
+
+ADS uses the weapon's `adsZoomFov` in the same 4:3-horizontal convention (`h2_m4_mp`:
+`adsZoomFov = 50` -> vertical 38.553 deg, horizontal 66.92 deg at 1920x1016). The ADS transition anim
+(`vm_h2_m4a1_ads_up`) only animates the hands `tag_ads` bone, so the workbench layers its end pose on top
+of the idle pose and sets the ADS FOV; it does not replace the primary animation. The `-ads` CLI flag and
+the Inspector checkbox use this. `-view firstperson` / the Inspector radio button switch between this and
+the orbit camera (orbit target = combined weapon+hands bounds).
 
 ## Animated composition (M3)
 
@@ -105,6 +123,11 @@ Verified rules for applying an animation to the combined skeleton:
 
 - Additive animations are an approximation (delta local rotations/translations multiplied onto
   IDLE; no reference pose or per-bone blend weight from the `.xab`). See `docs/milestones/M3.md`.
+- ADS uses the end pose of the weapon's `ADS_UP` animation as a `tag_ads` overlay (with the
+  weapon's `adsZoomFov`); there is no ADS idle sway or transition blend yet.
+- The workbench places the camera exactly at the hands `tag_view`. The game applies a small
+  viewmodel offset/pitch on top of that; the M3.1 reference comparison is within ~20 px horizontally
+  and ~35 px vertically in hip, ~5/15 px in ADS, without an extra offset.
 - The transform palette is limited to 256 bones (constant buffer). H1 viewmodels are far below
   that; character skeletons near/above 256 are not supported yet.
 - Animations with more than 255 frames use the long-index path, which is implemented but not

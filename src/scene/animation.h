@@ -48,4 +48,8 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
                                                   const SkeletonPose& pose,
                                                   const std::vector<int>& boneMap);
 
+// Recomputes worldQuat/worldPos after a caller overrides a local bone transform
+// (used for the ADS tag_ads overlay).
+void RecomputeWorld(SkeletonPose& pose);
+
 } // namespace wb::scene

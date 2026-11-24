@@ -290,4 +290,6 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
 	return palette;
 }
 
+void RecomputeWorld(SkeletonPose& pose) { ComposeWorld(pose); }
+
 } // namespace wb::scene

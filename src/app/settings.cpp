@@ -147,7 +147,7 @@ Settings LoadSettings(const std::filesystem::path& exeDir) {
 	settings.camera.fov = ClampFloat(settings.camera.fov, 10.0f, 140.0f);
 	settings.exposure = ClampFloat(settings.exposure, 0.1f, 4.0f);
 	settings.firstPersonFov = ClampFloat(settings.firstPersonFov, 40.0f, 120.0f);
-	settings.viewmodelFovScale = ClampFloat(settings.viewmodelFovScale, 1.0f, 1.6f);
+	settings.viewmodelFovScale = ClampFloat(settings.viewmodelFovScale, 0.1f, 2.0f);
 	return settings;
 }
 

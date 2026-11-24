@@ -544,17 +544,25 @@ void Application::DrawWeaponInspector() {
 		workbench_.SetWireframe(wire);
 	}
 
+	bool ads = workbench_.Aiming();
+	if (ImGui::Checkbox("Aim down sights", &ads)) {
+		workbench_.SetAds(ads);
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("ADS FOV %.1f (adsZoomFov)", viewmodel->weapon.adsZoomFov);
+
 	if (workbench_.IsFirstPerson()) {
-		float fov = settings_.firstPersonFov;
-		if (ImGui::SliderFloat("Viewmodel FOV", &fov, 40.0f, 120.0f, "%.0f deg")) {
-			settings_.firstPersonFov = fov;
+		float cgFov = settings_.firstPersonFov;
+		if (ImGui::SliderFloat("cg_fov (4:3 H)", &cgFov, 40.0f, 120.0f, "%.1f deg")) {
+			settings_.firstPersonFov = cgFov;
 			workbench_.RefreshCamera();
 		}
 		float scale = settings_.viewmodelFovScale;
-		if (ImGui::SliderFloat("FOV scale", &scale, 1.0f, 1.6f, "%.2f")) {
+		if (ImGui::SliderFloat("cg_fovScale", &scale, 0.1f, 2.0f, "%.2f")) {
 			settings_.viewmodelFovScale = scale;
 			workbench_.RefreshCamera();
 		}
+		ImGui::TextDisabled("camera vertical FOV %.2f deg", workbench_.GetCamera().Fov());
 	}
 
 	const char* preview = handsSelection_.empty()

@@ -82,6 +82,7 @@ struct Options {
 	int sheet = 0;
 	bool hasGrid = false;
 	bool gridEnabled = true;
+	bool ads = false;
 };
 
 void OpenConsoleStreams() {
@@ -118,11 +119,11 @@ void PrintUsage() {
 	    "  hmw-workbench.exe\n"
 	    "      Open the window.\n"
 	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel> | -weapon <name>]\n"
-	    "                    [-hands <viewhands>] [-view firstperson|orbit]\n"
+	    "                    [-hands <viewhands>] [-view firstperson|orbit] [-ads]\n"
 	    "                    [-anim <xanim>] [-time <seconds|fraction>] [-frac]\n"
 	    "                    [-sheet <n>] [-bones] [-wire] [-grid|-nogrid]\n"
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
-	    "                    [-dist <units>] [-fov <deg>] [-exposure <n>]\n"
+	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
 	    "  hmw-workbench.exe -info <xmodel|xanim>\n"
 	    "      Text dump: model bones/tags/surfaces/materials, or anim frames/notetracks.\n"
@@ -425,6 +426,13 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 	}
 
 	ApplyWorkbenchView(workbench, options, settings, hasAsset);
+	if (options.ads && workbench.Viewmodel() != nullptr) {
+		workbench.SetAds(true);
+	}
+	if (workbench.IsFirstPerson() && workbench.Viewmodel() != nullptr) {
+		std::printf("fov: cg %.2f (4:3 horizontal) -> vertical %.3f (viewmodel scale %.2f)\n",
+		            workbench.CgFov(), workbench.GetCamera().Fov(), settings.viewmodelFovScale);
+	}
 
 	if (!options.animName.empty()) {
 		std::string error;
@@ -732,6 +740,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			}
 		} else if (arg == L"-bones") {
 			options.bones = true;
+		} else if (arg == L"-ads") {
+			options.ads = true;
 		} else if (arg == L"-wire") {
 			options.wire = true;
 		} else if (arg == L"-grid") {

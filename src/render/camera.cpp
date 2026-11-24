@@ -58,14 +58,16 @@ DirectX::XMMATRIX Camera::View() const {
 	const DirectX::XMVECTOR targetVector = firstPerson_ ? DirectX::XMLoadFloat3(&firstPersonTarget_)
 	                                                   : DirectX::XMLoadFloat3(&target_);
 	const DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-	return DirectX::XMMatrixLookAtLH(eyeVector, targetVector, up);
+	// Game space is Z-up, X forward, Y left. A right-handed view/projection keeps +Y on
+	// the left side of the screen (the previous LH pair mirrored the viewmodel).
+	return DirectX::XMMatrixLookAtRH(eyeVector, targetVector, up);
 }
 
 DirectX::XMMATRIX Camera::Projection(float aspect) const {
 	if (aspect <= 0.0f) {
 		aspect = 1.0f;
 	}
-	return DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(fov_), aspect,
+	return DirectX::XMMatrixPerspectiveFovRH(DirectX::XMConvertToRadians(fov_), aspect,
 	                                         firstPerson_ ? 0.02f : 0.05f, 20000.0f);
 }
 
