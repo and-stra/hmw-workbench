@@ -57,6 +57,7 @@ cbuffer ModelConstants : register(b0)
     float4 gLightDirection;
     float4 gParams;
     float4 gTint;
+    float4 gCamoParams; // x strength (0 = off), y uv scale
 };
 
 #define MAX_BONES 256
@@ -68,6 +69,8 @@ cbuffer BoneConstants : register(b1)
 Texture2D gAlbedo : register(t0);
 Texture2D gNormalMap : register(t1);
 Texture2D gSpecMap : register(t2);
+Texture2D gCamo : register(t3);
+Texture2D gCamoMask : register(t4);
 SamplerState gLinear : register(s0);
 
 struct VSInput
@@ -145,6 +148,16 @@ float4 PSMain(PSInput input) : SV_TARGET
 {
     float3 albedo = gAlbedo.Sample(gLinear, input.uv).rgb;
 
+    // Camo: the camo design replaces the base colour where the material mask is white.
+    // gCamoParams.x is 0 when no camo is selected, so the output is then unchanged.
+    if (gCamoParams.x > 0.0f)
+    {
+        const float2 camoUv = input.uv * gCamoParams.y;
+        const float3 camoColor = gCamo.Sample(gLinear, camoUv).rgb;
+        const float mask = saturate(gCamoMask.Sample(gLinear, input.uv).r);
+        albedo = lerp(albedo, camoColor, saturate(mask * gCamoParams.x));
+    }
+
     float2 normalXY = gNormalMap.Sample(gLinear, input.uv).xy * 2.0f - 1.0f;
     float normalZ = sqrt(saturate(1.0f - dot(normalXY, normalXY)));
     float3 n = normalize(input.tangent * normalXY.x + input.bitangent * normalXY.y + input.normal * normalZ);
@@ -177,10 +190,11 @@ struct alignas(16) ModelConstants {
 	DirectX::XMFLOAT4 lightDirection;
 	DirectX::XMFLOAT4 params;
 	DirectX::XMFLOAT4 tint;
+	DirectX::XMFLOAT4 camoParams;
 };
 
 static_assert(sizeof(assets::SurfaceVertex) == 72);
-static_assert(sizeof(ModelConstants) == 192);
+static_assert(sizeof(ModelConstants) == 208);
 constexpr UINT kMaxBones = 256;
 
 bool CompileShader(const char* source, const char* entryPoint, const char* target, ID3DBlob** blob) {
@@ -266,6 +280,7 @@ bool Renderer::Initialize(const RendererDesc& desc) {
 void Renderer::Shutdown() {
 	ReleaseSceneTarget();
 	blackTexture_.Reset();
+	whiteTexture_.Reset();
 	flatNormalTexture_.Reset();
 	checkerTexture_.Reset();
 	samplerState_.Reset();
@@ -600,6 +615,7 @@ bool Renderer::CreateDefaultTextures() {
 
 	const std::uint8_t flatNormal[4] = {128, 128, 255, 255};
 	const std::uint8_t black[4] = {0, 0, 0, 255};
+	const std::uint8_t white[4] = {255, 255, 255, 255};
 	auto make1x1 = [this](const std::uint8_t pixel[4], ComPtr<ID3D11ShaderResourceView>& out) {
 		D3D11_TEXTURE2D_DESC desc1 = {};
 		desc1.Width = 1;
@@ -619,7 +635,8 @@ bool Renderer::CreateDefaultTextures() {
 		}
 		return SUCCEEDED(device_->CreateShaderResourceView(texture1.Get(), nullptr, &out));
 	};
-	if (!make1x1(flatNormal, flatNormalTexture_) || !make1x1(black, blackTexture_)) {
+	if (!make1x1(flatNormal, flatNormalTexture_) || !make1x1(black, blackTexture_) ||
+	    !make1x1(white, whiteTexture_)) {
 		return false;
 	}
 	return true;
@@ -801,6 +818,8 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	constants.lightDirection = DirectX::XMFLOAT4(light.x, light.y, light.z, 0.0f);
 	constants.params = DirectX::XMFLOAT4(48.0f, exposure, 0.0f, 0.0f);
 	constants.tint = tint != nullptr ? *tint : DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	constants.camoParams = DirectX::XMFLOAT4(model.camoStrength, model.camoScale > 0.0f ? model.camoScale : 1.0f,
+	                                         0.0f, 0.0f);
 
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 	if (FAILED(context_->Map(modelConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
@@ -833,7 +852,8 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 
 	ID3D11Buffer* constantBuffer = modelConstantBuffer_.Get();
 	ID3D11Buffer* boneBuffer = boneConstantBuffer_.Get();
-	ID3D11ShaderResourceView* textures[3] = {checkerTexture_.Get(), flatNormalTexture_.Get(), blackTexture_.Get()};
+	ID3D11ShaderResourceView* textures[5] = {checkerTexture_.Get(), flatNormalTexture_.Get(),
+	                                         blackTexture_.Get(), blackTexture_.Get(), whiteTexture_.Get()};
 	ID3D11SamplerState* sampler = samplerState_.Get();
 
 	context_->OMSetDepthStencilState(onTop ? overlayDepthState_.Get() : nullptr, 0);
@@ -860,6 +880,8 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 		textures[0] = checkerTexture_.Get();
 		textures[1] = flatNormalTexture_.Get();
 		textures[2] = blackTexture_.Get();
+		textures[3] = model.camo ? model.camo.Get() : blackTexture_.Get();
+		textures[4] = whiteTexture_.Get();
 		if (surface.materialIndex >= 0 && surface.materialIndex < static_cast<int>(model.materials.size())) {
 			const GpuMaterial& material = model.materials[static_cast<std::size_t>(surface.materialIndex)];
 			if (material.albedo) {
@@ -871,8 +893,11 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 			if (material.specular) {
 				textures[2] = material.specular.Get();
 			}
+			if (material.camoMask) {
+				textures[4] = material.camoMask.Get();
+			}
 		}
-		context_->PSSetShaderResources(0, 3, textures);
+		context_->PSSetShaderResources(0, 5, textures);
 
 		const UINT stride = sizeof(assets::SurfaceVertex);
 		const UINT offset = 0;
@@ -961,6 +986,7 @@ std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model,
 		applyTexture(slot.colorImage, material.albedo, true);
 		applyTexture(slot.normalImage, material.normal, false);
 		applyTexture(slot.specularImage, material.specular, false);
+		applyTexture(slot.camoMaskImage, material.camoMask, false);
 	}
 
 	gpu->surfaces.resize(model.surfaceSet.surfaces.size());
@@ -1002,6 +1028,25 @@ std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model,
 	}
 
 	return gpu;
+}
+
+bool Renderer::SetModelCamo(GpuModel& model, const assets::ImageData& image, float strength, float scale,
+                            std::string& error) {
+	ComPtr<ID3D11ShaderResourceView> view = CreateTexture(image, true, error);
+	if (!view) {
+		error = "camo texture: " + error;
+		return false;
+	}
+	model.camo = std::move(view);
+	model.camoStrength = std::clamp(strength, 0.0f, 1.0f);
+	model.camoScale = scale > 0.0f ? scale : 1.0f;
+	return true;
+}
+
+void Renderer::ClearModelCamo(GpuModel& model) {
+	model.camo.Reset();
+	model.camoStrength = 0.0f;
+	model.camoScale = 1.0f;
 }
 
 bool Renderer::CaptureScene(std::vector<std::uint8_t>& pixels, int& width, int& height,

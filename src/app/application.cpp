@@ -367,6 +367,11 @@ void Application::DrawInspectorPanel() {
 	ImGui::SeparatorText("Model");
 	DrawModelInspector();
 
+	if (workbench_.GpuWeaponGun() != nullptr || workbench_.GpuStandaloneModel() != nullptr) {
+		ImGui::SeparatorText("Camo");
+		DrawCamoSection();
+	}
+
 	DrawTagEditor();
 
 	ImGui::SeparatorText("Animation");
@@ -501,6 +506,56 @@ void Application::DrawModelInspector() {
 			ImGui::PopID();
 		}
 		ImGui::EndChild();
+	}
+}
+
+void Application::DrawCamoSection() {
+	const std::vector<std::string>& names = workbench_.CamoNames();
+	ImGui::TextDisabled("%zu weapon camo materials (camo_h1_*) in the asset roots", names.size());
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputTextWithHint("##camo_search", "Filter camos...", camoSearch_, sizeof(camoSearch_));
+	const std::string needle = ToLower(camoSearch_);
+	const std::string preview = workbench_.CamoName().empty() ? "(none)" : workbench_.CamoName().c_str();
+	if (ImGui::BeginCombo("Camo", preview.c_str())) {
+		if (ImGui::Selectable("(none)", workbench_.CamoName().empty())) {
+			std::string error;
+			if (!workbench_.SetCamo({}, error)) {
+				ImGui::SetTooltip("%s", error.c_str());
+			}
+		}
+		int shown = 0;
+		for (const std::string& name : names) {
+			if (!needle.empty() && ToLower(name).find(needle) == std::string::npos) {
+				continue;
+			}
+			++shown;
+			if (ImGui::Selectable(name.c_str(), name == workbench_.CamoName())) {
+				std::string error;
+				if (!workbench_.SetCamo(name, error)) {
+					ImGui::SetTooltip("%s", error.c_str());
+				}
+			}
+		}
+		if (shown == 0) {
+			ImGui::TextDisabled("No camo matches.");
+		}
+		ImGui::EndCombo();
+	}
+	if (!workbench_.CamoName().empty()) {
+		ImGui::TextDisabled("texture: %s", workbench_.CamoTexture().c_str());
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Clear")) {
+			std::string error;
+			workbench_.SetCamo({}, error);
+		}
+		float strength = workbench_.CamoStrength();
+		if (ImGui::SliderFloat("Strength", &strength, 0.0f, 1.0f, "%.2f")) {
+			workbench_.SetCamoStrength(strength);
+		}
+		float scale = workbench_.CamoScale();
+		if (ImGui::SliderFloat("UV scale", &scale, 0.25f, 4.0f, "%.2f")) {
+			workbench_.SetCamoScale(scale);
+		}
 	}
 }
 

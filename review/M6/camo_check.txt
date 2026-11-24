@@ -1,0 +1,28 @@
+﻿M6 camo self-check
+date: 2026-11-24 22:51:55
+
+no-camo pixel compare (identical command, pre-M6 exe vs M6 exe):
+  baseline_m4_model.png == nocamo_m4_model.png: True
+    sha256 50EC7D54834DFADB02F356AE13E5C071D07614F6334473D4E6DB206BF12CC59E
+  baseline_crossbow_model.png == nocamo_crossbow_model.png: True
+    sha256 5700D0AF294B4B34372E5B795EA0016B463F8AC748859991F7736CB8BD7F4395
+  nocamo_m4_fp_pre.png == nocamo_m4_fp_post.png: True
+    sha256 F6F48DA7156D5372CE258C759A3E107581DFB5EEDAC3C27E177F6FBBCCA5398F
+
+camo materials listed by the workbench: 355 weapon camos (camo_h1_*, character camos excluded)
+previews:
+  camo_m4_christmas_wrap_stock.png  529793 bytes
+  camo_m4_blue_jade_stock.png  498642 bytes
+  camo_m4_red_wash_stock.png  412431 bytes
+  camo_m4_fp_christmas_wrap.png  306418 bytes
+  camo_crossbow_christmas_wrap.png  555499 bytes
+  camo_crossbow_blue_jade.png  530709 bytes
+  camo_crossbow_red_wash.png  482235 bytes
+  m4_blue_jade_via_mcp.png  290703 bytes
+  crossbow_red_wash_via_mcp.png  463995 bytes
+
+commands:
+  hmw-workbench.exe -screenshot review\M6\camo_m4_christmas_wrap_stock.png -model wpn_h2_m4a1_vm -view orbit -yaw 200 -pitch 10 -dist 24 -exposure 1.5 -camo camo_h1_christmas_wrap -width 1600 -height 900
+  hmw-workbench.exe -screenshot review\M6\camo_crossbow_blue_jade.png -model vm_crossbow_base -view orbit -yaw 35 -pitch 18 -dist 26 -exposure 1.4 -camo camo_h1_blue_jade -width 1600 -height 900
+  hmw-workbench.exe -screenshot review\M6\camo_m4_fp_christmas_wrap.png -weapon h2_m4_mp -view firstperson -camo camo_h1_christmas_wrap -exposure 1.2 -width 1600 -height 900
+  powershell -ExecutionPolicy Bypass -File tools\test\m6-camo.ps1

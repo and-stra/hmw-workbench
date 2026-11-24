@@ -33,6 +33,7 @@ private:
 	void DrawTimelinePanel();
 	void DrawModelInspector();
 	void DrawWeaponInspector();
+	void DrawCamoSection();
 	void DrawTagEditor();
 	void DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspect);
 	void DrawAnimInspector();
@@ -72,6 +73,7 @@ private:
 	std::vector<std::string> handsOptions_;
 	bool firstPersonRequested_ = false;
 	char attachmentSearch_[96] = {};
+	char camoSearch_[64] = {};
 	std::string selectedTag_;
 	int gizmoMode_ = 0; // 0 = translate, 1 = rotate
 	bool showGizmo_ = true;

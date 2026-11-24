@@ -1,18 +1,17 @@
 ﻿# Overnight progress log
 
-Last update: 24 Nov 2026, ~23:00. The user asked to document the state and stop; the next session
-starts with a fresh context.
+Last update: 25 Nov 2026, ~00:00 (autonomous overnight run continuing).
 
 **On resume:** read `docs\OVERNIGHT-TASK.md` (the task), `AGENTS.md`, `docs\PLAN.md`, this file
-and `git log --oneline -5`; then continue with the first open item below. Do not redo M5.
+and `git log --oneline -5`; then continue with the first open item below.
 
 ## Status per milestone
 
 | milestone | state | commit | notes |
 |---|---|---|---|
 | M0-M4b | done | e4ba51a ... 5f6cec6 | previous sessions |
-| M5 tag editing | **done** | 23c650c + follow-up | all checks pass, copy-save 14/14 |
-| M6 camos | not started | – | |
+| M5 tag editing | **done** | 23c650c + bc8365e | all checks pass, copy-save 14/14 |
+| M6 camos | **done** | see M6.md | research + preview, 3 camos on M4/crossbow |
 | M7 hardening | not started | – | |
 | M8 world models | not started | – | |
 | M9 player models | not started | – | |
@@ -57,6 +56,23 @@ Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit incl
   **14/14 passed**. 39 -> 40 bones after reload, `tag_m5_copy` persisted at the moved local
   position, `.bak` byte-identical to the pristine copy, saved copy 5208 -> 5308 B, `.tags.json`
   contains the tag, real model sha256 unchanged.
+
+## M6 - camos
+
+- Research: `docs\camos.md` cites the script builtins (`overrideviewmodelmaterial` in
+  `refs\hmw_decomp\strings.tsv:7258`), the camoTable lookups (IW5 `_utility.gsc:1394`, H1
+  `42852.gsc`, `42891.gsc`), the `_camo` material slot layout (H2 M4 receiver/stock/grip/
+  handguard materials, crossbow `camo_transparent_col`/`crossbow_col`/`crossbow_mask_02`) and
+  the 355 `camo_h1_*` weapon camo materials (550 with 195 character camos). The task's
+  `camoViewModelMaterialOverride` field does not exist in any dump/decompile; documented.
+- Implemented: camo material list, dc1 texture loader, `m` mask slot in the material loader,
+  shader blend `lerp(albedo, camo, mask * strength)`, UI dropdown with filter + strength/UV
+  scale, `-camo`/`-camo-strength`/`-camo-scale`, MCP `camo` on `load_weapon` + `load_model`.
+- Self-check: 3 camos on the H2 M4 and the crossbow
+  (`christmas_wrap`, `blue_jade`, `red_wash`), no-camo frames SHA256-identical to the pre-M6
+  exe (`review\M6\camo_check.txt`), MCP camo test 6/6 (`review\M6\mcp-camo.txt`).
+- Build clean (0 warnings). Review: `review\M6\` (baselines, 9 camo PNGs, MCP PNGs, logs).
+- Files changed outside the repo: none.
 
 ## M5 open issues / notes
 

@@ -99,6 +99,11 @@ struct Options {
 	std::filesystem::path roundTripPath;
 	bool fitCrossbow = false;
 	bool noAdsAlign = false;
+	std::string camoName;
+	bool hasCamoStrength = false;
+	float camoStrength = 1.0f;
+	bool hasCamoScale = false;
+	float camoScale = 1.0f;
 	std::filesystem::path editTestSource;
 	std::filesystem::path editTestTarget;
 	std::string caption;
@@ -145,6 +150,7 @@ void PrintUsage() {
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
 	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
 	    "                    [-crosshair] [-marktags]\n"
+	    "                    [-camo <camo_h1_name|name>] [-camo-strength <0..1>] [-camo-scale <n>]\n"
 	    "                    [-caption <text>] [-no-ads-align]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
 	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>]\n"
@@ -434,7 +440,21 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 	if (options.ads && workbench.Viewmodel() != nullptr) {
 		workbench.SetAds(true);
 	}
-	if (workbench.IsFirstPerson() && workbench.Viewmodel() != nullptr) {
+	if (!options.camoName.empty()) {
+		std::string error;
+		if (!workbench.SetCamo(options.camoName, error)) {
+			std::fprintf(stderr, "camo %s: %s\n", options.camoName.c_str(), error.c_str());
+			return 1;
+		}
+		if (options.hasCamoStrength) {
+			workbench.SetCamoStrength(options.camoStrength);
+		}
+		if (options.hasCamoScale) {
+			workbench.SetCamoScale(options.camoScale);
+		}
+		std::printf("camo: %s (texture %s, strength %.2f, uv scale %.2f)\n", workbench.CamoName().c_str(),
+		            workbench.CamoTexture().c_str(), workbench.CamoStrength(), workbench.CamoScale());
+	}	if (workbench.IsFirstPerson() && workbench.Viewmodel() != nullptr) {
 		std::printf("fov: cg %.2f (4:3 horizontal) -> vertical %.3f (viewmodel scale %.2f)\n",
 		            workbench.CgFov(), workbench.GetCamera().Fov(), settings.viewmodelFovScale);
 	}
@@ -607,6 +627,19 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 		app.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson);
 	} else if (!options.modelName.empty()) {
 		app.LoadModelByName(options.modelName);
+	}
+	if (!options.camoName.empty()) {
+		std::string error;
+		if (!workbench.SetCamo(options.camoName, error)) {
+			std::fprintf(stderr, "camo %s: %s\n", options.camoName.c_str(), error.c_str());
+		} else {
+			if (options.hasCamoStrength) {
+				workbench.SetCamoStrength(options.camoStrength);
+			}
+			if (options.hasCamoScale) {
+				workbench.SetCamoScale(options.camoScale);
+			}
+		}
 	}
 
 	bool quit = false;
@@ -791,6 +824,21 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.fitCrossbow = true;
 		} else if (arg == L"-no-ads-align") {
 			options.noAdsAlign = true;
+		} else if (arg == L"-camo") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-camo needs a camo material or name\n", stderr);
+				valid = false;
+			} else {
+				options.camoName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-camo-strength") {
+			valid = ParseFloatArg(nextValue(), options.camoStrength) && options.camoStrength >= 0.0f &&
+			        options.camoStrength <= 1.0f;
+			options.hasCamoStrength = valid;
+		} else if (arg == L"-camo-scale") {
+			valid = ParseFloatArg(nextValue(), options.camoScale) && options.camoScale > 0.0f;
+			options.hasCamoScale = valid;
 		} else if (arg == L"-fit-report") {
 			options.fitReport = true;
 			if (i + 1 < argc && argv[i + 1][0] != L'-') {

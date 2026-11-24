@@ -137,6 +137,17 @@ public:
 		return OverrideAppliesToAttachment(entry);
 	}
 
+	// ---- camos ----
+	const std::vector<std::string>& CamoNames();
+	const std::string& CamoName() const { return camoName_; }
+	const std::string& CamoTexture() const { return camoTextureName_; }
+	bool SetCamo(const std::string& name, std::string& error);
+	void ClearCamo() { camoName_.clear(); camoTextureName_.clear(); camoImageValid_ = false; ApplyCamo(); }
+	float CamoStrength() const { return camoStrength_; }
+	float CamoScale() const { return camoScale_; }
+	void SetCamoStrength(float strength);
+	void SetCamoScale(float scale);
+
 	// ---- tag editing (weapon gun model or standalone model) ----
 	bool HasEditableModel() const { return document_ != nullptr; }
 	const assets::XModelDocument* Document() const { return document_.get(); }
@@ -245,6 +256,7 @@ private:
 	void LoadEditableDocumentForWeapon(const std::string& modelName);
 	void LoadEditableDocumentForModel(const std::string& modelName);
 	void SyncDocumentToScene();
+	void ApplyCamo();
 	void RebuildHiddenTags();
 	void UpdateAttachmentWorlds();
 	bool AlignAdsToReticle();
@@ -293,6 +305,14 @@ private:
 	std::unique_ptr<assets::XModelDocument> document_;
 	bool documentIsWeapon_ = false;
 	bool adsAutoAlign_ = true;
+
+	std::vector<std::string> camoNames_;
+	std::string camoName_;
+	std::string camoTextureName_;
+	assets::ImageData camoImage_;
+	bool camoImageValid_ = false;
+	float camoStrength_ = 1.0f;
+	float camoScale_ = 1.0f;
 
 	std::string animName_;
 	std::optional<assets::XAnimData> primaryAnim_;

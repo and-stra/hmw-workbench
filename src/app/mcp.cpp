@@ -249,13 +249,15 @@ private:
 		       {"properties", {{"weapon", str("Weapon json name, e.g. iw5_exocrossbow_mp.")},
 		                       {"hands", str("Viewhands override (optional).")},
 		                       {"attachments", {{"type", "array"}, {"items", {{"type", "string"}}}}},
+		                       {"camo", str("Camo material or name (camo_h1_<name>), e.g. camo_h1_goldfish.")},
 		                       {"first_person", boolean("First-person view (default true).")}}},
 		       {"required", {"weapon"}}}}},
 		    {{"name", "load_model"},
 		     {"description", "Load a standalone xmodel (orbit view; unloads the weapon)."},
 		     {"inputSchema",
 		      {{"type", "object"},
-		       {"properties", {{"model", str("Xmodel name.")}}},
+		       {"properties", {{"model", str("Xmodel name.")},
+		                       {"camo", str("Camo material or name (camo_h1_<name>).")}}},
 		       {"required", {"model"}}}}},
 		    {{"name", "set_anim"},
 		     {"description", "Play an animation (xanim name or weapon state such as IDLE/ADS_UP), set time/fraction and ADS."},
@@ -477,11 +479,24 @@ private:
 		for (const std::string& warning : viewmodel->warnings) {
 			warnings.push_back(warning);
 		}
+		json camo;
+		if (args.contains("camo") && args["camo"].is_string()) {
+			const std::string camoName = args["camo"].get<std::string>();
+			std::string camoError;
+			if (!workbench_.SetCamo(camoName, camoError)) {
+				camo = json{{"name", camoName}, {"error", camoError}};
+			} else {
+				camo = json{{"name", workbench_.CamoName()},
+				            {"texture", workbench_.CamoTexture()},
+				            {"strength", workbench_.CamoStrength()}};
+			}
+		}
 		return json{{"weapon", viewmodel->weapon.name},
 		            {"gun_model", viewmodel->weapon.gunModel},
 		            {"hands", viewmodel->handsName},
 		            {"hands_source", viewmodel->handsSource},
 		            {"first_person", workbench_.IsFirstPerson()},
+		            {"camo", camo},
 		            {"attachments", attachments},
 		            {"warnings", warnings}};
 	}
@@ -499,10 +514,23 @@ private:
 			return json{{"error", error}};
 		}
 		const assets::ModelAsset* asset = workbench_.Model();
+		json camo;
+		if (args.contains("camo") && args["camo"].is_string()) {
+			const std::string camoName = args["camo"].get<std::string>();
+			std::string camoError;
+			if (!workbench_.SetCamo(camoName, camoError)) {
+				camo = json{{"name", camoName}, {"error", camoError}};
+			} else {
+				camo = json{{"name", workbench_.CamoName()},
+				            {"texture", workbench_.CamoTexture()},
+				            {"strength", workbench_.CamoStrength()}};
+			}
+		}
 		return json{{"model", asset->name},
 		            {"bones", asset->model.bones.size()},
 		            {"surfaces", asset->surfaceSet.surfaces.size()},
 		            {"materials", asset->materials.size()},
+		            {"camo", camo},
 		            {"bounds_mid", Vec3(asset->boundsCenter)},
 		            {"bounds_half", Vec3(asset->boundsHalf)}};
 	}

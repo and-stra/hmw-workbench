@@ -5,6 +5,8 @@
 #include <cstring>
 #include <unordered_set>
 
+#include "assets/camo.h"
+
 namespace wb::commands {
 namespace {
 
@@ -256,6 +258,87 @@ void Workbench::ClearAttachments() {
 	hiddenTags_.clear();
 }
 
+const std::vector<std::string>& Workbench::CamoNames() {
+	if (camoNames_.empty()) {
+		camoNames_ = assets::ListCamos(roots_);
+	}
+	return camoNames_;
+}
+
+bool Workbench::SetCamo(const std::string& name, std::string& error) {
+	std::string trimmed = name;
+	while (!trimmed.empty() && (trimmed.back() == ' ' || trimmed.back() == '\t')) {
+		trimmed.pop_back();
+	}
+	if (trimmed.empty() || ToLower(trimmed) == "none") {
+		camoName_.clear();
+		camoTextureName_.clear();
+		camoImageValid_ = false;
+		ApplyCamo();
+		return true;
+	}
+	assets::ImageData image;
+	if (!assets::LoadCamoImage(roots_, trimmed, image, error)) {
+		return false;
+	}
+	camoName_ = trimmed;
+	camoTextureName_ = assets::CamoTextureName(roots_, trimmed);
+	if (camoTextureName_.empty()) {
+		camoTextureName_ = image.name;
+	}
+	camoImage_ = std::move(image);
+	camoImageValid_ = true;
+	ApplyCamo();
+	return true;
+}
+
+void Workbench::ApplyCamo() {
+	const auto apply = [this](GpuModel* gpu) {
+		if (gpu == nullptr) {
+			return;
+		}
+		if (!camoImageValid_) {
+			renderer_.ClearModelCamo(*gpu);
+			return;
+		}
+		std::string error;
+		(void)renderer_.SetModelCamo(*gpu, camoImage_, camoStrength_, camoScale_, error);
+	};
+	apply(gpuGun_.get());
+	apply(gpuModel_.get());
+	for (AttachmentMount& mount : attachments_) {
+		apply(mount.gpu.get());
+	}
+}
+
+void Workbench::SetCamoStrength(float strength) {
+	camoStrength_ = std::clamp(strength, 0.0f, 1.0f);
+	const auto set = [this](GpuModel* gpu) {
+		if (gpu != nullptr && gpu->camo) {
+			gpu->camoStrength = camoStrength_;
+		}
+	};
+	set(gpuGun_.get());
+	set(gpuModel_.get());
+	for (AttachmentMount& mount : attachments_) {
+		set(mount.gpu.get());
+	}
+}
+
+void Workbench::SetCamoScale(float scale) {
+	camoScale_ = std::clamp(scale, 0.01f, 16.0f);
+	const auto set = [this](GpuModel* gpu) {
+		if (gpu != nullptr && gpu->camo) {
+			gpu->camoScale = camoScale_;
+		}
+	};
+	set(gpuGun_.get());
+	set(gpuModel_.get());
+	for (AttachmentMount& mount : attachments_) {
+		set(mount.gpu.get());
+	}
+}
+
 void Workbench::RefreshAttachmentList() {
 	attachmentNames_ = assets::ListAttachments(roots_);
 	attachmentCatalogValid_ = false;
@@ -437,6 +520,7 @@ bool Workbench::Attach(const std::string& attachment, std::string& error) {
 	if (ads_) {
 		LoadAdsAnim();
 	}
+	ApplyCamo();
 	BuildPose();
 	return true;
 }
@@ -935,8 +1019,7 @@ std::string Workbench::EffectiveAnimForState(const std::string& state) const {
 }
 
 bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson,
-                           std::string& error) {
-	ClearWeapon();
+                           std::string& error) {	ClearWeapon();
 	primaryAnim_.reset();
 	idleAnim_.reset();
 	animName_.clear();
@@ -987,6 +1070,7 @@ bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, 
 	}
 	UpdateViewCamera();
 	AutoPlayIdle();
+	ApplyCamo();
 	BuildPose();
 	return true;
 }
@@ -1051,6 +1135,7 @@ bool Workbench::LoadModel(const std::string& model, std::string& error) {
 	if (!hasWeapon_) {
 		FrameCamera();
 	}
+	ApplyCamo();
 	BuildPose();
 	return true;
 }

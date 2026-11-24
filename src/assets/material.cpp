@@ -62,6 +62,7 @@ MaterialData LoadMaterial(const std::filesystem::path& path) {
 			def.image = texture.value("image", "");
 			def.semantic = static_cast<std::uint8_t>(texture.value("semantic", 0));
 			def.samplerState = static_cast<std::uint8_t>(texture.value("samplerState", 0));
+			def.typeHash = texture.value("typeHash", 0u);
 			if (!def.image.empty()) {
 				material.textures.push_back(std::move(def));
 			}

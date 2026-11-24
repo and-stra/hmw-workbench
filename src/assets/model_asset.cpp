@@ -234,6 +234,7 @@ bool LoadModelAssetFromFile(const std::filesystem::path& modelPath,
 			MaterialTextureInfo info;
 			info.imageName = def.image;
 			info.semantic = def.semantic;
+			info.typeHash = def.typeHash;
 			const std::optional<std::filesystem::path> imagePath = FindImageFile(roots, def.image);
 			info.fileFound = imagePath.has_value();
 			slot.textures.push_back(std::move(info));
@@ -241,6 +242,30 @@ bool LoadModelAssetFromFile(const std::filesystem::path& modelPath,
 
 		if (!loadImages) {
 			continue;
+		}
+
+		// Camo mask: the "m" slot that the H1/H2 camo-ready materials carry next to the
+		// base colour ("c"), normal and specular textures. Loaded once and used as the
+		// blend factor against the selected camo texture.
+		for (std::size_t i = 0; i < slot.textures.size(); ++i) {
+			MaterialTextureInfo& info = slot.textures[i];
+			if (info.semantic != 2 || info.typeHash != kTextureTypeColorM || !info.fileFound) {
+				continue;
+			}
+			const std::optional<std::filesystem::path> imagePath = FindImageFile(roots, info.imageName);
+			if (!imagePath.has_value()) {
+				continue;
+			}
+			const int imageIndex = LoadImageCached(out, imageCache, *imagePath);
+			if (imageIndex < 0) {
+				continue;
+			}
+			info.imageIndex = imageIndex;
+			info.dataAvailable = out.images[static_cast<std::size_t>(imageIndex)].available;
+			if (info.dataAvailable) {
+				slot.camoMaskImage = imageIndex;
+			}
+			break;
 		}
 
 		struct Candidate {

@@ -1,0 +1,96 @@
+﻿hmw-workbench M6 MCP camo test
+date: 2026-11-24 22:51:35
+> initialize -> hmw-workbench
+
+> tools/call load_weapon {"first_person":true,"camo":"camo_h1_blue_jade","weapon":"h2_m4_mp"}
+< {
+  "attachments": [],
+  "camo": {
+    "name": "camo_h1_blue_jade",
+    "strength": 1.0,
+    "texture": "wpn_h1_camo_jade_col"
+  },
+  "first_person": true,
+  "gun_model": "wpn_h2_m4a1_vm",
+  "hands": "viewhands_tf141",
+  "hands_source": "faction",
+  "warnings": [],
+  "weapon": "h2_m4_mp"
+}
+
+> tools/call screenshot {"path":"review/M6/m4_blue_jade_via_mcp.png","view":"firstperson","height":900,"width":1600}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M6/m4_blue_jade_via_mcp.png (1600x900, 290703 bytes)
+
+> tools/call load_model {"model":"vm_crossbow_base","camo":"camo_h1_red_wash"}
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": {
+    "name": "camo_h1_red_wash",
+    "strength": 1.0,
+    "texture": "wpn_h1_camo_norse_red_wash_col"
+  },
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call screenshot {"dist":26,"width":1600,"yaw":35,"path":"review/M6/crossbow_red_wash_via_mcp.png","pitch":18,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M6/crossbow_red_wash_via_mcp.png (1600x900, 463995 bytes)
+
+> tools/call load_model {"model":"vm_crossbow_base","camo":"none"}
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": {
+    "name": "",
+    "strength": 1.0,
+    "texture": ""
+  },
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call load_weapon {"camo":"camo_h1_does_not_exist","weapon":"h2_m4_mp"}
+< {
+  "attachments": [],
+  "camo": {
+    "error": "camo material camo_h1_does_not_exist not found in any asset root",
+    "name": "camo_h1_does_not_exist"
+  },
+  "first_person": true,
+  "gun_model": "wpn_h2_m4a1_vm",
+  "hands": "viewhands_tf141",
+  "hands_source": "faction",
+  "warnings": [],
+  "weapon": "h2_m4_mp"
+}
+
+checks:
+  PASS load_weapon camo (M4, blue_jade -> wpn_h1_camo_jade_col)
+  PASS screenshot M4 blue_jade via MCP
+  PASS load_model camo (crossbow, red_wash)
+  PASS screenshot crossbow red_wash via MCP
+  PASS camo=none clears the camo
+  PASS unknown camo reports an error
+
+result: 6 passed, 0 failed

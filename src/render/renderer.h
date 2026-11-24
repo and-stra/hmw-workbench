@@ -33,11 +33,17 @@ struct GpuMaterial {
 	ComPtr<ID3D11ShaderResourceView> albedo;
 	ComPtr<ID3D11ShaderResourceView> normal;
 	ComPtr<ID3D11ShaderResourceView> specular;
+	ComPtr<ID3D11ShaderResourceView> camoMask;
 };
 
 struct GpuModel {
 	std::vector<GpuSurface> surfaces;
 	std::vector<GpuMaterial> materials;
+	// Optional camo layer: the selected camo design sampled with the model UVs and blended
+	// over the base colour by the material's "m" mask (white when the material has none).
+	ComPtr<ID3D11ShaderResourceView> camo;
+	float camoStrength = 0.0f;
+	float camoScale = 1.0f;
 	DirectX::XMFLOAT3 boundsCenter{0.0f, 0.0f, 0.0f};
 	DirectX::XMFLOAT3 boundsHalf{1.0f, 1.0f, 1.0f};
 };
@@ -68,6 +74,12 @@ public:
 	                     int width, int height, DXGI_FORMAT format);
 
 	std::unique_ptr<GpuModel> UploadModel(const assets::ModelAsset& model, std::string& error);
+
+	// Sets/clears the camo layer on an uploaded model (used by the weapon and the
+	// standalone model; the same camo design is shared by all surfaces of a model).
+	bool SetModelCamo(GpuModel& model, const assets::ImageData& image, float strength, float scale,
+	                  std::string& error);
+	void ClearModelCamo(GpuModel& model);
 
 	void Present();
 	void ClearBackBuffer(const float color[4]);
@@ -123,6 +135,7 @@ private:
 	ComPtr<ID3D11ShaderResourceView> checkerTexture_;
 	ComPtr<ID3D11ShaderResourceView> flatNormalTexture_;
 	ComPtr<ID3D11ShaderResourceView> blackTexture_;
+	ComPtr<ID3D11ShaderResourceView> whiteTexture_;
 };
 
 } // namespace wb

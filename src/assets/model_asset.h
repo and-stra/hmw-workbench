@@ -16,6 +16,7 @@ namespace wb::assets {
 struct MaterialTextureInfo {
 	std::string imageName;
 	std::uint8_t semantic = 0;
+	std::uint32_t typeHash = 0;
 	bool fileFound = false;
 	int imageIndex = -1; // index into ModelAsset::images (only for loaded textures)
 	bool dataAvailable = false;
@@ -27,6 +28,7 @@ struct MaterialSlot {
 	int colorImage = -1;
 	int normalImage = -1;
 	int specularImage = -1;
+	int camoMaskImage = -1; // "m" slot of a camo-ready material, -1 when absent
 	bool jsonFound = false;
 	std::string error;
 };

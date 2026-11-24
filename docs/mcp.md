@@ -57,17 +57,21 @@ Load a weapon json, its hands and attachments in first person (or orbit).
 | `weapon` | string | required | e.g. `iw5_exocrossbow_mp` |
 | `hands` | string | weapon `handModel` / faction default | viewhands override |
 | `attachments` | string[] | `[]` | attachment asset names (`reflexmwr`, `acogmwrm4`, ...) |
+| `camo` | string | – | camo material (`camo_h1_blue_jade`) or bare name (`blue_jade`); applied to the gun + attachment view models |
 | `first_person` | bool | `true` | first-person view (orbit otherwise) |
 
-Returns `{weapon, gun_model, hands, hands_source, first_person, attachments:[{name,view_model,
-required_tag,found}], warnings}`. A missing tag is reported with `found:false`; the attachment is
-still mounted (red, at the weapon origin) so a screenshot shows the problem.
+Returns `{weapon, gun_model, hands, hands_source, first_person, camo:{name,texture,strength},
+attachments:[{name,view_model,required_tag,found}], warnings}`. A missing tag is reported with
+`found:false`; the attachment is still mounted (red, at the weapon origin) so a screenshot shows
+the problem. An unknown camo reports `camo:{name,error}` and leaves the weapon loaded without a
+camo (see `docs/camos.md`).
 
 ### `load_model`
 
 Load a standalone xmodel (unloads the weapon, switches to orbit).
 
-`{"model":"vm_crossbow_base"}` → `{model,bones,surfaces,materials,bounds_mid,bounds_half}`.
+`{"model":"vm_crossbow_base"}` → `{model,bones,surfaces,materials,camo,bounds_mid,bounds_half}`.
+The optional `camo` parameter works like `load_weapon` (`"none"` clears it).
 
 ### `set_anim`
 
