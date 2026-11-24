@@ -28,24 +28,25 @@ bool MatchesFilter(const std::string& name, const std::string& needleLower) {
 	return needleLower.empty() || ToLower(name).find(needleLower) != std::string::npos;
 }
 
-float BoundsRadius(const DirectX::XMFLOAT3& halfSize) {
-	return std::max({halfSize.x, halfSize.y, halfSize.z, 0.25f}) * 1.1f;
+bool IsAdditiveName(const std::string& name) {
+	const std::string lower = ToLower(name);
+	return lower.rfind("additive_", 0) == 0 ||
+	       (lower.size() >= 4 && lower.compare(lower.size() - 4, 4, "_add") == 0);
 }
 
 } // namespace
 
 Application::Application(Settings& settings, AssetIndex& assets, Renderer& renderer,
-                         std::filesystem::path exeDir, bool restoreLayout)
-    : settings_(settings), assets_(assets), renderer_(renderer), exeDir_(std::move(exeDir)),
-      layoutNeeded_(!restoreLayout) {
-	camera_.SetYawPitch(settings_.camera.yaw, settings_.camera.pitch);
-	camera_.SetDistance(settings_.camera.distance);
-	camera_.SetFov(settings_.camera.fov);
+                         commands::Workbench& workbench, std::filesystem::path exeDir, bool restoreLayout)
+    : settings_(settings), assets_(assets), renderer_(renderer), workbench_(workbench),
+      exeDir_(std::move(exeDir)), layoutNeeded_(!restoreLayout) {
 	RebuildFilter();
 	RefreshHandsOptions();
 }
 
 void Application::Frame() {
+	workbench_.Update(ImGui::GetIO().DeltaTime);
+
 	DrawMenuBar();
 
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -73,16 +74,16 @@ void Application::Frame() {
 	ImGui::End();
 
 	DrawAssetsPanel();
-	UpdateViewCamera();
 	DrawViewportPanel();
 	DrawInspectorPanel();
 	DrawTimelinePanel();
 
-	settings_.camera.yaw = camera_.Yaw();
-	settings_.camera.pitch = camera_.Pitch();
-	settings_.camera.distance = camera_.Distance();
-	if (!camera_.IsFirstPerson()) {
-		settings_.camera.fov = camera_.Fov();
+	const Camera& camera = workbench_.GetCamera();
+	settings_.camera.yaw = camera.Yaw();
+	settings_.camera.pitch = camera.Pitch();
+	settings_.camera.distance = camera.Distance();
+	if (!camera.IsFirstPerson()) {
+		settings_.camera.fov = camera.Fov();
 	}
 }
 
@@ -93,8 +94,8 @@ void Application::BuildLayout(ImGuiID dockspaceId, const ImVec2& size) {
 
 	ImGuiID center = dockspaceId;
 	const ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, nullptr, &center);
-	const ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.28f, nullptr, &center);
-	const ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
+	const ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.30f, nullptr, &center);
+	const ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.28f, nullptr, &center);
 
 	ImGui::DockBuilderDockWindow(kAssetsWindow, left);
 	ImGui::DockBuilderDockWindow(kInspectorWindow, right);
@@ -114,10 +115,10 @@ void Application::DrawMenuBar() {
 		if (ImGui::MenuItem("Rescan assets")) {
 			RescanAssets();
 		}
-		if (ImGui::MenuItem("Reload model", nullptr, false, !loadedModelName_.empty())) {
+		if (ImGui::MenuItem("Reload model", nullptr, false, !workbench_.ModelName().empty())) {
 			ReloadModel();
 		}
-		if (ImGui::MenuItem("Reload weapon", nullptr, false, !loadedWeaponName_.empty())) {
+		if (ImGui::MenuItem("Reload weapon", nullptr, false, !workbench_.WeaponName().empty())) {
 			ReloadWeapon();
 		}
 		if (ImGui::MenuItem("Save settings now")) {
@@ -136,6 +137,14 @@ void Application::DrawMenuBar() {
 		}
 		if (ImGui::MenuItem("Reset camera")) {
 			FrameCamera();
+		}
+		bool grid = workbench_.ShowGrid();
+		if (ImGui::MenuItem("Grid", nullptr, &grid)) {
+			workbench_.SetShowGrid(grid);
+		}
+		bool wire = workbench_.Wireframe();
+		if (ImGui::MenuItem("Wireframe", nullptr, &wire)) {
+			workbench_.SetWireframe(wire);
 		}
 		ImGui::EndMenu();
 	}
@@ -210,9 +219,12 @@ void Application::DrawAssetsPanel() {
 					selected_ = entryIndex;
 					if (entry.kind == AssetKind::Weapon) {
 						settings_.lastWeapon = entry.name;
-						LoadWeaponByName(entry.name);
+						LoadWeapon(entry.name, handsSelection_, firstPersonRequested_);
 					} else if (entry.kind == AssetKind::Model) {
 						LoadSelectedModel();
+					} else if (entry.kind == AssetKind::Anim) {
+						std::string error;
+						workbench_.PlayAnim(entry.name, error);
 					}
 				}
 				if (ImGui::IsItemHovered()) {
@@ -249,24 +261,14 @@ void Application::DrawViewportPanel() {
 	const int pixelHeight = std::max(1, static_cast<int>(available.y * framebufferScale.y));
 	const float aspect = static_cast<float>(pixelWidth) / static_cast<float>(pixelHeight);
 
-	if (!renderer_.BeginScene(pixelWidth, pixelHeight)) {
+	if (!workbench_.RenderScene(pixelWidth, pixelHeight)) {
 		ImGui::TextDisabled("Rendering failed.");
 		ImGui::End();
 		ImGui::PopStyleVar();
 		return;
 	}
-	renderer_.RenderGrid(camera_);
-	if (gpuGun_ && gpuHands_) {
-		renderer_.RenderModel(*gpuHands_, camera_, wireframe_, &handsSurfaceVisible_, settings_.exposure);
-		renderer_.RenderModel(*gpuGun_, camera_, wireframe_, &gunSurfaceVisible_, settings_.exposure,
-		                      &viewmodel_.gunTransform);
-	} else if (gpuGun_) {
-		renderer_.RenderModel(*gpuGun_, camera_, wireframe_, &gunSurfaceVisible_, settings_.exposure,
-		                      &viewmodel_.gunTransform);
-	} else if (gpuModel_ && modelVisible_) {
-		renderer_.RenderModel(*gpuModel_, camera_, wireframe_, &surfaceVisible_, settings_.exposure);
-	}
 
+	const Camera& camera = workbench_.GetCamera();
 	const ImVec2 imageOrigin = ImGui::GetCursorScreenPos();
 	ImGui::Image(static_cast<ImTextureID>(reinterpret_cast<uintptr_t>(renderer_.SceneTexture())), available);
 	ImGui::SetCursorScreenPos(imageOrigin);
@@ -276,20 +278,31 @@ void Application::DrawViewportPanel() {
 
 	HandleViewportInput(available);
 
-	if (showBones_ && !model_.model.bones.empty()) {
+	const assets::ModelAsset* standalone = workbench_.Model();
+	if (showBones_ && standalone != nullptr && !standalone->model.bones.empty()) {
 		DirectX::XMFLOAT4X4 viewProjection = {};
-		DirectX::XMStoreFloat4x4(&viewProjection, camera_.ViewProjection(aspect));
-		DrawModelOverlay(ImGui::GetWindowDrawList(), imageOrigin, available, viewProjection, model_.model,
+		DirectX::XMStoreFloat4x4(&viewProjection, camera.ViewProjection(aspect));
+		DrawModelOverlay(ImGui::GetWindowDrawList(), imageOrigin, available, viewProjection, standalone->model,
 		                 selectedBone_, showAllBoneNames_);
 	}
 
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 	char line[256];
-	std::snprintf(line, sizeof(line), "yaw %.1f  pitch %.1f  dist %.2f  fov %.1f", camera_.Yaw(),
-	              camera_.Pitch(), camera_.Distance(), camera_.Fov());
+	std::snprintf(line, sizeof(line), "%s  yaw %.1f  pitch %.1f  dist %.2f  fov %.1f",
+	              workbench_.IsFirstPerson() ? "first person" : "orbit", camera.Yaw(), camera.Pitch(),
+	              camera.Distance(), camera.Fov());
 	const ImU32 textColor = IM_COL32(210, 214, 222, 220);
 	drawList->AddText(ImVec2(imageOrigin.x + 10.0f, imageOrigin.y + 8.0f), textColor, line);
-	drawList->AddText(ImVec2(imageOrigin.x + 10.0f, imageOrigin.y + 24.0f), IM_COL32(150, 155, 165, 200),
+	if (!workbench_.AnimName().empty()) {
+		char animLine[256];
+		std::snprintf(animLine, sizeof(animLine), "anim %s  frame %.2f / %u  time %.3f s",
+		              workbench_.AnimName().c_str(), workbench_.AnimFrame(),
+		              workbench_.Anim() != nullptr ? workbench_.Anim()->frameCount : 0u,
+		              workbench_.AnimTime());
+		drawList->AddText(ImVec2(imageOrigin.x + 10.0f, imageOrigin.y + 24.0f),
+		                  IM_COL32(180, 205, 240, 220), animLine);
+	}
+	drawList->AddText(ImVec2(imageOrigin.x + 10.0f, imageOrigin.y + 40.0f), IM_COL32(150, 155, 165, 200),
 	                  "LMB orbit  |  RMB/MMB pan  |  wheel zoom  |  F frame camera");
 
 	ImGui::End();
@@ -298,25 +311,26 @@ void Application::DrawViewportPanel() {
 
 void Application::HandleViewportInput(const ImVec2& viewportSize) {
 	ImGuiIO& io = ImGui::GetIO();
+	Camera& camera = workbench_.GetCamera();
 	const bool active = ImGui::IsItemActive();
 	const bool hovered = ImGui::IsItemHovered();
 
 	if (active) {
 		const ImVec2 delta = io.MouseDelta;
-		if (!camera_.IsFirstPerson() && (delta.x != 0.0f || delta.y != 0.0f)) {
+		if (!camera.IsFirstPerson() && (delta.x != 0.0f || delta.y != 0.0f)) {
 			if (io.MouseDown[ImGuiMouseButton_Left]) {
-				camera_.Orbit(delta.x, delta.y);
+				camera.Orbit(delta.x, delta.y);
 			} else if (io.MouseDown[ImGuiMouseButton_Right] || io.MouseDown[ImGuiMouseButton_Middle]) {
-				camera_.Pan(delta.x, delta.y, viewportSize.y);
+				camera.Pan(delta.x, delta.y, viewportSize.y);
 			}
 		}
 	}
 
-	if (hovered && io.MouseWheel != 0.0f && !camera_.IsFirstPerson()) {
-		camera_.Zoom(io.MouseWheel);
+	if (hovered && io.MouseWheel != 0.0f && !camera.IsFirstPerson()) {
+		camera.Zoom(io.MouseWheel);
 	}
 
-	if (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false) && !camera_.IsFirstPerson()) {
+	if (hovered && ImGui::IsKeyPressed(ImGuiKey_F, false) && !camera.IsFirstPerson()) {
 		FrameCamera();
 	}
 }
@@ -335,7 +349,7 @@ void Application::DrawInspectorPanel() {
 		}
 	} else {
 		ImGui::TextDisabled("No asset selected.");
-		ImGui::TextWrapped("Pick an xmodel in the Assets panel to load a model.");
+		ImGui::TextWrapped("Pick an asset in the Assets panel.");
 	}
 
 	ImGui::SeparatorText("Weapon");
@@ -344,12 +358,16 @@ void Application::DrawInspectorPanel() {
 	ImGui::SeparatorText("Model");
 	DrawModelInspector();
 
+	ImGui::SeparatorText("Animation");
+	DrawAnimInspector();
+
 	ImGui::SeparatorText("Camera");
-	ImGui::Text("yaw %.1f   pitch %.1f", camera_.Yaw(), camera_.Pitch());
-	ImGui::Text("distance %.2f", camera_.Distance());
-	float fov = camera_.Fov();
-	if (!camera_.IsFirstPerson() && ImGui::SliderFloat("FOV", &fov, 20.0f, 120.0f, "%.0f deg")) {
-		camera_.SetFov(fov);
+	Camera& camera = workbench_.GetCamera();
+	ImGui::Text("yaw %.1f   pitch %.1f", camera.Yaw(), camera.Pitch());
+	ImGui::Text("distance %.2f", camera.Distance());
+	float fov = camera.Fov();
+	if (!camera.IsFirstPerson() && ImGui::SliderFloat("FOV", &fov, 20.0f, 120.0f, "%.0f deg")) {
+		camera.SetFov(fov);
 	}
 	float exposure = settings_.exposure;
 	if (ImGui::SliderFloat("Exposure", &exposure, 0.1f, 4.0f, "%.2f")) {
@@ -363,16 +381,16 @@ void Application::DrawInspectorPanel() {
 }
 
 void Application::DrawModelInspector() {
-	if (!modelError_.empty()) {
-		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", modelError_.c_str());
+	const assets::ModelAsset* model = workbench_.Model();
+	if (!workbench_.ModelError().empty()) {
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", workbench_.ModelError().c_str());
 	}
-
-	if (!gpuModel_) {
+	if (model == nullptr || workbench_.GpuStandaloneModel() == nullptr) {
 		ImGui::TextDisabled("Select an xmodel in Assets.");
 		return;
 	}
 
-	ImGui::Text("%s", model_.model.name.c_str());
+	ImGui::Text("%s", model->model.name.c_str());
 	if (ImGui::Button("Reload")) {
 		ReloadModel();
 	}
@@ -381,31 +399,37 @@ void Application::DrawModelInspector() {
 		FrameCamera();
 	}
 	ImGui::SameLine();
-	ImGui::Checkbox("Visible", &modelVisible_);
+	bool modelVisible = workbench_.ModelVisible();
+	if (ImGui::Checkbox("Visible", &modelVisible)) {
+		workbench_.SetModelVisible(modelVisible);
+	}
 	ImGui::Checkbox("Bones", &showBones_);
 	ImGui::SameLine();
-	ImGui::Checkbox("Wireframe", &wireframe_);
+	bool wire = workbench_.Wireframe();
+	if (ImGui::Checkbox("Wireframe", &wire)) {
+		workbench_.SetWireframe(wire);
+	}
 	ImGui::Checkbox("All bone names", &showAllBoneNames_);
 
-	const assets::XModelData& data = model_.model;
+	const assets::XModelData& data = model->model;
 	std::uint32_t totalVerts = 0;
 	std::uint32_t totalTris = 0;
-	for (const auto& surface : model_.surfaceSet.surfaces) {
+	for (const auto& surface : model->surfaceSet.surfaces) {
 		totalVerts += surface.vertexCount;
 		totalTris += surface.triangleCount;
 	}
 	ImGui::TextDisabled("%u bones (%u roots)  |  %zu surfaces, %u verts, %u tris", data.numBones,
-	                    data.numRootBones, model_.surfaceSet.surfaces.size(), totalVerts, totalTris);
-	ImGui::TextDisabled("bounds mid %.2f %.2f %.2f  half %.2f %.2f %.2f", model_.boundsCenter.x,
-	                    model_.boundsCenter.y, model_.boundsCenter.z, model_.boundsHalf.x, model_.boundsHalf.y,
-	                    model_.boundsHalf.z);
-	ImGui::TextDisabled("%s", model_.surfaceSet.path.string().c_str());
+	                    data.numRootBones, model->surfaceSet.surfaces.size(), totalVerts, totalTris);
+	ImGui::TextDisabled("bounds mid %.2f %.2f %.2f  half %.2f %.2f %.2f", model->boundsCenter.x,
+	                    model->boundsCenter.y, model->boundsCenter.z, model->boundsHalf.x,
+	                    model->boundsHalf.y, model->boundsHalf.z);
+	ImGui::TextDisabled("%s", model->surfaceSet.path.string().c_str());
 
-	if (!model_.warnings.empty()) {
-		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "%zu warnings", model_.warnings.size());
+	if (!model->warnings.empty()) {
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "%zu warnings", model->warnings.size());
 		if (ImGui::IsItemHovered()) {
 			ImGui::BeginTooltip();
-			for (const std::string& warning : model_.warnings) {
+			for (const std::string& warning : model->warnings) {
 				ImGui::TextWrapped("%s", warning.c_str());
 			}
 			ImGui::EndTooltip();
@@ -413,7 +437,7 @@ void Application::DrawModelInspector() {
 	}
 
 	if (!data.bones.empty() && ImGui::CollapsingHeader("Bones", ImGuiTreeNodeFlags_DefaultOpen)) {
-		ImGui::BeginChild("##bone_list", ImVec2(0.0f, 180.0f), ImGuiChildFlags_Borders);
+		ImGui::BeginChild("##bone_list", ImVec2(0.0f, 150.0f), ImGuiChildFlags_Borders);
 		for (std::size_t i = 0; i < data.bones.size(); ++i) {
 			const assets::BoneData& bone = data.bones[i];
 			ImGui::PushID(static_cast<int>(i));
@@ -434,25 +458,26 @@ void Application::DrawModelInspector() {
 		ImGui::EndChild();
 	}
 
-	if (ImGui::CollapsingHeader("Surfaces", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if (surfaceVisible_.size() != model_.surfaceSet.surfaces.size()) {
-			surfaceVisible_.assign(model_.surfaceSet.surfaces.size(), true);
+	if (ImGui::CollapsingHeader("Surfaces")) {
+		std::vector<bool>& surfaceVisible = workbench_.ModelSurfaceVisible();
+		if (surfaceVisible.size() != model->surfaceSet.surfaces.size()) {
+			surfaceVisible.assign(model->surfaceSet.surfaces.size(), true);
 		}
-		ImGui::BeginChild("##surface_list", ImVec2(0.0f, 150.0f), ImGuiChildFlags_Borders);
-		for (std::size_t i = 0; i < model_.surfaceSet.surfaces.size(); ++i) {
-			const assets::SurfaceData& surface = model_.surfaceSet.surfaces[i];
+		ImGui::BeginChild("##surface_list", ImVec2(0.0f, 120.0f), ImGuiChildFlags_Borders);
+		for (std::size_t i = 0; i < model->surfaceSet.surfaces.size(); ++i) {
+			const assets::SurfaceData& surface = model->surfaceSet.surfaces[i];
 			ImGui::PushID(static_cast<int>(i));
-			bool visible = surfaceVisible_[i];
+			bool visible = surfaceVisible[i];
 			if (ImGui::Checkbox("##visible", &visible)) {
-				surfaceVisible_[i] = visible;
+				surfaceVisible[i] = visible;
 			}
 			ImGui::SameLine();
 			if (ImGui::TreeNode((void*)(uintptr_t)(i + 1), "%2zu  %u verts  %u tris  %s", i,
 			                    surface.vertexCount, surface.triangleCount, surface.materialName.c_str())) {
 				if (surface.materialIndex >= 0 &&
-				    surface.materialIndex < static_cast<int>(model_.materials.size())) {
+				    surface.materialIndex < static_cast<int>(model->materials.size())) {
 					const assets::MaterialSlot& slot =
-					    model_.materials[static_cast<std::size_t>(surface.materialIndex)];
+					    model->materials[static_cast<std::size_t>(surface.materialIndex)];
 					ImGui::TextDisabled("material: %s", slot.material.name.c_str());
 					for (const auto& texture : slot.textures) {
 						ImGui::TextDisabled("  %-10s %s%s", assets::TextureSemanticName(texture.semantic),
@@ -466,31 +491,280 @@ void Application::DrawModelInspector() {
 		}
 		ImGui::EndChild();
 	}
+}
 
-	if (!model_.materials.empty() && ImGui::CollapsingHeader("Materials")) {
-		for (const assets::MaterialSlot& slot : model_.materials) {
-			ImGui::PushID(slot.material.name.c_str());
-			if (ImGui::TreeNode(slot.material.name.c_str())) {
-				ImGui::TextDisabled("techset: %s", slot.material.techniqueSet.c_str());
-				if (!slot.error.empty()) {
-					ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "%s", slot.error.c_str());
-				}
-				for (const auto& texture : slot.textures) {
-					ImGui::TextDisabled("  %-10s %s%s", assets::TextureSemanticName(texture.semantic),
-					                    texture.imageName.c_str(),
-					                    texture.fileFound ? "" : "  (missing)");
-				}
-				ImGui::TreePop();
+void Application::DrawWeaponInspector() {
+	const scene::ViewmodelAsset* viewmodel = workbench_.Viewmodel();
+	if (!workbench_.WeaponError().empty()) {
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", workbench_.WeaponError().c_str());
+	}
+	if (viewmodel == nullptr || workbench_.GpuWeaponGun() == nullptr) {
+		ImGui::TextDisabled("Select a weapon in Assets.");
+		return;
+	}
+
+	ImGui::Text("%s", viewmodel->weapon.name.c_str());
+	ImGui::TextDisabled("gun: %s", viewmodel->weapon.gunModel.c_str());
+	ImGui::TextDisabled("handModel: %s", viewmodel->weapon.handModel.empty()
+	                                         ? "(none)"
+	                                         : viewmodel->weapon.handModel.c_str());
+	if (viewmodel->weapon.handModel == "viewmodel_base_viewhands") {
+		ImGui::TextWrapped("handModel is the placeholder viewmodel_base_viewhands; the game replaces it with "
+		                   "the faction viewmodel via setviewmodel (see docs/viewmodel.md).");
+	}
+	ImGui::TextDisabled("hands: %s (%s)", viewmodel->handsName.empty() ? "(none)" : viewmodel->handsName.c_str(),
+	                    viewmodel->handsSource.c_str());
+	ImGui::TextDisabled("anim states: %zu   overrides: %zu", workbench_.AnimStates().size(),
+	                    workbench_.AnimOverrides().size());
+
+	if (ImGui::Button("Reload weapon")) {
+		ReloadWeapon();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Frame weapon")) {
+		FrameCamera();
+	}
+
+	int viewMode = workbench_.IsFirstPerson() ? 1 : 0;
+	if (ImGui::RadioButton("Orbit", viewMode == 0)) {
+		workbench_.SetViewMode(commands::ViewMode::Orbit);
+	}
+	ImGui::SameLine();
+	if (ImGui::RadioButton("First person", viewMode == 1)) {
+		workbench_.SetViewMode(commands::ViewMode::FirstPerson);
+	}
+
+	bool grid = workbench_.ShowGrid();
+	if (ImGui::Checkbox("Grid", &grid)) {
+		workbench_.SetShowGrid(grid);
+	}
+	ImGui::SameLine();
+	bool wire = workbench_.Wireframe();
+	if (ImGui::Checkbox("Wireframe", &wire)) {
+		workbench_.SetWireframe(wire);
+	}
+
+	if (workbench_.IsFirstPerson()) {
+		float fov = settings_.firstPersonFov;
+		if (ImGui::SliderFloat("Viewmodel FOV", &fov, 40.0f, 120.0f, "%.0f deg")) {
+			settings_.firstPersonFov = fov;
+			workbench_.RefreshCamera();
+		}
+		float scale = settings_.viewmodelFovScale;
+		if (ImGui::SliderFloat("FOV scale", &scale, 1.0f, 1.6f, "%.2f")) {
+			settings_.viewmodelFovScale = scale;
+			workbench_.RefreshCamera();
+		}
+	}
+
+	const char* preview = handsSelection_.empty()
+	                          ? (viewmodel->handsName.empty() ? "(auto)" : viewmodel->handsName.c_str())
+	                          : handsSelection_.c_str();
+	if (ImGui::BeginCombo("Hands", preview)) {
+		if (ImGui::Selectable("(auto)", handsSelection_.empty())) {
+			handsSelection_.clear();
+			std::string error;
+			workbench_.SetHands({}, error);
+		}
+		for (const std::string& name : handsOptions_) {
+			const bool selected = name == handsSelection_;
+			if (ImGui::Selectable(name.c_str(), selected)) {
+				handsSelection_ = name;
+				std::string error;
+				workbench_.SetHands(name, error);
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (!viewmodel->warnings.empty()) {
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "%zu warnings", viewmodel->warnings.size());
+		if (ImGui::IsItemHovered()) {
+			ImGui::BeginTooltip();
+			for (const std::string& warning : viewmodel->warnings) {
+				ImGui::TextWrapped("%s", warning.c_str());
+			}
+			ImGui::EndTooltip();
+		}
+	}
+}
+
+void Application::DrawAnimInspector() {
+	const assets::XAnimData* anim = workbench_.Anim();
+	if (anim != nullptr) {
+		ImGui::Text("%s", anim->name.c_str());
+		ImGui::TextDisabled("%u frames (0..%u)  |  %.1f fps  |  %.3f s", anim->frameCount, anim->frameCount,
+		                    anim->frameRate, anim->Duration());
+		ImGui::TextDisabled("bones %zu  |  notetracks %zu%s%s", anim->boneNames.size(),
+		                    anim->notifies.size(), anim->looping ? "  |  loop" : "",
+		                    anim->additive ? "  |  additive asset" : "");
+		if (workbench_.AdditiveEnabled()) {
+			ImGui::TextColored(ImVec4(0.55f, 0.80f, 1.0f, 1.0f), "additive over IDLE");
+		}
+	} else {
+		ImGui::TextDisabled("No animation loaded.");
+	}
+
+	if (ImGui::CollapsingHeader("Weapon anim states", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (workbench_.AnimStates().empty()) {
+			ImGui::TextDisabled("No weapon states (load a weapon).");
+		}
+		ImGui::BeginChild("##anim_states", ImVec2(0.0f, 170.0f), ImGuiChildFlags_Borders);
+		for (const commands::AnimStateEntry& entry : workbench_.AnimStates()) {
+			ImGui::PushID(entry.state.c_str());
+			const bool active = entry.anim == workbench_.AnimName();
+			char label[256];
+			std::snprintf(label, sizeof(label), "%-20s  %s", entry.state.c_str(), entry.anim.c_str());
+			if (ImGui::Selectable(label, active)) {
+				std::string error;
+				workbench_.PlayAnim(entry.anim, error);
+			}
+			if (IsAdditiveName(entry.anim)) {
+				ImGui::SameLine();
+				ImGui::TextDisabled("[add]");
 			}
 			ImGui::PopID();
 		}
+		ImGui::EndChild();
+	}
+
+	if (ImGui::CollapsingHeader("animOverrides")) {
+		if (workbench_.AnimOverrides().empty()) {
+			ImGui::TextDisabled("No overrides.");
+		}
+		ImGui::BeginChild("##anim_overrides", ImVec2(0.0f, 150.0f), ImGuiChildFlags_Borders);
+		for (const assets::WeaponAnimOverride& entry : workbench_.AnimOverrides()) {
+			ImGui::PushID(entry.anim.c_str());
+			char label[320];
+			std::snprintf(label, sizeof(label), "att %d  tree %d  %s", entry.attachment1, entry.animTreeType,
+			              entry.anim.c_str());
+			if (ImGui::Selectable(label, entry.anim == workbench_.AnimName())) {
+				std::string error;
+				workbench_.PlayAnim(entry.anim, error);
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndChild();
+	}
+
+	if (ImGui::CollapsingHeader("All anims in roots")) {
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::InputTextWithHint("##anim_search", "Filter anims...", animSearch_, sizeof(animSearch_));
+		const std::string needle = ToLower(animSearch_);
+		ImGui::BeginChild("##all_anims", ImVec2(0.0f, 170.0f), ImGuiChildFlags_Borders);
+		int shown = 0;
+		for (const AssetEntry& entry : assets_.Entries()) {
+			if (entry.kind != AssetKind::Anim || !MatchesFilter(entry.name, needle)) {
+				continue;
+			}
+			++shown;
+			ImGui::PushID(entry.name.c_str());
+			if (ImGui::Selectable(entry.name.c_str(), entry.name == workbench_.AnimName())) {
+				std::string error;
+				workbench_.PlayAnim(entry.name, error);
+			}
+			ImGui::PopID();
+		}
+		if (shown == 0) {
+			ImGui::TextDisabled("No anims match.");
+		}
+		ImGui::EndChild();
 	}
 }
 
 void Application::DrawTimelinePanel() {
 	ImGui::Begin(kTimelineWindow);
-	ImGui::TextDisabled("No animation loaded.");
-	ImGui::TextDisabled("Timeline, playback and notetracks arrive in M3.");
+
+	const assets::XAnimData* anim = workbench_.Anim();
+	if (anim == nullptr) {
+		ImGui::TextDisabled("No animation loaded.");
+		ImGui::TextDisabled("Load a weapon or pick an anim; timeline and notetracks appear here.");
+		ImGui::End();
+		return;
+	}
+
+	ImGui::Text("%s", anim->name.c_str());
+
+	if (ImGui::Button(workbench_.AnimPlaying() ? "Pause" : "Play")) {
+		workbench_.SetAnimPlaying(!workbench_.AnimPlaying());
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) {
+		workbench_.StopAnim();
+		ImGui::End();
+		return;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("|<")) {
+		workbench_.SetAnimFrame(0);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("<")) {
+		workbench_.SetAnimFrame(static_cast<int>(std::floor(workbench_.AnimFrame())) - 1);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(">")) {
+		workbench_.SetAnimFrame(static_cast<int>(std::floor(workbench_.AnimFrame())) + 1);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(">|")) {
+		workbench_.SetAnimFrame(static_cast<int>(anim->frameCount));
+	}
+	ImGui::SameLine();
+	bool loop = workbench_.AnimLooping();
+	if (ImGui::Checkbox("Loop", &loop)) {
+		workbench_.SetAnimLooping(loop);
+	}
+	ImGui::SameLine();
+	bool additive = workbench_.AdditiveEnabled();
+	if (ImGui::Checkbox("Additive over IDLE", &additive)) {
+		workbench_.SetAdditive(additive);
+	}
+
+	float speed = workbench_.AnimSpeed();
+	ImGui::SetNextItemWidth(160.0f);
+	if (ImGui::SliderFloat("Speed", &speed, 0.1f, 2.0f, "%.2fx")) {
+		workbench_.SetAnimSpeed(speed);
+	}
+	ImGui::SameLine();
+	ImGui::TextDisabled("frame %.2f / %u   |   %.3f / %.3f s", workbench_.AnimFrame(), anim->frameCount,
+	                    workbench_.AnimTime(), workbench_.AnimDuration());
+
+	float progress = workbench_.AnimProgress();
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	if (ImGui::SliderFloat("##anim_scrub", &progress, 0.0f, 1.0f, "")) {
+		workbench_.SetAnimFraction(progress);
+	}
+	const ImVec2 sliderMin = ImGui::GetItemRectMin();
+	const ImVec2 sliderMax = ImGui::GetItemRectMax();
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	for (const assets::AnimNotify& note : anim->notifies) {
+		const float x = sliderMin.x + std::clamp(note.fraction, 0.0f, 1.0f) * (sliderMax.x - sliderMin.x);
+		drawList->AddLine(ImVec2(x, sliderMin.y - 2.0f), ImVec2(x, sliderMax.y + 2.0f),
+		                  IM_COL32(255, 190, 90, 220), 1.5f);
+		if (ImGui::IsItemHovered() && ImGui::GetIO().MousePos.x > x - 4.0f &&
+		    ImGui::GetIO().MousePos.x < x + 4.0f) {
+			ImGui::SetTooltip("%s\nframe %u  |  %.3f s", note.name.c_str(), note.frame, note.time);
+		}
+	}
+
+	if (workbench_.AdditiveEnabled()) {
+		if (workbench_.BaseAnim() == nullptr) {
+			ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.35f, 1.0f),
+			                   "No IDLE animation found for the additive base pose.");
+		} else {
+			ImGui::TextDisabled("base: %s  (%.3f s)", workbench_.BaseAnim()->name.c_str(),
+			                    workbench_.BaseAnim()->Duration());
+		}
+	}
+
+	if (!anim->notifies.empty()) {
+		ImGui::SeparatorText("Notetracks");
+		for (const assets::AnimNotify& note : anim->notifies) {
+			ImGui::Text("frame %3u  %6.3f s  %s", note.frame, note.time, note.name.c_str());
+		}
+	}
+
 	ImGui::End();
 }
 
@@ -510,7 +784,9 @@ void Application::RebuildFilter() {
 }
 
 void Application::RescanAssets() {
-	assets_.Scan(ResolveAssetRoots(settings_, exeDir_));
+	const std::vector<std::filesystem::path> roots = ResolveAssetRoots(settings_, exeDir_);
+	assets_.Scan(roots);
+	workbench_.SetRoots(roots);
 	selected_ = -1;
 	RebuildFilter();
 	RefreshHandsOptions();
@@ -519,246 +795,71 @@ void Application::RescanAssets() {
 void Application::RefreshHandsOptions() {
 	const std::vector<std::filesystem::path> roots = ResolveAssetRoots(settings_, exeDir_);
 	handsOptions_ = scene::ListHandsModels(roots);
-	if (!handsOverride_.empty() &&
-	    std::find(handsOptions_.begin(), handsOptions_.end(), handsOverride_) == handsOptions_.end()) {
-		handsOptions_.insert(handsOptions_.begin(), handsOverride_);
+	if (!handsSelection_.empty() &&
+	    std::find(handsOptions_.begin(), handsOptions_.end(), handsSelection_) == handsOptions_.end()) {
+		handsOptions_.insert(handsOptions_.begin(), handsSelection_);
 	}
-}
-
-void Application::UpdateViewCamera() {
-	if (!gpuGun_ || !weaponFirstPerson_) {
-		camera_.SetOrbitMode();
-		camera_.SetFov(settings_.camera.fov);
-		return;
-	}
-
-	DirectX::XMFLOAT3 eye = viewmodel_.viewOrigin;
-	if (!viewmodel_.viewOriginValid) {
-		eye = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-	}
-	const DirectX::XMFLOAT3 target(eye.x + 1.0f, eye.y, eye.z);
-	camera_.SetFirstPerson(eye, target);
-	camera_.SetFov(std::clamp(settings_.firstPersonFov * settings_.viewmodelFovScale, 20.0f, 140.0f));
 }
 
 void Application::LoadWeapon(const std::string& name, const std::string& hands, bool firstPerson) {
-	handsOverride_ = hands;
-	weaponFirstPerson_ = firstPerson;
-	LoadWeaponByName(name);
-}
-
-void Application::LoadWeaponByName(const std::string& name) {	weaponError_.clear();
-	loadedWeaponName_ = name;
-	gpuGun_.reset();
-	gpuHands_.reset();
-	viewmodel_ = scene::ViewmodelAsset{};
-	gunSurfaceVisible_.clear();
-	handsSurfaceVisible_.clear();
-
+	firstPersonRequested_ = firstPerson;
+	handsSelection_ = hands;
 	std::string error;
-	const std::vector<std::filesystem::path> roots = ResolveAssetRoots(settings_, exeDir_);
-	if (!scene::LoadViewmodel(name, handsOverride_, roots, viewmodel_, error)) {
-		weaponError_ = error;
-		return;
-	}
-
-	std::string uploadError;
-	gpuGun_ = renderer_.UploadModel(viewmodel_.gun, uploadError);
-	if (!gpuGun_) {
-		weaponError_ = "gun upload failed: " + uploadError;
-		return;
-	}
-	gunSurfaceVisible_.assign(viewmodel_.gun.surfaceSet.surfaces.size(), true);
-	if (viewmodel_.hasHands) {
-		gpuHands_ = renderer_.UploadModel(viewmodel_.hands, uploadError);
-		if (!gpuHands_) {
-			weaponError_ = "hands upload failed: " + uploadError;
+	workbench_.LoadWeapon(name, hands, firstPerson, error);
+	for (std::size_t i = 0; i < assets_.Entries().size(); ++i) {
+		const AssetEntry& entry = assets_.Entries()[i];
+		if (entry.kind == AssetKind::Weapon && entry.name == name) {
+			selected_ = static_cast<int>(i);
+			break;
 		}
-		handsSurfaceVisible_.assign(viewmodel_.hands.surfaceSet.surfaces.size(), true);
 	}
-
-	if (!weaponFirstPerson_) {
-		FrameCamera();
-	}
-	UpdateViewCamera();
 }
 
 void Application::LoadSelectedWeapon() {
 	const AssetEntry* entry = SelectedEntry();
 	if (entry != nullptr && entry->kind == AssetKind::Weapon) {
-		LoadWeaponByName(entry->name);
+		LoadWeapon(entry->name, handsSelection_, firstPersonRequested_);
 	}
 }
 
 void Application::ReloadWeapon() {
-	if (!loadedWeaponName_.empty()) {
-		LoadWeaponByName(loadedWeaponName_);
-	}
-}
-
-void Application::DrawWeaponInspector() {
-	if (!weaponError_.empty()) {
-		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s", weaponError_.c_str());
-	}
-	if (!gpuGun_) {
-		ImGui::TextDisabled("Select a weapon in Assets.");
+	if (workbench_.WeaponName().empty()) {
 		return;
 	}
-
-	ImGui::Text("%s", viewmodel_.weapon.name.c_str());
-	ImGui::TextDisabled("gun: %s", viewmodel_.weapon.gunModel.c_str());
-	ImGui::TextDisabled("handModel: %s", viewmodel_.weapon.handModel.empty()
-	                                         ? "(none)"
-	                                         : viewmodel_.weapon.handModel.c_str());
-	if (viewmodel_.weapon.handModel == "viewmodel_base_viewhands") {
-		ImGui::TextWrapped("handModel is the placeholder viewmodel_base_viewhands; the game replaces it with "
-		                   "the faction viewmodel via setviewmodel (see docs/viewmodel.md).");
-	}
-	ImGui::TextDisabled("hands: %s (%s)", viewmodel_.handsName.empty() ? "(none)" : viewmodel_.handsName.c_str(),
-	                    viewmodel_.handsSource.c_str());
-
-	if (ImGui::Button("Reload weapon")) {
-		ReloadWeapon();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Frame weapon")) {
-		FrameCamera();
-	}
-
-	int viewMode = weaponFirstPerson_ ? 1 : 0;
-	if (ImGui::RadioButton("Orbit", &viewMode, 0) || ImGui::RadioButton("First person", &viewMode, 1)) {
-		weaponFirstPerson_ = viewMode == 1;
-		UpdateViewCamera();
-		if (!weaponFirstPerson_) {
-			FrameCamera();
-		}
-	}
-
-	if (weaponFirstPerson_) {
-		float fov = settings_.firstPersonFov;
-		if (ImGui::SliderFloat("Viewmodel FOV", &fov, 40.0f, 120.0f, "%.0f deg")) {
-			settings_.firstPersonFov = fov;
-			UpdateViewCamera();
-		}
-		float scale = settings_.viewmodelFovScale;
-		if (ImGui::SliderFloat("FOV scale", &scale, 1.0f, 1.6f, "%.2f")) {
-			settings_.viewmodelFovScale = scale;
-			UpdateViewCamera();
-		}
-	}
-
-	const char* preview = handsOverride_.empty()
-	                          ? (viewmodel_.handsName.empty() ? "(auto)" : viewmodel_.handsName.c_str())
-	                          : handsOverride_.c_str();
-	if (ImGui::BeginCombo("Hands", preview)) {
-		if (ImGui::Selectable("(auto)", handsOverride_.empty())) {
-			handsOverride_.clear();
-			ReloadWeapon();
-		}
-		for (const std::string& name : handsOptions_) {
-			const bool selected = name == handsOverride_;
-			if (ImGui::Selectable(name.c_str(), selected)) {
-				handsOverride_ = name;
-				ReloadWeapon();
-			}
-		}
-		ImGui::EndCombo();
-	}
-
-	if (!viewmodel_.warnings.empty()) {
-		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.3f, 1.0f), "%zu warnings", viewmodel_.warnings.size());
-		if (ImGui::IsItemHovered()) {
-			ImGui::BeginTooltip();
-			for (const std::string& warning : viewmodel_.warnings) {
-				ImGui::TextWrapped("%s", warning.c_str());
-			}
-			ImGui::EndTooltip();
-		}
-	}
+	std::string error;
+	workbench_.ReloadWeapon(error);
 }
 
-void Application::FrameCamera() {
-	if (gpuGun_) {
-		camera_.SetOrbitMode();
-		camera_.Frame(viewmodel_.boundsCenter, BoundsRadius(viewmodel_.boundsHalf));
-	} else if (gpuModel_) {
-		camera_.SetOrbitMode();
-		camera_.Frame(model_.boundsCenter, BoundsRadius(model_.boundsHalf));
-	} else {
-		camera_.SetOrbitMode();
-		camera_.Frame(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), 7.0f);
-	}
-}
+void Application::FrameCamera() { workbench_.FrameCamera(); }
 
 void Application::LoadModelByName(const std::string& name) {
-	const std::vector<AssetEntry>& entries = assets_.Entries();
-	for (std::size_t i = 0; i < entries.size(); ++i) {
-		if (entries[i].kind == AssetKind::Model && entries[i].name == name) {
+	for (std::size_t i = 0; i < assets_.Entries().size(); ++i) {
+		const AssetEntry& entry = assets_.Entries()[i];
+		if (entry.kind == AssetKind::Model && entry.name == name) {
 			selected_ = static_cast<int>(i);
-			LoadSelectedModel();
-			return;
+			break;
 		}
 	}
-	modelError_ = "model not found in the asset list: " + name;
+	std::string error;
+	workbench_.LoadModel(name, error);
 }
 
-void Application::LoadSelectedModel() {	const AssetEntry* entry = SelectedEntry();
+void Application::LoadSelectedModel() {
+	const AssetEntry* entry = SelectedEntry();
 	if (entry == nullptr || entry->kind != AssetKind::Model) {
 		return;
 	}
-	if (entry->name == loadedModelName_ && !modelError_.empty()) {
-		return;
-	}
-	if (entry->name == loadedModelName_ && gpuModel_) {
-		return;
-	}
-
-	modelError_.clear();
-	loadedModelName_ = entry->name;
-	loadedModelPath_ = entry->path.string();
 	selectedBone_ = -1;
-	gpuModel_.reset();
-	model_ = assets::ModelAsset{};
-
 	std::string error;
-	const std::vector<std::filesystem::path> roots = ResolveAssetRoots(settings_, exeDir_);
-	if (!assets::LoadModelAsset(entry->name, roots, model_, error, true)) {
-		modelError_ = error;
-		return;
-	}
-
-	std::string uploadError;
-	gpuModel_ = renderer_.UploadModel(model_, uploadError);
-	if (!gpuModel_) {
-		modelError_ = "GPU upload failed: " + uploadError;
-		return;
-	}
-
-	surfaceVisible_.assign(model_.surfaceSet.surfaces.size(), true);
-	FrameCamera();
+	workbench_.LoadModel(entry->name, error);
 }
 
 void Application::ReloadModel() {
-	if (loadedModelName_.empty()) {
+	if (workbench_.ModelName().empty()) {
 		return;
 	}
-	gpuModel_.reset();
-	const std::string name = loadedModelName_;
-	loadedModelName_.clear();
-	modelError_.clear();
-	const AssetEntry* entry = SelectedEntry();
-	if (entry != nullptr && entry->kind == AssetKind::Model && entry->name == name) {
-		LoadSelectedModel();
-	} else {
-		// Keep the selection-independent reload path simple: find the model entry by name.
-		for (const AssetEntry& candidate : assets_.Entries()) {
-			if (candidate.kind == AssetKind::Model && candidate.name == name) {
-				selected_ = static_cast<int>(&candidate - assets_.Entries().data());
-				LoadSelectedModel();
-				break;
-			}
-		}
-	}
+	std::string error;
+	workbench_.ReloadModel(error);
 }
 
 const AssetEntry* Application::SelectedEntry() const {

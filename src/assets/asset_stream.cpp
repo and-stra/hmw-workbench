@@ -294,6 +294,9 @@ template ArrayView<h1::BlendShape> AssetStream::ReadArrayView<h1::BlendShape>();
 template ArrayView<h1::BlendShapeVert> AssetStream::ReadArrayView<h1::BlendShapeVert>();
 template ArrayView<h1::GfxImageRaw> AssetStream::ReadArrayView<h1::GfxImageRaw>();
 template ArrayView<h1::XModelRaw> AssetStream::ReadArrayView<h1::XModelRaw>();
+template ArrayView<h1::XAnimPartsRaw> AssetStream::ReadArrayView<h1::XAnimPartsRaw>();
+template ArrayView<h1::XAnimNotifyInfoRaw> AssetStream::ReadArrayView<h1::XAnimNotifyInfoRaw>();
+template ArrayView<h1::XAnimDeltaPartRaw> AssetStream::ReadArrayView<h1::XAnimDeltaPartRaw>();
 
 template ArrayView<std::uint8_t> AssetStream::ReadRawView<std::uint8_t>();
 template ArrayView<std::uint16_t> AssetStream::ReadRawView<std::uint16_t>();

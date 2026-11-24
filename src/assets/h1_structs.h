@@ -341,4 +341,63 @@ struct GfxImageRaw {
 
 static_assert(sizeof(GfxImageRaw) == 0x68);
 
+struct XAnimNotifyInfoRaw {
+	std::int32_t name;
+	float time;
+};
+
+static_assert(sizeof(XAnimNotifyInfoRaw) == 8);
+
+struct XAnimDeltaPartRaw {
+	std::uint64_t trans;
+	std::uint64_t quat2;
+	std::uint64_t quat;
+};
+
+static_assert(sizeof(XAnimDeltaPartRaw) == 24);
+
+struct XAnimPartsRaw {
+	std::uint64_t name;                                     // 0
+	std::uint16_t dataByteCount;                            // 8
+	std::uint16_t dataShortCount;                           // 10
+	std::uint16_t dataIntCount;                             // 12
+	std::uint16_t numframes;                                // 14
+	std::uint8_t flags;                                     // 16
+	std::uint8_t boneCount[12];                             // 17
+	std::uint8_t notifyCount;                               // 29
+	std::uint8_t assetType;                                 // 30
+	std::uint8_t ikType;                                    // 31
+	std::uint32_t randomDataByteCount;                      // 32
+	std::uint32_t randomDataShortCount;                     // 36
+	std::uint32_t randomDataIntCount;                       // 40
+	std::uint32_t indexCount;                               // 44
+	float framerate;                                        // 48
+	float frequency;                                        // 52
+	std::uint64_t names;                                    // 56
+	std::uint64_t dataByte;                                 // 64
+	std::uint64_t dataShort;                                // 72
+	std::uint64_t dataInt;                                  // 80
+	std::uint64_t randomDataShort;                          // 88
+	std::uint64_t randomDataByte;                           // 96
+	std::uint64_t randomDataInt;                            // 104
+	std::uint64_t indices;                                  // 112
+	std::uint64_t notify;                                   // 120
+	std::uint64_t deltaPart;                                // 128
+	std::uint64_t secondaryName;                            // 136
+	std::uint8_t alternateAnimWeight;                       // 144
+	std::uint8_t numAlternatives;                           // 145
+	std::uint16_t blendShapeCount;                          // 146
+	std::int16_t pad;                                       // 148
+	std::uint64_t blendShapeWeightNames;                    // 152
+	std::uint64_t blendShapeCoefficientMagnitudes;          // 160
+	std::uint64_t numberOfBlendShapeKeys;                   // 168
+	std::uint64_t blendShapeKeys;                           // 176
+	std::uint64_t compressedBlendShapeCoefficients;         // 184
+	std::uint64_t blendShapeWeights;                        // 192
+	std::uint64_t alternativeAnim;                          // 200
+	std::uint64_t svAmimData;                               // 208
+};
+
+static_assert(sizeof(XAnimPartsRaw) == 0xD8);
+
 } // namespace wb::assets::h1

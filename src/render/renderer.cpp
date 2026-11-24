@@ -58,6 +58,12 @@ cbuffer ModelConstants : register(b0)
     float4 gParams;
 };
 
+#define MAX_BONES 256
+cbuffer BoneConstants : register(b1)
+{
+    row_major float4x4 gBones[MAX_BONES];
+};
+
 Texture2D gAlbedo : register(t0);
 Texture2D gNormalMap : register(t1);
 Texture2D gSpecMap : register(t2);
@@ -70,6 +76,8 @@ struct VSInput
     float3 tangent : TANGENT;
     float binormalSign : BINORMAL;
     float2 uv : TEXCOORD0;
+    uint4 boneIndices : BLENDINDICES;
+    float4 boneWeights : BLENDWEIGHT;
 };
 
 struct PSInput
@@ -85,11 +93,39 @@ struct PSInput
 PSInput VSMain(VSInput input)
 {
     PSInput output;
-    output.position = mul(mul(float4(input.position, 1.0f), gWorld), gViewProjection);
-    output.worldPosition = mul(float4(input.position, 1.0f), gWorld).xyz;
 
-    float3 n = normalize(mul(input.normal, (float3x3)gWorld));
-    float3 t = mul(input.tangent, (float3x3)gWorld);
+    float weightSum = dot(input.boneWeights, float4(1.0f, 1.0f, 1.0f, 1.0f));
+    if (weightSum < 1.0e-5f)
+    {
+        input.boneWeights = float4(1.0f, 0.0f, 0.0f, 0.0f);
+        input.boneIndices = uint4(0u, 0u, 0u, 0u);
+        weightSum = 1.0f;
+    }
+
+    float4 skinnedPosition = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float3 skinnedNormal = float3(0.0f, 0.0f, 0.0f);
+    float3 skinnedTangent = float3(0.0f, 0.0f, 0.0f);
+    [unroll]
+    for (int i = 0; i < 4; ++i)
+    {
+        if (input.boneWeights[i] <= 0.0f)
+        {
+            continue;
+        }
+        const uint bone = min(input.boneIndices[i], MAX_BONES - 1);
+        const float4x4 boneMatrix = gBones[bone];
+        const float weight = input.boneWeights[i] / weightSum;
+        skinnedPosition += mul(float4(input.position, 1.0f), boneMatrix) * weight;
+        skinnedNormal += mul(input.normal, (float3x3)boneMatrix) * weight;
+        skinnedTangent += mul(input.tangent, (float3x3)boneMatrix) * weight;
+    }
+    skinnedPosition.w = 1.0f;
+
+    output.position = mul(mul(skinnedPosition, gWorld), gViewProjection);
+    output.worldPosition = mul(skinnedPosition, gWorld).xyz;
+
+    float3 n = normalize(mul(skinnedNormal, (float3x3)gWorld));
+    float3 t = mul(skinnedTangent, (float3x3)gWorld);
     if (length(t) < 1.0e-5f)
     {
         t = (abs(n.z) < 0.9f) ? cross(n, float3(0.0f, 0.0f, 1.0f)) : cross(n, float3(0.0f, 1.0f, 0.0f));
@@ -141,8 +177,9 @@ struct alignas(16) ModelConstants {
 	DirectX::XMFLOAT4 params;
 };
 
-static_assert(sizeof(assets::SurfaceVertex) == 48);
+static_assert(sizeof(assets::SurfaceVertex) == 72);
 static_assert(sizeof(ModelConstants) == 176);
+constexpr UINT kMaxBones = 256;
 
 bool CompileShader(const char* source, const char* entryPoint, const char* target, ID3DBlob** blob) {
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
@@ -449,6 +486,10 @@ bool Renderer::CreateModelResources() {
 	     D3D11_INPUT_PER_VERTEX_DATA, 0},
 	    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(assets::SurfaceVertex, uv),
 	     D3D11_INPUT_PER_VERTEX_DATA, 0},
+	    {"BLENDINDICES", 0, DXGI_FORMAT_R16G16B16A16_UINT, 0,
+	     offsetof(assets::SurfaceVertex, boneIndices), D3D11_INPUT_PER_VERTEX_DATA, 0},
+	    {"BLENDWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,
+	     offsetof(assets::SurfaceVertex, boneWeights), D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
 	hr = device_->CreateInputLayout(layout, static_cast<UINT>(std::size(layout)), vsBlob->GetBufferPointer(),
 	                                vsBlob->GetBufferSize(), &modelInputLayout_);
@@ -462,6 +503,16 @@ bool Renderer::CreateModelResources() {
 	constantDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	constantDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	hr = device_->CreateBuffer(&constantDesc, nullptr, &modelConstantBuffer_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	D3D11_BUFFER_DESC boneDesc = {};
+	boneDesc.ByteWidth = static_cast<UINT>(sizeof(DirectX::XMFLOAT4X4) * kMaxBones);
+	boneDesc.Usage = D3D11_USAGE_DYNAMIC;
+	boneDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	boneDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	hr = device_->CreateBuffer(&boneDesc, nullptr, &boneConstantBuffer_);
 	if (FAILED(hr)) {
 		return false;
 	}
@@ -685,7 +736,8 @@ void Renderer::RenderGrid(const Camera& camera) {
 
 void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
                            const std::vector<bool>* visibleSurfaces, float exposure,
-                           const DirectX::XMFLOAT4X4* world) {
+                           const DirectX::XMFLOAT4X4* world,
+                           const std::vector<DirectX::XMFLOAT4X4>* bonePalette) {
 	if (model.surfaces.empty() || sceneWidth_ <= 0 || sceneHeight_ <= 0) {
 		return;
 	}
@@ -700,7 +752,39 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	}
 	const DirectX::XMFLOAT3 eye = camera.Eye();
 	constants.cameraPosition = DirectX::XMFLOAT4(eye.x, eye.y, eye.z, 1.0f);
-	constants.lightDirection = DirectX::XMFLOAT4(0.35f, -0.45f, 0.82f, 0.0f);
+	const DirectX::XMFLOAT3 target = camera.Target();
+	DirectX::XMFLOAT3 forward = {target.x - eye.x, target.y - eye.y, target.z - eye.z};
+	const float forwardLength = std::sqrt(forward.x * forward.x + forward.y * forward.y + forward.z * forward.z);
+	if (forwardLength > 1.0e-5f) {
+		forward.x /= forwardLength;
+		forward.y /= forwardLength;
+		forward.z /= forwardLength;
+	} else {
+		forward = {1.0f, 0.0f, 0.0f};
+	}
+	// Key light in front of the weapon (roughly from the camera side), slightly above
+	// and to the right, so the receiver/handguard faces are visible in first person.
+	const DirectX::XMFLOAT3 up = {0.0f, 0.0f, 1.0f};
+	DirectX::XMFLOAT3 right = {forward.y * up.z - forward.z * up.y, forward.z * up.x - forward.x * up.z,
+	                           forward.x * up.y - forward.y * up.x};
+	const float rightLength = std::sqrt(right.x * right.x + right.y * right.y + right.z * right.z);
+	if (rightLength > 1.0e-5f) {
+		right.x /= rightLength;
+		right.y /= rightLength;
+		right.z /= rightLength;
+	} else {
+		right = {0.0f, 1.0f, 0.0f};
+	}
+	DirectX::XMFLOAT3 light = {-forward.x * 0.85f + up.x * 0.55f + right.x * 0.22f,
+	                           -forward.y * 0.85f + up.y * 0.55f + right.y * 0.22f,
+	                           -forward.z * 0.85f + up.z * 0.55f + right.z * 0.22f};
+	const float lightLength = std::sqrt(light.x * light.x + light.y * light.y + light.z * light.z);
+	if (lightLength > 1.0e-5f) {
+		light.x /= lightLength;
+		light.y /= lightLength;
+		light.z /= lightLength;
+	}
+	constants.lightDirection = DirectX::XMFLOAT4(light.x, light.y, light.z, 0.0f);
 	constants.params = DirectX::XMFLOAT4(48.0f, exposure, 0.0f, 0.0f);
 
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -710,7 +794,30 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	std::memcpy(mapped.pData, &constants, sizeof(constants));
 	context_->Unmap(modelConstantBuffer_.Get(), 0);
 
+	// Upload the skinning palette. Bones beyond the palette (or a missing palette) use
+	// identity so the bind pose still renders.
+	std::vector<DirectX::XMFLOAT4X4> identityPalette;
+	const std::vector<DirectX::XMFLOAT4X4>* palette = bonePalette;
+	if (palette == nullptr) {
+		DirectX::XMFLOAT4X4 identity;
+		DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity());
+		identityPalette.assign(1, identity);
+		palette = &identityPalette;
+	}
+	if (FAILED(context_->Map(boneConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+		return;
+	}
+	auto* bones = static_cast<DirectX::XMFLOAT4X4*>(mapped.pData);
+	DirectX::XMFLOAT4X4 identity;
+	DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity());
+	const std::size_t paletteCount = std::min<std::size_t>(palette->size(), kMaxBones);
+	for (std::size_t i = 0; i < kMaxBones; ++i) {
+		bones[i] = i < paletteCount ? (*palette)[i] : identity;
+	}
+	context_->Unmap(boneConstantBuffer_.Get(), 0);
+
 	ID3D11Buffer* constantBuffer = modelConstantBuffer_.Get();
+	ID3D11Buffer* boneBuffer = boneConstantBuffer_.Get();
 	ID3D11ShaderResourceView* textures[3] = {checkerTexture_.Get(), flatNormalTexture_.Get(), blackTexture_.Get()};
 	ID3D11SamplerState* sampler = samplerState_.Get();
 
@@ -721,6 +828,7 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	context_->VSSetShader(modelVs_.Get(), nullptr, 0);
 	context_->VSSetConstantBuffers(0, 1, &constantBuffer);
+	context_->VSSetConstantBuffers(1, 1, &boneBuffer);
 	context_->PSSetShader(modelPs_.Get(), nullptr, 0);
 	context_->PSSetConstantBuffers(0, 1, &constantBuffer);
 	context_->PSSetSamplers(0, 1, &sampler);
@@ -878,6 +986,63 @@ std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model,
 	}
 
 	return gpu;
+}
+
+bool Renderer::CaptureScene(std::vector<std::uint8_t>& pixels, int& width, int& height,
+                            DXGI_FORMAT& format) {
+	if (!sceneTexture_) {
+		return false;
+	}
+	D3D11_TEXTURE2D_DESC desc = {};
+	sceneTexture_->GetDesc(&desc);
+	desc.Usage = D3D11_USAGE_STAGING;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	desc.BindFlags = 0;
+	desc.MiscFlags = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> staging;
+	HRESULT hr = device_->CreateTexture2D(&desc, nullptr, &staging);
+	if (FAILED(hr)) {
+		return false;
+	}
+	context_->CopyResource(staging.Get(), sceneTexture_.Get());
+
+	D3D11_MAPPED_SUBRESOURCE mapped = {};
+	hr = context_->Map(staging.Get(), 0, D3D11_MAP_READ, 0, &mapped);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	const UINT bytesPerPixel = static_cast<UINT>(DirectX::BitsPerPixel(desc.Format) / 8);
+	const std::size_t rowSize = static_cast<std::size_t>(desc.Width) * bytesPerPixel;
+	width = static_cast<int>(desc.Width);
+	height = static_cast<int>(desc.Height);
+	format = desc.Format;
+	pixels.resize(rowSize * desc.Height);
+	for (UINT y = 0; y < desc.Height; ++y) {
+		std::memcpy(pixels.data() + rowSize * y, static_cast<const std::uint8_t*>(mapped.pData) + mapped.RowPitch * y,
+		            rowSize);
+	}
+	context_->Unmap(staging.Get(), 0);
+	return true;
+}
+
+bool Renderer::SavePixelsToPng(const std::filesystem::path& path, const std::vector<std::uint8_t>& pixels,
+                               int width, int height, DXGI_FORMAT format) {
+	if (width <= 0 || height <= 0) {
+		return false;
+	}
+	const UINT bytesPerPixel = static_cast<UINT>(DirectX::BitsPerPixel(format) / 8);
+	DirectX::Image image = {};
+	image.width = static_cast<std::size_t>(width);
+	image.height = static_cast<std::size_t>(height);
+	image.format = format;
+	image.rowPitch = static_cast<std::size_t>(width) * bytesPerPixel;
+	image.slicePitch = image.rowPitch * image.height;
+	image.pixels = const_cast<std::uint8_t*>(pixels.data());
+	const HRESULT hr = DirectX::SaveToWICFile(image, DirectX::WIC_FLAGS_NONE,
+	                                          DirectX::GetWICCodec(DirectX::WIC_CODEC_PNG), path.c_str());
+	return SUCCEEDED(hr);
 }
 
 bool Renderer::SaveSceneToPng(const std::filesystem::path& path) {

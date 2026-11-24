@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace wb::assets {
 namespace {
@@ -129,6 +130,78 @@ XSurfaceSet LoadXSurface(const std::filesystem::path& path) {
 		surface.vertices.reserve(packedVertices.size());
 		for (const h1::GfxPackedVertex& packed : packedVertices) {
 			surface.vertices.push_back(DecodeVertex(packed));
+		}
+
+		// Blend weights: rigid vertices come first (one XRigidVertList entry per rigid
+		// bone range), then the skinned vertices grouped by weight count. The weight
+		// buffer stores bone indices pre-multiplied by 64.
+		surface.vertexWeights.assign(packedVertices.size(), VertexWeights{});
+		std::size_t rigidVertices = 0;
+		for (const h1::XRigidVertList& rigid : rigidLists) {
+			const std::uint16_t bone = static_cast<std::uint16_t>(rigid.boneOffset / 64);
+			for (std::uint16_t i = 0; i < rigid.vertCount; ++i) {
+				if (rigidVertices < surface.vertexWeights.size()) {
+					surface.vertexWeights[rigidVertices].boneIndex[0] = bone;
+					surface.vertexWeights[rigidVertices].weight[0] = 1.0f;
+				}
+				++rigidVertices;
+			}
+		}
+
+		if (!surface.blendTableRaw.empty() && !surface.blendWeightsRaw.empty()) {
+			const std::size_t tableCount = surface.blendTableRaw.size() / 32;
+			std::vector<std::uint16_t> weightWords(surface.blendWeightsRaw.size() / sizeof(std::uint16_t));
+			std::memcpy(weightWords.data(), surface.blendWeightsRaw.data(), surface.blendWeightsRaw.size());
+			const auto tableClass = [&surface](std::size_t vertex) {
+				return static_cast<std::uint16_t>(surface.blendTableRaw[vertex * 32 + 30] |
+				                                  (surface.blendTableRaw[vertex * 32 + 31] << 8));
+			};
+			std::size_t cursor = 0;
+			for (std::uint16_t weightCount = 1; weightCount <= 8; ++weightCount) {
+				for (std::size_t vertex = rigidVertices; vertex < tableCount; ++vertex) {
+					if (tableClass(vertex) != weightCount) {
+						continue;
+					}
+					if (vertex >= surface.vertexWeights.size()) {
+						continue;
+					}
+					VertexWeights& target = surface.vertexWeights[vertex];
+					const std::size_t used = std::min<std::size_t>(weightCount, 4);
+					float remaining = 1.0f;
+					for (std::size_t w = 0; w < used; ++w) {
+						if (cursor >= weightWords.size()) {
+							break;
+						}
+						if (w == 0) {
+							target.boneIndex[0] = static_cast<std::uint16_t>(weightWords[cursor] / 64);
+							++cursor;
+							if (used == 1) {
+								target.weight[0] = 1.0f;
+							}
+						} else {
+							if (cursor + 1 >= weightWords.size()) {
+								break;
+							}
+							target.boneIndex[w] = static_cast<std::uint16_t>(weightWords[cursor] / 64);
+							target.weight[w] = static_cast<float>(weightWords[cursor + 1]) / 65536.0f;
+							cursor += 2;
+							remaining -= target.weight[w];
+						}
+					}
+					target.weight[0] = std::max(0.0f, remaining);
+					// Consume the remaining ids/weights of animations with more than four influences.
+					for (std::size_t w = 4; w < weightCount; ++w) {
+						cursor += 2;
+					}
+				}
+			}
+		}
+
+		for (std::size_t i = 0; i < surface.vertices.size() && i < surface.vertexWeights.size(); ++i) {
+			for (int w = 0; w < 4; ++w) {
+				surface.vertices[i].boneIndices[w] = surface.vertexWeights[i].boneIndex[w];
+				surface.vertices[i].boneWeights[w] = surface.vertexWeights[i].weight[w];
+			}
 		}
 
 		surface.indices.reserve(faces.size() * 3);

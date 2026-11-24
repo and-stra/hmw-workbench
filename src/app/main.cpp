@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <cwchar>
 #include <filesystem>
 #include <iterator>
@@ -16,13 +17,16 @@
 #include <imgui.h>
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
+#include <DirectXTex.h>
 
 #include "app/application.h"
+#include "app/commands.h"
 #include "app/info.h"
 #include "app/model_overlay.h"
 #include "app/settings.h"
 #include "assets/asset_index.h"
 #include "assets/model_asset.h"
+#include "assets/xanim.h"
 #include "render/camera.h"
 #include "render/renderer.h"
 #include "scene/viewmodel.h"
@@ -52,6 +56,7 @@ struct Options {
 	std::string modelName;
 	std::string weaponName;
 	std::string handsName;
+	std::string animName;
 	bool viewFirstPerson = false;
 	bool hasView = false;
 	std::string infoName;
@@ -59,6 +64,8 @@ struct Options {
 	bool wire = false;
 	int width = 1600;
 	int height = 900;
+	bool hasWidth = false;
+	bool hasHeight = false;
 	bool hasYaw = false;
 	bool hasPitch = false;
 	bool hasDistance = false;
@@ -69,6 +76,12 @@ struct Options {
 	float fov = 0.0f;
 	bool hasExposure = false;
 	float exposure = 1.0f;
+	bool hasAnimTime = false;
+	double animTime = 0.0;
+	bool animFraction = false;
+	int sheet = 0;
+	bool hasGrid = false;
+	bool gridEnabled = true;
 };
 
 void OpenConsoleStreams() {
@@ -105,12 +118,14 @@ void PrintUsage() {
 	    "  hmw-workbench.exe\n"
 	    "      Open the window.\n"
 	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel> | -weapon <name>]\n"
-	    "                    [-hands <viewhands>] [-view firstperson|orbit] [-bones] [-wire]\n"
+	    "                    [-hands <viewhands>] [-view firstperson|orbit]\n"
+	    "                    [-anim <xanim>] [-time <seconds|fraction>] [-frac]\n"
+	    "                    [-sheet <n>] [-bones] [-wire] [-grid|-nogrid]\n"
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
 	    "                    [-dist <units>] [-fov <deg>] [-exposure <n>]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
-	    "  hmw-workbench.exe -info <xmodel>\n"
-	    "      Text dump: bones, tags, surfaces, materials, bounds.\n"
+	    "  hmw-workbench.exe -info <xmodel|xanim>\n"
+	    "      Text dump: model bones/tags/surfaces/materials, or anim frames/notetracks.\n"
 	    "  hmw-workbench.exe -validate\n"
 	    "      Parse every .xmb in all roots plus its .xsb surface sets and material json.\n"
 	    "\n"
@@ -137,6 +152,19 @@ bool ParseFloatArg(const wchar_t* text, float& value) {
 		return false;
 	}
 	value = static_cast<float>(parsed);
+	return true;
+}
+
+bool ParseDoubleArg(const wchar_t* text, double& value) {
+	if (text == nullptr || *text == L'\0') {
+		return false;
+	}
+	wchar_t* end = nullptr;
+	const double parsed = std::wcstod(text, &end);
+	if (end == text || *end != L'\0') {
+		return false;
+	}
+	value = parsed;
 	return true;
 }
 
@@ -177,17 +205,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
-void ApplyCameraOptions(wb::Camera& camera, const Options& options, const wb::Settings& settings) {
-	camera.SetYawPitch(options.hasYaw ? options.yaw : settings.camera.yaw,
-	                   options.hasPitch ? options.pitch : settings.camera.pitch);
-	camera.SetDistance(options.hasDistance ? options.distance : settings.camera.distance);
-	camera.SetFov(options.hasFov ? options.fov : settings.camera.fov);
-}
-
-float CameraRadius(const DirectX::XMFLOAT3& halfSize) {
-	return std::max({halfSize.x, halfSize.y, halfSize.z, 0.25f}) * 1.1f;
-}
-
 void DrawHeadlessBoneOverlay(wb::Renderer& renderer, const wb::assets::ModelAsset& model,
                              const wb::Camera& camera, int width, int height, bool showAllNames) {
 	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
@@ -219,8 +236,144 @@ void DrawHeadlessBoneOverlay(wb::Renderer& renderer, const wb::assets::ModelAsse
 	ImGui::DestroyContext();
 }
 
-int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& settings, const Options& options) {
-	std::printf("hmw-workbench M2 (headless)\n");
+void DrawHeadlessCaption(wb::Renderer& renderer, int width, int height, const std::string& caption) {
+	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr;
+	io.DisplaySize = displaySize;
+	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	io.FontGlobalScale = 1.4f;
+
+	if (!ImGui_ImplDX11_Init(renderer.Device(), renderer.Context())) {
+		ImGui::DestroyContext();
+		return;
+	}
+	ImGui_ImplDX11_NewFrame();
+	ImGui::NewFrame();
+	ImGui::GetBackgroundDrawList()->AddText(ImVec2(10.0f, 8.0f), IM_COL32(255, 255, 255, 235),
+	                                       caption.c_str());
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	ImGui_ImplDX11_Shutdown();
+	ImGui::DestroyContext();
+}
+
+void ApplyWorkbenchView(wb::commands::Workbench& workbench, const Options& options,
+                        const wb::Settings& settings, bool hasAsset) {
+	if (!hasAsset) {
+		workbench.SetOrbitView(options.hasYaw ? options.yaw : settings.camera.yaw,
+		                       options.hasPitch ? options.pitch : settings.camera.pitch,
+		                       options.hasDistance ? options.distance : settings.camera.distance,
+		                       options.hasFov ? options.fov : settings.camera.fov);
+	} else if (options.viewFirstPerson) {
+		workbench.SetFirstPersonView(options.hasYaw ? options.yaw : 0.0f,
+		                             options.hasPitch ? options.pitch : 0.0f,
+		                             options.hasFov ? options.fov : 0.0f);
+	} else {
+		const wb::Camera& camera = workbench.GetCamera();
+		if (options.hasYaw || options.hasPitch || options.hasDistance || options.hasFov) {
+			workbench.SetOrbitView(options.hasYaw ? options.yaw : camera.Yaw(),
+			                       options.hasPitch ? options.pitch : camera.Pitch(),
+			                       options.hasDistance ? options.distance : camera.Distance(),
+			                       options.hasFov ? options.fov : 0.0f);
+		} else {
+			workbench.FrameCamera();
+		}
+	}
+	if (options.hasGrid) {
+		workbench.SetShowGrid(options.gridEnabled);
+	}
+}
+
+bool RenderContactSheet(wb::commands::Workbench& workbench, wb::Renderer& renderer, const Options& options) {
+	const wb::assets::XAnimData* anim = workbench.Anim();
+	if (anim == nullptr) {
+		std::fprintf(stderr, "-sheet needs an animation (-anim <name>)\n");
+		return false;
+	}
+	if (options.sheet <= 0) {
+		return false;
+	}
+	const int cells = options.sheet;
+	const int columns = cells <= 2 ? cells : (cells == 4 ? 2 : (cells <= 6 ? 3 : 4));
+	const int rows = (cells + columns - 1) / columns;
+	const int cellWidth = options.hasWidth ? options.width : 480;
+	const int cellHeight = options.hasHeight ? options.height : 270;
+	const double duration = anim->Duration();
+
+	std::vector<std::uint8_t> sheetPixels;
+	int sheetWidth = 0;
+	int sheetHeight = 0;
+	DXGI_FORMAT sheetFormat = DXGI_FORMAT_UNKNOWN;
+
+	for (int index = 0; index < cells; ++index) {
+		double t = 0.0;
+		if (cells > 1) {
+			const double step = anim->looping ? static_cast<double>(index) / cells
+			                                  : static_cast<double>(index) / (cells - 1);
+			t = duration * step;
+		}
+		workbench.SetAnimTime(t);
+		if (!workbench.RenderScene(cellWidth, cellHeight)) {
+			std::fprintf(stderr, "sheet: failed to render cell %d\n", index);
+			return false;
+		}
+		char caption[160];
+		std::snprintf(caption, sizeof(caption), "%s   frame %.1f   %.3f s", anim->name.c_str(),
+		              t * anim->frameRate, t);
+		DrawHeadlessCaption(renderer, cellWidth, cellHeight, caption);
+
+		std::vector<std::uint8_t> cell;
+		int capturedWidth = 0;
+		int capturedHeight = 0;
+		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
+		if (!renderer.CaptureScene(cell, capturedWidth, capturedHeight, format)) {
+			std::fprintf(stderr, "sheet: failed to capture cell %d\n", index);
+			return false;
+		}
+		if (sheetPixels.empty()) {
+			sheetWidth = columns * capturedWidth;
+			sheetHeight = rows * capturedHeight;
+			sheetFormat = format;
+			const std::size_t bpp = DirectX::BitsPerPixel(format) / 8;
+			sheetPixels.assign(static_cast<std::size_t>(sheetWidth) * sheetHeight * bpp, 0);
+			if (bpp == 4) {
+				for (std::size_t pixel = 0; pixel < static_cast<std::size_t>(sheetWidth) * sheetHeight; ++pixel) {
+					sheetPixels[pixel * bpp + 3] = 255;
+				}
+			}
+		}
+		const std::size_t bpp = DirectX::BitsPerPixel(format) / 8;
+		const int column = index % columns;
+		const int row = index / columns;
+		const std::size_t sheetRowBytes = static_cast<std::size_t>(sheetWidth) * bpp;
+		const std::size_t cellRowBytes = static_cast<std::size_t>(capturedWidth) * bpp;
+		for (int y = 0; y < capturedHeight; ++y) {
+			const std::size_t dest =
+			    (static_cast<std::size_t>(row) * capturedHeight + static_cast<std::size_t>(y)) * sheetRowBytes +
+			    static_cast<std::size_t>(column) * capturedWidth * bpp;
+			const std::size_t source = static_cast<std::size_t>(y) * cellRowBytes;
+			std::memcpy(sheetPixels.data() + dest, cell.data() + source, cellRowBytes);
+		}
+	}
+
+	std::error_code ec;
+	const std::filesystem::path parent = options.screenshotPath.parent_path();
+	if (!parent.empty()) {
+		std::filesystem::create_directories(parent, ec);
+	}
+	if (!renderer.SavePixelsToPng(options.screenshotPath, sheetPixels, sheetWidth, sheetHeight, sheetFormat)) {
+		std::fprintf(stderr, "sheet: failed to save %s\n", options.screenshotPath.string().c_str());
+		return false;
+	}
+	std::printf("wrote %s (%dx%d, %d cells of %dx%d, %s)\n", options.screenshotPath.string().c_str(),
+	            sheetWidth, sheetHeight, cells, cellWidth, cellHeight, anim->name.c_str());
+	return true;
+}
+
+int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, const Options& options) {
+	std::printf("hmw-workbench M3 (headless)\n");
 
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 	wb::AssetIndex assets;
@@ -238,129 +391,91 @@ int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& setting
 		return 1;
 	}
 
-	wb::Camera camera;
-	wb::assets::ModelAsset model;
-	std::unique_ptr<wb::GpuModel> gpuModel;
-	wb::scene::ViewmodelAsset viewmodel;
-	std::unique_ptr<wb::GpuModel> gpuHands;
-	std::unique_ptr<wb::GpuModel> gpuGun;
-	const float exposure = options.hasExposure ? options.exposure : settings.exposure;
-
+	wb::commands::Workbench workbench(settings, assets, renderer, roots);
+	bool hasAsset = false;
 	if (!options.weaponName.empty()) {
 		std::string error;
-		if (!wb::scene::LoadViewmodel(options.weaponName, options.handsName, roots, viewmodel, error)) {
+		if (!workbench.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson, error)) {
 			std::fprintf(stderr, "cannot load weapon %s: %s\n", options.weaponName.c_str(), error.c_str());
 			return 1;
 		}
-		std::string uploadError;
-		gpuGun = renderer.UploadModel(viewmodel.gun, uploadError);
-		if (!gpuGun) {
-			std::fprintf(stderr, "cannot upload gun %s: %s\n", viewmodel.weapon.gunModel.c_str(),
-			             uploadError.c_str());
-			return 1;
-		}
-		if (viewmodel.hasHands) {
-			gpuHands = renderer.UploadModel(viewmodel.hands, uploadError);
-			if (!gpuHands) {
-				std::fprintf(stderr, "cannot upload hands %s: %s\n", viewmodel.handsName.c_str(),
-				             uploadError.c_str());
-			}
-		}
-		std::printf("weapon: %s | gun: %s | hands: %s (%s)\n", viewmodel.weapon.name.c_str(),
-		            viewmodel.weapon.gunModel.c_str(),
-		            viewmodel.handsName.empty() ? "(none)" : viewmodel.handsName.c_str(),
-		            viewmodel.handsSource.c_str());
-		for (const std::string& warning : viewmodel.warnings) {
+		const wb::scene::ViewmodelAsset* viewmodel = workbench.Viewmodel();
+		std::printf("weapon: %s | gun: %s | hands: %s (%s)\n", viewmodel->weapon.name.c_str(),
+		            viewmodel->weapon.gunModel.c_str(),
+		            viewmodel->handsName.empty() ? "(none)" : viewmodel->handsName.c_str(),
+		            viewmodel->handsSource.c_str());
+		for (const std::string& warning : viewmodel->warnings) {
 			std::printf("warning: %s\n", warning.c_str());
 		}
-
-		if (options.viewFirstPerson) {
-			const DirectX::XMFLOAT3 eye = viewmodel.viewOriginValid
-			                                  ? viewmodel.viewOrigin
-			                                  : DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-			const float yaw = DirectX::XMConvertToRadians(options.hasYaw ? options.yaw : 0.0f);
-			const float pitch = DirectX::XMConvertToRadians(options.hasPitch ? options.pitch : 0.0f);
-			const DirectX::XMFLOAT3 target(eye.x + std::cos(pitch) * std::cos(yaw),
-			                               eye.y + std::cos(pitch) * std::sin(yaw),
-			                               eye.z + std::sin(pitch));
-			camera.SetFirstPerson(eye, target);
-			camera.SetFov(options.hasFov
-			                  ? options.fov
-			                  : std::clamp(settings.firstPersonFov * settings.viewmodelFovScale, 20.0f, 140.0f));
-			if (!viewmodel.viewOriginValid) {
-				std::printf("warning: no tag_view on the hands model, first-person origin at (0,0,0)\n");
-			}
-		} else {
-			camera.SetFov(options.hasFov ? options.fov : settings.camera.fov);
-			camera.Frame(viewmodel.boundsCenter, CameraRadius(viewmodel.boundsHalf));
-			if (options.hasYaw || options.hasPitch) {
-				camera.SetYawPitch(options.hasYaw ? options.yaw : camera.Yaw(),
-				                   options.hasPitch ? options.pitch : camera.Pitch());
-			}
-			if (options.hasDistance) {
-				camera.SetDistance(options.distance);
-			}
-		}
+		hasAsset = true;
 	} else if (!options.modelName.empty()) {
 		std::string error;
-		if (!wb::assets::LoadModelAsset(options.modelName, roots, model, error, true)) {
+		if (!workbench.LoadModel(options.modelName, error)) {
 			std::fprintf(stderr, "cannot load model %s: %s\n", options.modelName.c_str(), error.c_str());
 			return 1;
 		}
-		std::string uploadError;
-		gpuModel = renderer.UploadModel(model, uploadError);
-		if (!gpuModel) {
-			std::fprintf(stderr, "cannot upload model %s: %s\n", options.modelName.c_str(),
-			             uploadError.c_str());
-			return 1;
-		}
+		const wb::assets::ModelAsset* model = workbench.Model();
 		std::printf("model: %s (%zu surfaces, %u bones, %zu materials, %zu images)\n",
-		            model.model.name.c_str(), model.surfaceSet.surfaces.size(), model.model.numBones,
-		            model.materials.size(), model.images.size());
-		for (const std::string& warning : model.warnings) {
+		            model->model.name.c_str(), model->surfaceSet.surfaces.size(), model->model.numBones,
+		            model->materials.size(), model->images.size());
+		for (const std::string& warning : model->warnings) {
 			std::printf("warning: %s\n", warning.c_str());
 		}
-		camera.SetFov(options.hasFov ? options.fov : settings.camera.fov);
-		camera.Frame(model.boundsCenter, CameraRadius(model.boundsHalf));
-		if (options.hasYaw || options.hasPitch) {
-			camera.SetYawPitch(options.hasYaw ? options.yaw : camera.Yaw(),
-			                   options.hasPitch ? options.pitch : camera.Pitch());
-		}
-		if (options.hasDistance) {
-			camera.SetDistance(options.distance);
-		}
-	} else {
-		ApplyCameraOptions(camera, options, settings);
+		hasAsset = true;
 	}
 
-	if (!renderer.BeginScene(options.width, options.height)) {
+	ApplyWorkbenchView(workbench, options, settings, hasAsset);
+
+	if (!options.animName.empty()) {
+		std::string error;
+		if (!workbench.PlayAnim(options.animName, error)) {
+			std::fprintf(stderr, "cannot play anim %s: %s\n", options.animName.c_str(), error.c_str());
+			return 1;
+		}
+		std::printf("anim: %s (%u frames, %.1f fps, %.3f s, %zu notetracks)\n",
+		            workbench.Anim()->name.c_str(), workbench.Anim()->frameCount,
+		            workbench.Anim()->frameRate, workbench.Anim()->Duration(),
+		            workbench.Anim()->notifies.size());
+	}
+	if (options.hasAnimTime) {
+		if (options.animFraction) {
+			workbench.SetAnimFraction(options.animTime);
+		} else {
+			workbench.SetAnimTime(options.animTime);
+		}
+	}
+	if (workbench.Anim() != nullptr && options.hasAnimTime) {
+		std::printf("time: %.4f s  frame %.2f\n", workbench.AnimTime(), workbench.AnimFrame());
+	}
+
+	const std::filesystem::path& output = options.screenshotPath;
+	if (options.sheet > 0) {
+		return RenderContactSheet(workbench, renderer, options) ? 0 : 1;
+	}
+
+	if (!workbench.RenderScene(options.width, options.height)) {
 		std::fprintf(stderr, "failed to begin the scene\n");
 		return 1;
 	}
-	renderer.RenderGrid(camera);
-	if (gpuGun) {
-		if (gpuHands) {
-			renderer.RenderModel(*gpuHands, camera, options.wire, nullptr, exposure);
-		}
-		renderer.RenderModel(*gpuGun, camera, options.wire, nullptr, exposure, &viewmodel.gunTransform);
-	} else if (gpuModel) {
-		renderer.RenderModel(*gpuModel, camera, options.wire, nullptr, exposure);
-		if (options.bones) {
-			DrawHeadlessBoneOverlay(renderer, model, camera, options.width, options.height, true);
+	if (options.bones) {
+		const wb::assets::ModelAsset* model = workbench.Model();
+		if (model != nullptr) {
+			DrawHeadlessBoneOverlay(renderer, *model, workbench.GetCamera(), options.width, options.height, true);
 		}
 	}
 
 	std::error_code ec;
-	const std::filesystem::path parent = options.screenshotPath.parent_path();
+	const std::filesystem::path parent = output.parent_path();
 	if (!parent.empty()) {
 		std::filesystem::create_directories(parent, ec);
 	}
-	if (!renderer.SaveSceneToPng(options.screenshotPath)) {
+	if (!renderer.SaveSceneToPng(output)) {
 		return 1;
 	}
 
-	std::printf("wrote %s (%dx%d, yaw %.1f pitch %.1f dist %.2f)\n", options.screenshotPath.string().c_str(),
-	            options.width, options.height, camera.Yaw(), camera.Pitch(), camera.Distance());
+	const wb::Camera& camera = workbench.GetCamera();
+	std::printf("wrote %s (%dx%d, yaw %.1f pitch %.1f dist %.2f)\n", output.string().c_str(), options.width,
+	            options.height, camera.Yaw(), camera.Pitch(), camera.Distance());
 	return 0;
 }
 
@@ -456,8 +571,9 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 	}
 	g_imguiReady = true;
 
+	wb::commands::Workbench workbench(settings, assets, renderer, roots);
 	const bool restoreLayout = std::filesystem::exists(exeDir / "imgui.ini");
-	wb::Application app(settings, assets, renderer, exeDir, restoreLayout);
+	wb::Application app(settings, assets, renderer, workbench, exeDir, restoreLayout);
 	if (!options.weaponName.empty()) {
 		app.LoadWeapon(options.weaponName, options.handsName, options.viewFirstPerson);
 	} else if (!options.modelName.empty()) {
@@ -554,7 +670,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		} else if (arg == L"-info") {
 			const wchar_t* value = nextValue();
 			if (value == nullptr) {
-				std::fputs("-info needs an xmodel name\n", stderr);
+				std::fputs("-info needs an xmodel or xanim name\n", stderr);
 				valid = false;
 			} else {
 				options.mode = Mode::Info;
@@ -586,6 +702,21 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			} else {
 				options.handsName = std::filesystem::path(value).string();
 			}
+		} else if (arg == L"-anim") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-anim needs an xanim name\n", stderr);
+				valid = false;
+			} else {
+				options.animName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-time") {
+			valid = ParseDoubleArg(nextValue(), options.animTime);
+			options.hasAnimTime = valid;
+		} else if (arg == L"-frac") {
+			options.animFraction = true;
+		} else if (arg == L"-sheet") {
+			valid = ParseIntArg(nextValue(), options.sheet) && options.sheet > 0;
 		} else if (arg == L"-view") {
 			const wchar_t* value = nextValue();
 			const std::wstring view = value != nullptr ? value : L"";
@@ -603,10 +734,18 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.bones = true;
 		} else if (arg == L"-wire") {
 			options.wire = true;
+		} else if (arg == L"-grid") {
+			options.hasGrid = true;
+			options.gridEnabled = true;
+		} else if (arg == L"-nogrid") {
+			options.hasGrid = true;
+			options.gridEnabled = false;
 		} else if (arg == L"-width") {
 			valid = ParseIntArg(nextValue(), options.width) && options.width > 0;
+			options.hasWidth = valid;
 		} else if (arg == L"-height") {
 			valid = ParseIntArg(nextValue(), options.height) && options.height > 0;
+			options.hasHeight = valid;
 		} else if (arg == L"-yaw") {
 			valid = ParseFloatArg(nextValue(), options.yaw);
 			options.hasYaw = valid;
@@ -648,6 +787,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		CoUninitialize();
 		return 2;
 	}
+	if (options.mode == Mode::Screenshot && options.screenshotPath.empty()) {
+		EnsureHeadlessConsole();
+		std::fputs("-screenshot needs a file name\n", stderr);
+		CoUninitialize();
+		return 2;
+	}
 
 	const std::filesystem::path exeDir = ExeDirectory();
 	wb::Settings settings = wb::LoadSettings(exeDir);
@@ -659,7 +804,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 	int result = 0;
 	if (options.mode == Mode::Info) {
 		EnsureHeadlessConsole();
-		result = wb::PrintModelInfo(options.infoName, roots) ? 0 : 1;
+		const bool animFound = wb::commands::HasAnim(roots, options.infoName);
+		result = (animFound ? wb::PrintAnimInfo(options.infoName, roots)
+		                    : wb::PrintModelInfo(options.infoName, roots))
+		             ? 0
+		             : 1;
 	} else if (options.mode == Mode::Validate) {
 		EnsureHeadlessConsole();
 		result = wb::RunValidate(roots) == 0 ? 0 : 1;

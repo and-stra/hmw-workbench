@@ -57,8 +57,14 @@ public:
 	void RenderGrid(const Camera& camera);
 	void RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
 	                 const std::vector<bool>* visibleSurfaces, float exposure = 1.0f,
-	                 const DirectX::XMFLOAT4X4* world = nullptr);
+	                 const DirectX::XMFLOAT4X4* world = nullptr,
+	                 const std::vector<DirectX::XMFLOAT4X4>* bonePalette = nullptr);
 	bool SaveSceneToPng(const std::filesystem::path& path);
+
+	// Copies the current scene target into CPU memory (BGRA/RGBA bytes as stored by D3D).
+	bool CaptureScene(std::vector<std::uint8_t>& pixels, int& width, int& height, DXGI_FORMAT& format);
+	bool SavePixelsToPng(const std::filesystem::path& path, const std::vector<std::uint8_t>& pixels,
+	                     int width, int height, DXGI_FORMAT format);
 
 	std::unique_ptr<GpuModel> UploadModel(const assets::ModelAsset& model, std::string& error);
 
@@ -108,6 +114,7 @@ private:
 	ComPtr<ID3D11PixelShader> modelPs_;
 	ComPtr<ID3D11InputLayout> modelInputLayout_;
 	ComPtr<ID3D11Buffer> modelConstantBuffer_;
+	ComPtr<ID3D11Buffer> boneConstantBuffer_;
 	ComPtr<ID3D11RasterizerState> solidState_;
 	ComPtr<ID3D11RasterizerState> wireframeState_;
 	ComPtr<ID3D11SamplerState> samplerState_;

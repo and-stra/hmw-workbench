@@ -5,8 +5,10 @@
 #include <set>
 #include <string>
 
+#include "app/commands.h"
 #include "assets/material.h"
 #include "assets/model_asset.h"
+#include "assets/xanim.h"
 #include "assets/xsurface.h"
 
 namespace wb {
@@ -23,7 +25,7 @@ void PrintBounds(const assets::ModelAsset& model) {
 bool PrintModelInfo(const std::string& name, const std::vector<std::filesystem::path>& roots) {
 	assets::ModelAsset model;
 	std::string error;
-	if (!assets::LoadModelAsset(name, roots, model, error, false)) {
+	if (!commands::LoadModelForInfo(roots, name, model, error)) {
 		std::fprintf(stderr, "-info %s: %s\n", name.c_str(), error.c_str());
 		return false;
 	}
@@ -220,6 +222,40 @@ int RunValidate(const std::vector<std::filesystem::path>& roots) {
 	            missingMaterials.size());
 	std::printf("  models with missing surface data: %zu\n", modelsMissingSurfaces.size());
 	return modelFailed + surfaceFailed + materialFailed;
+}
+
+bool PrintAnimInfo(const std::string& name, const std::vector<std::filesystem::path>& roots) {
+	assets::XAnimData anim;
+	std::string error;
+	if (!commands::LoadAnimForInfo(roots, name, anim, error)) {
+		std::fprintf(stderr, "-info %s: %s\n", name.c_str(), error.c_str());
+		return false;
+	}
+
+	std::printf("anim: %s\n", anim.name.c_str());
+	std::printf("file: %s\n", anim.path.string().c_str());
+	std::printf("frames: %u (keys 0..%u)  framerate: %.4f  duration: %.4f s\n", anim.frameCount, anim.frameCount,
+	            anim.frameRate, anim.Duration());
+	std::printf("flags: 0x%02X%s%s  assetType: %u%s\n", anim.flags, anim.looping ? "  loop" : "",
+	            anim.delta ? "  delta" : "", anim.assetType, anim.additive ? "  additive" : "");
+	std::printf("bones: %zu\n", anim.boneNames.size());
+	for (std::size_t i = 0; i < anim.boneNames.size(); ++i) {
+		const assets::AnimChannel& channel = anim.channels[i];
+		std::printf("  [%3zu] %-28s rot %3zu  trans %3zu\n", i, anim.boneNames[i].c_str(),
+		            channel.rotations.size(), channel.translations.size());
+	}
+	std::printf("notetracks: %zu\n", anim.notifies.size());
+	for (const assets::AnimNotify& note : anim.notifies) {
+		std::printf("  frame %3u  %8.4f s  %6.4f  %s\n", note.frame, note.time, note.fraction,
+		            note.name.c_str());
+	}
+	if (!anim.deltaRotations.empty() || !anim.deltaTranslations.empty()) {
+		std::printf("delta parts: %zu rotations, %zu translations\n", anim.deltaRotations.size(),
+		            anim.deltaTranslations.size());
+	} else {
+		std::printf("delta parts: none\n");
+	}
+	return true;
 }
 
 } // namespace wb

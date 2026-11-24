@@ -16,6 +16,13 @@ struct SurfaceVertex {
 	DirectX::XMFLOAT3 tangent{1.0f, 0.0f, 0.0f};
 	float binormalSign = 1.0f;
 	DirectX::XMFLOAT2 uv{0.0f, 0.0f};
+	std::uint16_t boneIndices[4] = {0, 0, 0, 0};
+	float boneWeights[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+};
+
+struct VertexWeights {
+	std::uint16_t boneIndex[4] = {0, 0, 0, 0};
+	float weight[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 };
 
 struct SurfaceData {
@@ -27,6 +34,7 @@ struct SurfaceData {
 	std::vector<std::uint8_t> blendWeightsRaw; // XBlendInfo weights (uint16 per entry)
 	std::vector<std::uint8_t> blendTableRaw;   // 32 bytes per vertex
 	std::vector<SurfaceVertex> vertices;
+	std::vector<VertexWeights> vertexWeights; // one entry per vertex
 	std::vector<std::uint16_t> indices;
 	std::string materialName;
 	int materialIndex = -1;

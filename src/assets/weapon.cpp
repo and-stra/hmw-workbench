@@ -43,10 +43,33 @@ WeaponAsset LoadWeapon(const std::filesystem::path& path) {
 	weapon.handModel = json.value("handModel", "");
 	weapon.camoViewModelMaterialOverride = json.value("camoViewModelMaterialOverride", "");
 
+	if (json.contains("szXAnims") && json["szXAnims"].is_object()) {
+		for (const auto& [state, value] : json["szXAnims"].items()) {
+			if (value.is_string()) {
+				const std::string anim = value.get<std::string>();
+				if (!anim.empty()) {
+					weapon.animStates.push_back({state, anim});
+				}
+			}
+		}
+	}
+
 	if (json.contains("animOverrides") && json["animOverrides"].is_array()) {
 		for (const auto& override : json["animOverrides"]) {
 			if (override.is_object()) {
 				weapon.attachmentOverrides.push_back(override.value("overrideAnim", ""));
+				WeaponAnimOverride info;
+				info.anim = override.value("overrideAnim", "");
+				info.altmodeAnim = override.value("altmodeAnim", "");
+				info.attachment1 = override.value("attachment1", 0);
+				info.attachment2 = override.value("attachment2", 0);
+				info.animTreeType = override.value("animTreeType", 0);
+				info.animHand = override.value("animHand", 0);
+				info.animTime = override.value("animTime", 0.0f);
+				info.altTime = override.value("altTime", 0.0f);
+				if (!info.anim.empty() || !info.altmodeAnim.empty()) {
+					weapon.animOverrides.push_back(std::move(info));
+				}
 			}
 		}
 	}

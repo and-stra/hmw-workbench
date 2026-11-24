@@ -1,0 +1,89 @@
+anim: vm_crossbow_reload
+file: C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\zonetool\mod\xanim\vm_crossbow_reload.xab
+frames: 86 (keys 0..86)  framerate: 30.0000  duration: 2.8667 s
+flags: 0x00  assetType: 1
+bones: 75
+  [  0] tag_torso                    rot   1  trans   1
+  [  1] tag_player                   rot   1  trans   1
+  [  2] j_gun                        rot   1  trans   0
+  [  3] chargehandle                 rot   1  trans  13
+  [  4] tag_vrd                      rot   1  trans   0
+  [  5] string_c                     rot   1  trans  14
+  [  6] tag_thermal_scope            rot   1  trans   0
+  [  7] flipdown                     rot   1  trans   0
+  [  8] flipup                       rot   1  trans   0
+  [  9] arm                          rot   1  trans   0
+  [ 10] tag_camera                   rot  38  trans   0
+  [ 11] j_shoulder_le                rot  84  trans  36
+  [ 12] j_shoulder_ri                rot  59  trans   1
+  [ 13] tag_weapon                   rot  80  trans  58
+  [ 14] j_elbow_le                   rot  76  trans   1
+  [ 15] j_elbow_ri                   rot  57  trans   1
+  [ 16] bow_l                        rot  15  trans   0
+  [ 17] bow_r                        rot  15  trans   0
+  [ 18] j_wrist_le                   rot  85  trans   1
+  [ 19] j_wrist_ri                   rot  81  trans   1
+  [ 20] j_wristtwist_back_le         rot  69  trans   1
+  [ 21] j_wristtwist_back_ri         rot  30  trans   1
+  [ 22] j_wristtwist_le              rot  80  trans   1
+  [ 23] j_wristtwist_ri              rot  58  trans   1
+  [ 24] tag_clip                     rot  18  trans  25
+  [ 25] cablecross1_l                rot  15  trans   0
+  [ 26] cablecross1_r                rot  15  trans   0
+  [ 27] j_index_le_0                 rot  58  trans   1
+  [ 28] j_index_ri_0                 rot   2  trans   1
+  [ 29] j_mid_le_0                   rot  58  trans   1
+  [ 30] j_mid_ri_0                   rot   2  trans   1
+  [ 31] j_pinkypalm_le               rot  30  trans   1
+  [ 32] j_pinkypalm_ri               rot   2  trans   1
+  [ 33] j_ringpalm_le                rot  27  trans   1
+  [ 34] j_ringpalm_ri                rot   2  trans   1
+  [ 35] j_thumb_le_0                 rot  54  trans   1
+  [ 36] string_cl                    rot  17  trans   0
+  [ 37] string_cr                    rot  17  trans   0
+  [ 38] tag_weapon_left              rot  69  trans  72
+  [ 39] tag_weapon_right             rot   2  trans   1
+  [ 40] wheel_l                      rot  15  trans   0
+  [ 41] wheel_r                      rot  15  trans   0
+  [ 42] cablecross2a_l               rot  15  trans   0
+  [ 43] cablecross2a_r               rot  15  trans   0
+  [ 44] j_index_le_1                 rot  60  trans   1
+  [ 45] j_index_ri_1                 rot   2  trans   1
+  [ 46] j_mid_le_1                   rot  55  trans   1
+  [ 47] j_mid_ri_1                   rot   2  trans   1
+  [ 48] j_pinky_le_0                 rot  55  trans   1
+  [ 49] j_pinky_ri_0                 rot   2  trans   1
+  [ 50] j_ring_le_0                  rot  56  trans   1
+  [ 51] j_ring_ri_0                  rot   2  trans   1
+  [ 52] j_thumb_le_1                 rot  46  trans   1
+  [ 53] j_thumb_ri_1                 rot   2  trans   1
+  [ 54] stringwheel_l                rot   6  trans   0
+  [ 55] stringwheel_r                rot   6  trans   0
+  [ 56] cablecross2b_l               rot  15  trans   0
+  [ 57] cablecross2b_r               rot  15  trans   0
+  [ 58] j_index_le_2                 rot  53  trans   1
+  [ 59] j_index_ri_2                 rot   2  trans   1
+  [ 60] j_mid_le_2                   rot  53  trans   1
+  [ 61] j_mid_ri_2                   rot   2  trans   1
+  [ 62] j_pinky_le_1                 rot  51  trans   1
+  [ 63] j_pinky_ri_1                 rot   2  trans   1
+  [ 64] j_ring_le_1                  rot  48  trans   1
+  [ 65] j_ring_ri_1                  rot   2  trans   1
+  [ 66] j_thumb_le_2                 rot  31  trans   1
+  [ 67] j_thumb_ri_2                 rot   2  trans   1
+  [ 68] stringwheel2_l               rot  16  trans   0
+  [ 69] stringwheel2_r               rot  16  trans   0
+  [ 70] j_pinky_le_2                 rot  51  trans   1
+  [ 71] j_pinky_ri_2                 rot   2  trans   1
+  [ 72] j_ring_le_2                  rot  50  trans   1
+  [ 73] j_ring_ri_2                  rot   2  trans   1
+  [ 74] j_thumb_ri_0                 rot   1  trans   1
+notetracks: 7
+  frame   1    0.0333 s  0.0116  wpn_crossbow_foley_start
+  frame  20    0.6667 s  0.2326  wpn_crossbow_charge
+  frame  29    0.9667 s  0.3372  wpn_crossbow_lock
+  frame  46    1.5333 s  0.5349  wpn_crossbow_magin
+  frame  69    2.3000 s  0.8023  wpn_crossbow_settle
+  frame  74    2.4667 s  0.8605  interruptible
+  frame  86    2.8667 s  1.0000  end
+delta parts: none
