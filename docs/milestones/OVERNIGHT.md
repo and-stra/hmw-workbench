@@ -1,148 +1,130 @@
-﻿# Overnight progress log
+﻿# Overnight progress log - FINAL
 
-Last update: 25 Nov 2026, ~00:00 (autonomous overnight run continuing).
+Run: 24-25 Nov 2026, autonomous. Tasks: M5 (one open check), M6, M7, M8, M9, M10. Maps were not
+part of this run.
 
-**On resume:** read `docs\OVERNIGHT-TASK.md` (the task), `AGENTS.md`, `docs\PLAN.md`, this file
-and `git log --oneline -5`; then continue with the first open item below.
+**State: all requested milestones are attempted and committed. Repo is clean except the
+untracked `review\claude\` (Claude's own artifact, intentionally left untracked).**
 
 ## Status per milestone
 
-| milestone | state | commit | notes |
+| milestone | state | commit | summary |
 |---|---|---|---|
 | M0-M4b | done | e4ba51a ... 5f6cec6 | previous sessions |
-| M5 tag editing | **done** | 23c650c + bc8365e | all checks pass, copy-save 14/14 |
+| M5 tag editing | **done** | 23c650c, bc8365e | copy-save check closed 14/14 |
 | M6 camos | **done** | a419bbb | research + preview, 3 camos on M4/crossbow |
-| M7 hardening | **done** | 33595c1 | 80/80 regression, window test 5/5 |
-| M8 world models | **done** | 0779ae7 | world model + world attachments, fit report |
-| M9 player models | **done with asset gap** | see M9.md | 2 complete factions; missing assets listed |
-| M10 comfort features | **done** | see M10.md | hot reload, compare, rename map |
+| M7 hardening | **done** | 33595c1 | README/workflow, 80/80 regression, window test 5/5 |
+| M8 world models | **done** | 0779ae7 | world model + attachments, -world/MCP, world fit report |
+| M9 player models | **done with asset gap** | d77140e | faction table + body/head + hand weapon + anims; 2 complete factions in dumps, missing assets listed |
+| M10 comfort features | **done** | cf17c46, 49c86c7 | hot reload, compare mode, bone compare + rename map |
 
-Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit includes
-`docs\porting\aw.md` updated by Claude and `docs\OVERNIGHT-TASK.md`.
+Maps: not started (explicitly out of scope).
 
-## M5 - what is done
+## Self-checks
 
-- **Writer + round-trip: 523/523 `.xmb` byte-identical, 0 errors** (`review\M5\roundtrip.txt`).
-  `-roundtrip [report.txt]` writes into `build\roundtrip` (gitignored). The writer replays the
-  original stream tokens and supports edits; models with shared/offset bone arrays are refused
-  for editing but still round-trip.
-- **Editing command layer** (UI + MCP): `MoveTagLocal`/`MoveTagWorld`, `AddTag` (append, all
-  per-bone arrays + name string token + counts), `RevertTag`, `RevertAllTags`, `HasTagChanges`,
-  `SaveEditedModel`, tag pose/ghost accessors. Inspector has the tag list, numeric pos/quat,
-  ImGuizmo move/rotate, ghost, add-tag panel (fit-needed tag dropdown, parent, copy-from), revert,
-  save, dirty marker. Edits apply live in hip/ADS, FP/orbit.
-- **Save**: `.bak` created once, in-place write, `<model>.tags.json` (all tags with
-  name/parent/local pos/rot/world/added), reload + `-validate`-style check.
-- **MCP write tools**: `move_tag`, `add_tag`, `revert_tags`, `save_model`; `get_tags` reports
-  `added`; `screenshot` has `ads_align`. Documented in `docs\mcp.md`.
-- **Crossbow fit**: `vm_crossbow_base` now has `tag_reflex` (+0.356197 Z from `tag_red_dot`),
-  `tag_acog` (+0.109879 Z from `tag_acog_2`) and `tag_silencer` (exactly `tag_flash`);
-  36 -> 39 bones. ADS reticle aim **960.0 / 508.0 px** (centre) for both
-  `vm_crossbow_reddot_ads_up` and `vm_crossbow_acog_ads_up`.
-- Files changed outside the repo (only these): `GAME\zonetool\mod\xmodel\vm_crossbow_base.xmb`
-  (5208 B), `vm_crossbow_base.xmb.bak` (4911 B, original) and `vm_crossbow_base.tags.json`
-  (7939 B). No weapon json/zone csv/other port file touched.
+**M5** (all pass, `review\M5\`):
+- roundtrip 523/523 identical, 0 errors.
+- saved crossbow re-reads (39 bones), `-validate` unchanged, `.bak` = 4911 B original.
+- fit report finds `tag_reflex`, `tag_acog`, `tag_silencer`.
+- ADS end reflex/ACOG reticle aim (960.0, 508.0) at 1920x1016.
+- idle/fire/reload sheets clean.
+- MCP copy-save test **14/14** on `build\edit_test` (39 -> 40 bones, tag persisted, .bak
+  pristine, real model sha256 unchanged) - `tools\test\m5-mcp-copy.ps1`.
 
-## M5 self-checks
+**M6** (all pass, `review\M6\`):
+- `docs\camos.md` cites every statement (script builtins, camoTable, `_camo` material slots,
+  dumps, 355 weapon camos / 550 with character camos).
+- 3 camos (`christmas_wrap`, `blue_jade`, `red_wash`) on H2 M4 and crossbow.
+- no-camo frames SHA256-identical to the pre-M6 exe (M4 model, crossbow model, M4 first person).
+- MCP camo test **6/6**.
 
-- [x] roundtrip: 523/523 identical, 0 errors.
-- [x] Saved model re-reads (39 bones, new tags present); `-validate` unchanged (523/0, 298/47,
-  189/30; no new failures). `.bak` is the 4911 B original and re-reads as the 36-bone model.
-- [x] `fit_crossbow_after.txt` shows `tag_reflex`, `tag_acog`, `tag_silencer` found.
-- [x] ADS-end with `-crosshair`: reflex and ACOG reticle aim (960.0, 508.0), 0 px off.
-- [x] Idle/fire/reload sheets with the new tags, no exploded vertices.
-- [x] **Copy-save check (closed 25 Nov):** MCP write tools save **on a copy of a model in
-  `build\edit_test\`** (not the real file): `tools\test\m5-mcp-copy.ps1` -> `review\M5\mcp-smoke.txt`,
-  **14/14 passed**. 39 -> 40 bones after reload, `tag_m5_copy` persisted at the moved local
-  position, `.bak` byte-identical to the pristine copy, saved copy 5208 -> 5308 B, `.tags.json`
-  contains the tag, real model sha256 unchanged.
+**M7** (all pass, `review\M7\`):
+- `-validate` 523/0 xmodels, 298/47 surfaces, 189/30 materials (known missing only).
+- `-roundtrip` 523/523 identical.
+- every M1-M6 review command + all MCP scripts: **80/80** (`review\M7\regression.txt`).
+- fixed the outdated MCP smoke expectation (reflexmwr is fitted since M5): 42/42.
+- scripted window test **5/5** (load crossbow/M4, anims, attachment, copy tag edit/save/reload,
+  clean close; real model hash unchanged) - `review\M7\window-test.txt`.
+- build 0 warnings; git clean after the commit.
 
-## M6 - camos
+**M8** (all pass, `review\M8\`):
+- `npc_crossbow_base` and `wpn_h2_m4a1_npc` render textured; M4 world + camo too.
+- world attachments by the same tag rule: M4 world reflex found on `tag_reflex`; crossbow world
+  reflex MISSING (nearest `tag_red_dot`) because M5 fitted only the VM model - reported, not
+  fixed (would be another game-file write).
+- world fit reports: crossbow missing `tag_reflex`/`tag_acog`, M4 tags found.
+- MCP world test **7/7**.
 
-- Research: `docs\camos.md` cites the script builtins (`overrideviewmodelmaterial` in
-  `refs\hmw_decomp\strings.tsv:7258`), the camoTable lookups (IW5 `_utility.gsc:1394`, H1
-  `42852.gsc`, `42891.gsc`), the `_camo` material slot layout (H2 M4 receiver/stock/grip/
-  handguard materials, crossbow `camo_transparent_col`/`crossbow_col`/`crossbow_mask_02`) and
-  the 355 `camo_h1_*` weapon camo materials (550 with 195 character camos). The task's
-  `camoViewModelMaterialOverride` field does not exist in any dump/decompile; documented.
-- Implemented: camo material list, dc1 texture loader, `m` mask slot in the material loader,
-  shader blend `lerp(albedo, camo, mask * strength)`, UI dropdown with filter + strength/UV
-  scale, `-camo`/`-camo-strength`/`-camo-scale`, MCP `camo` on `load_weapon` + `load_model`.
-- Self-check: 3 camos on the H2 M4 and the crossbow
-  (`christmas_wrap`, `blue_jade`, `red_wash`), no-camo frames SHA256-identical to the pre-M6
-  exe (`review\M6\camo_check.txt`), MCP camo test 6/6 (`review\M6\mcp-camo.txt`).
-- Build clean (0 warnings). Review: `review\M6\` (baselines, 9 camo PNGs, MCP PNGs, logs).
-- Files changed outside the repo: none.
+**M9** (done with a documented asset gap, `review\M9\`):
+- faction table from `custom_teams.gsc`; body/head, viewhands availability and dropdown;
+  world weapon on `tag_weapon_right` (verified: parent `j_wrist_ri`; `tag_inhand` is the chest
+  tag); third-person `mp_jug_maniac_idle` / `mp_jug_maniac_stand_hold_throw` play on the
+  player skeleton.
+- **2 complete textured factions** (`hazmat`, `infect`) and the missing-asset list
+  (`review\M9\missing-factions.txt`): `body_usmc_desert_assault_mp_camo` is present but its
+  `.xsb` is missing; the HMW `body_h2_*`/`head_h2_*` and H1 `mp_body_*`/`head_*` models are not
+  in the dumps. No outside-repo dump was allowed/written.
+- world weapon in hand: `hazmat_m4_hand.png`, `hazmat_hold.png`, `infect_m4_hand.png`.
+- MCP character test **8/8**.
 
-## M7 - hardening
+**M10** (all pass, `review\M10\`):
+- hot reload on a copy: **5/5** (39 -> 40 bones edit, replace file, debounced reload back to 39,
+  real model untouched) - `review\M10\hot-reload.txt`.
+- compare side and ghost screenshots (crossbow vs H2 M4) in `review\M10\`.
+- rename-map test on the copy, made-up `{"j_mainroot":"j_gun"}`: compare-bones 2 matched / 1
+  renamed / 91 missing, applied pose images differ - `review\M10\rename-map.txt`.
+- MCP comfort test **5/5** (compare_screenshot side 1604x600, ghost 1200x900, compare_bones
+  with/without map, rename_map) - `review\M10\mcp-comfort.txt`.
+- final build 0 warnings.
 
-- New `README.md` (tool, build, run, UI, CLI reference, MCP link, asset roots) and
-  `docs\workflow-porting.md` (step-by-step port check with the crossbow example).
-- `tools\test\m7-regression.ps1`: `-validate` (523/0, 298/47, 189/30), `-roundtrip` (523/523),
-  every M1-M6 review command, all MCP scripts and the M7 window test -> **80/80 passed**
-  (`review\M7\regression.txt`).
-- Fixed the outdated MCP smoke expectation (reflexmwr is now found since M5): 42/42.
-- `tools\test\m7-window.ps1` + `-window-test`: real window, crossbow + M4 + anims +
-  attachments, add/move/save a tag on the copy, reload, close cleanly -> **5/5**
-  (`review\M7\window-test.txt`); real model hash unchanged.
-- Clean build 0 warnings. No app code changes besides the `-window-test` test hook.
+## Files changed outside the repo
 
-## M8 - world models
+M5 (already done before this run; not touched again):
+```
+GAME\zonetool\mod\xmodel\vm_crossbow_base.xmb          5208 B
+GAME\zonetool\mod\xmodel\vm_crossbow_base.xmb.bak      4911 B (original, 23 Nov 18:40)
+GAME\zonetool\mod\xmodel\vm_crossbow_base.tags.json     7939 B
+```
+No other writes outside `C:\Games\cod-hwm\hmw-workbench` in M6-M10 (copy tests use
+`build\edit_test`, gitignored). New dumps: none.
 
-- `LoadViewmodel(..., world)`: `worldModel` (fallback gunModel), no hands, orbit; `-world` and
-  `load_weapon world=true`; UI checkbox; `Attach` uses `worldModels` in world mode; world fit
-  report (`-fit-report -world`, MCP `world:true`).
-- Self-check: crossbow `npc_crossbow_base` and M4 `wpn_h2_m4a1_npc` textured
-  (`review\M8\`), M4 world reflex found on `tag_reflex`, crossbow world reflex missing
-  (nearest `tag_red_dot`) - the M5 tags are VM-only, documented. MCP world test **7/7**.
-- Build clean (0 warnings). Files changed outside the repo: none.
+## Build / disk
 
-## M9 - player models
+- Clean Release x64 build, **0 warnings** (`build.log`).
+- Free disk on C: **33.1 GB** (>= 20 GB).
 
-- Faction table from `refs\dumps\hmw_files\scripts\mp_patches\custom_teams.gsc` (body/head/
-  viewhands), availability check and dropdown; `-character` / `-character-weapon`; MCP
-  `load_character` (faction or body+head); world weapon on `tag_weapon_right` (verified: parent
-  `j_wrist_ri`; `tag_inhand` is the chest tag); third-person `mp_jug_maniac_idle` +
-  `mp_jug_maniac_stand_hold_throw` play on the player skeleton.
-- Asset gap: only `body_hazmat` and `body_infect` are complete in the dumps;
-  `body_usmc_desert_assault_mp_camo` is missing its xsurface and the HMW faction bodies/heads
-  are not dumped. Full list in `review\M9\missing-factions.txt`; no outside-repo dump was made.
-- Self-check: 2 textured factions + the missing-asset list, MCP character test **8/8**,
-  screenshots in `review\M9\`. Build clean.
-- Files changed outside the repo: none.
+## Known gaps / questions for the user
 
-## M10 - comfort features
+1. **M9 character assets:** only `body_hazmat` and `body_infect` are complete. To render the HMW
+   factions (TF141/OpFor/Spetsnaz/Rangers/SEALs/Militia/GIGN/PMC/IC/Africa/Delta), the
+   `body_h2_*` + `head_h2_*` (and H1 `mp_body_*`/`head_*`) models need to be dumped with
+   zonetool into a new `GAME\dump\workbench_*` folder (outside-repo write, not allowed this
+   run). The faction table/dropdown/code is already in place. `usmc_desert` also needs
+   `usmc_desert_assault_body_mp_lod0300.xsb`.
+2. **Crossbow world tags:** M5 added `tag_reflex`/`tag_acog` only to `vm_crossbow_base`. If world
+   attachments are mounted from `npc_crossbow_base`, add the same tags there (tag edit + save).
+3. **Reflex ring occlusion:** the crossbow's `tag_sight_on` ring still hides the reflex dot in
+   ADS; fix is a `hideTags`/weapon-json change, not a tag fit issue.
+4. **Camo fidelity:** the preview replaces the diffuse colour using the game's `m` mask; the real
+   technique also swaps camo normal/spec/env. H2 native animated camo material variants
+   (`mtl_h2_m4a1_receiver_fire` etc.) are not exposed.
+5. **Compare / hot reload scope:** compare is an offscreen composition (side/ghost) rather than
+   a live split viewport; hot reload watches the loaded asset files (weapon json/model/surface/
+   hands/attachments/current anim), not arbitrary new files or material/image edits.
+6. **M9 head attachment:** implemented for separate head xmodels (`j_head`/`tag_head`) but
+   untested because no separate heads are dumped; the two available bodies include their heads.
 
-- Hot reload: watches the loaded weapon/model/character files (weapon json, xmb, xsb, hands,
-  attachment models, current xab), 400 ms debounce, keeps anim/camera; UI status, MCP
-  `hot_reload`; copy-file test **5/5** (`review\M10\hot-reload.txt`).
-- Compare mode: `-compare a b -screenshot ... -compare-mode side|ghost`, MCP
-  `compare_screenshot`; crossbow vs H2 M4 side/ghost + model side images.
-- Bone compare + rename map: `-compare-bones`, `-rename-map json`, MCP `compare_bones` /
-  `rename_map`, UI Rig section; made-up mapping on the copy (`j_mainroot -> j_gun`) moves the
-  crossbow, counts 2 matched/1 renamed/91 missing.
-- MCP comfort test **5/5** (`review\M10\mcp-comfort.txt`). Build clean (0 warnings). No writes
-  outside the repo.
+## Resume note
 
-## M5 open issues / notes
-
-- The crossbow's built-in `tag_sight_on` ring hides the reflex dot in ADS. The official
-  `crossbow_reflex_ads_end.png` hides surfaces 0,1,3,18,19 (`-hidesurface`) to show the centred
-  dot; `crossbow_reflex_ads_end_ring.png` is the same without hiding. The tag fit itself is
-  correct; the in-game fix is a `hideTags`/weapon-json change (not allowed in M5, M6/M7 candidate).
-- ACOG reticle is dark in the workbench (no alpha reticle rendering); the crosshair marks centre.
-- `tags.json` marks the three tags `added:true` as saved. Saving again re-baselines them
-  (`added:false`); name/parent/local transform remain.
-- UI gizmo/ghost compile and the window loads the crossbow, but the interactive gizmo could not be
-  driven headlessly; numeric fields and the command layer are tested via MCP.
-- Free disk: 33.3 GB.
-
-## Next steps (new context)
-
-1. Finish the one M5 MCP copy-save check, update `docs\milestones\M5.md` + this log, amend
-   `M5: tag editing` (clean build first).
-2. M6 camos: read OVERNIGHT-TASK.md §M6, write `docs\camos.md` research first, then the camo
-   dropdown/CLI/MCP and the shader approximation. One commit `M6: camos`.
-3. M7 hardening, then M8 world models, M9 player models, M10 comfort features, one commit each,
-   updating this file after every milestone. Maps are not part of the run.
-
+`git log --oneline -8`:
+```
+49c86c7 M10: refresh review artifacts
+cf17c46 M10: comfort features
+d77140e M9: player models
+0779ae7 M8: world models
+33595c1 M7: hardening
+a419bbb M6: camos
+bc8365e M5: MCP copy-save self-check
+e663b1d M5: record overnight checkpoint hash
+```
+The only untracked path is `review\claude\`, intentionally left alone.
