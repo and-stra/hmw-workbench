@@ -15,7 +15,7 @@ and `git log --oneline -5`; then continue with the first open item below.
 | M7 hardening | **done** | 33595c1 | 80/80 regression, window test 5/5 |
 | M8 world models | **done** | 0779ae7 | world model + world attachments, fit report |
 | M9 player models | **done with asset gap** | see M9.md | 2 complete factions; missing assets listed |
-| M10 comfort features | not started | - | |
+| M10 comfort features | **done** | see M10.md | hot reload, compare, rename map |
 
 Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit includes
 `docs\porting\aw.md` updated by Claude and `docs\OVERNIGHT-TASK.md`.
@@ -110,6 +110,19 @@ Commit hash of this checkpoint: **23c650c** (`M5: tag editing`). The commit incl
 - Self-check: 2 textured factions + the missing-asset list, MCP character test **8/8**,
   screenshots in `review\M9\`. Build clean.
 - Files changed outside the repo: none.
+
+## M10 - comfort features
+
+- Hot reload: watches the loaded weapon/model/character files (weapon json, xmb, xsb, hands,
+  attachment models, current xab), 400 ms debounce, keeps anim/camera; UI status, MCP
+  `hot_reload`; copy-file test **5/5** (`review\M10\hot-reload.txt`).
+- Compare mode: `-compare a b -screenshot ... -compare-mode side|ghost`, MCP
+  `compare_screenshot`; crossbow vs H2 M4 side/ghost + model side images.
+- Bone compare + rename map: `-compare-bones`, `-rename-map json`, MCP `compare_bones` /
+  `rename_map`, UI Rig section; made-up mapping on the copy (`j_mainroot -> j_gun`) moves the
+  crossbow, counts 2 matched/1 renamed/91 missing.
+- MCP comfort test **5/5** (`review\M10\mcp-comfort.txt`). Build clean (0 warnings). No writes
+  outside the repo.
 
 ## M5 open issues / notes
 

@@ -1,0 +1,284 @@
+﻿hmw-workbench M10 hot-reload test (copy in build\edit_test)
+date: 2026-11-24 23:34:13
+> initialize -> hmw-workbench
+
+> tools/call load_model {"model":"vm_crossbow_base"}
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": null,
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call get_bones {"limit":200}
+< {
+  "bones": [
+    {
+      "local_pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "local_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "j_gun",
+      "parent": "",
+      "source": "model",
+      "world_pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "world_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "local_pos": [
+        23.15617561340332,
+        6.210381031036377,
+        4.187574863433838
+      ],
+      "local_quat": [
+        0.0,
+        0.0,
+        0.9847103953361511,
+        0.1741996854543686
+      ],
+      "name": "bow_l",
+      "parent": "j_gun",
+      "source": "model",
+      "world_pos": [
+        23.15617561340332,
+        6.210381031036377,
+        4.187574863433838
+      ],
+      "world_quat": [
+        0.0,
+        0.0,
+        0.9847103953361511,
+        0.1741996854543686
+      ]
+    },
+    {
+      "local_pos": [
+        23.15617561340332,
+        -6.210381031036377,
+        4.187574863433838
+      ],
+      "local_quat": [
+        -0.1741996854543686,
+        0.9847103953361511,
+        0.0,
+        0.0
+      ],
+      "name": "bow_r",
+      "parent": "j_gun",
+      "source": "model",
+      "world_pos": [
+        23.15617561340332,
+        -6.210381031036377,
+        4.187574863433838
+      ],
+      "world_quat": [
+        -0.1741996854543686,
+        0.9 ...[truncated]
+
+> tools/call hot_reload {"action":"status"}
+< {
+  "enabled": true,
+  "pending": false,
+  "reloads": 0,
+  "status": "",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xsurface\\010296ab_3f739e8a_100.xsb"
+  ]
+}
+watched: C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root\xmodel\vm_crossbow_base.xmb; C:\Games\cod-hwm\hmw-workbench\build\edit_test\m5root\xsurface\010296ab_3f739e8a_100.xsb
+
+> tools/call add_tag {"parent":"j_gun","copy_from":"tag_red_dot","tag":"tag_hot_reload_test"}
+< {
+  "added": true,
+  "dirty": true,
+  "local_pos": [
+    3.2427539825439453,
+    0.0,
+    5.735755920410156
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "j_gun",
+  "tag": "tag_hot_reload_test",
+  "world_pos": [
+    3.2427539825439453,
+    0.0,
+    5.735755920410156
+  ]
+}
+
+> tools/call save_model {}
+< {
+  "backup": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb.bak",
+  "dirty": false,
+  "saved": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+  "tags_json": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.tags.json",
+  "validation": "ok: 20 surfaces, 8 materials, 6 material json missing"
+}
+
+> tools/call load_model {"model":"vm_crossbow_base"}
+< {
+  "bones": 40,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": null,
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": true,
+  "reloads": 0,
+  "status": "changed: vm_crossbow_base.xmb",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xsurface\\010296ab_3f739e8a_100.xsb"
+  ]
+}
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": false,
+  "reloads": 1,
+  "status": "reloaded vm_crossbow_base (1)",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xsurface\\010296ab_3f739e8a_100.xsb"
+  ]
+}
+
+> tools/call get_bones {"limit":200}
+< {
+  "bones": [
+    {
+      "local_pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "local_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "j_gun",
+      "parent": "",
+      "source": "model",
+      "world_pos": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "world_quat": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "local_pos": [
+        23.15617561340332,
+        6.210381031036377,
+        4.187574863433838
+      ],
+      "local_quat": [
+        0.0,
+        0.0,
+        0.9847103953361511,
+        0.1741996854543686
+      ],
+      "name": "bow_l",
+      "parent": "j_gun",
+      "source": "model",
+      "world_pos": [
+        23.15617561340332,
+        6.210381031036377,
+        4.187574863433838
+      ],
+      "world_quat": [
+        0.0,
+        0.0,
+        0.9847103953361511,
+        0.1741996854543686
+      ]
+    },
+    {
+      "local_pos": [
+        23.15617561340332,
+        -6.210381031036377,
+        4.187574863433838
+      ],
+      "local_quat": [
+        -0.1741996854543686,
+        0.9847103953361511,
+        0.0,
+        0.0
+      ],
+      "name": "bow_r",
+      "parent": "j_gun",
+      "source": "model",
+      "world_pos": [
+        23.15617561340332,
+        -6.210381031036377,
+        4.187574863433838
+      ],
+      "world_quat": [
+        -0.1741996854543686,
+        0.9 ...[truncated]
+
+status: {"enabled":true,"pending":false,"reloads":1,"status":"reloaded vm_crossbow_base (1)","watched":["C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb","C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xsurface\\010296ab_3f739e8a_100.xsb"]}
+
+checks:
+  PASS load copy + watcher registered 2 files
+  PASS copy model edited to 40 bones (baseline)
+  PASS hot reload fired after the copy changed (reloads 1)
+  PASS reloaded copy has 39 bones (was 40)
+  PASS real game model untouched (sha256 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D)
+
+result: 5 passed, 0 failed

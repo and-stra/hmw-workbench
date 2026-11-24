@@ -380,6 +380,9 @@ void Application::DrawInspectorPanel() {
 	ImGui::SeparatorText("Animation");
 	DrawAnimInspector();
 
+	ImGui::SeparatorText("Rig / anim map");
+	DrawRigTools();
+
 	ImGui::SeparatorText("Camera");
 	Camera& camera = workbench_.GetCamera();
 	ImGui::Text("yaw %.1f   pitch %.1f", camera.Yaw(), camera.Pitch());
@@ -394,6 +397,17 @@ void Application::DrawInspectorPanel() {
 	}
 	if (ImGui::Button("Frame camera (F)")) {
 		FrameCamera();
+	}
+
+	ImGui::SeparatorText("Hot reload");
+	bool hotReload = workbench_.HotReloadEnabled();
+	if (ImGui::Checkbox("Watch asset files", &hotReload)) {
+		workbench_.SetHotReloadEnabled(hotReload);
+	}
+	ImGui::TextDisabled("%d reloads, %zu watched files", workbench_.HotReloadCount(),
+	                    workbench_.WatchedFiles().size());
+	if (!workbench_.HotReloadStatus().empty()) {
+		ImGui::TextWrapped("%s", workbench_.HotReloadStatus().c_str());
 	}
 
 	ImGui::End();
@@ -1087,6 +1101,60 @@ void Application::DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspe
 			                  IM_COL32(255, 180, 60, 180), 1.0f);
 			drawList->AddText(ImVec2(x + 9.0f, y + 4.0f), IM_COL32(255, 200, 120, 220), "original");
 		}
+	}
+}
+
+void Application::DrawRigTools() {
+	ImGui::SetNextItemWidth(-120.0f);
+	ImGui::InputTextWithHint("##rename_map", "rename map json ({\"old\":\"new\"})", renameMapPath_,
+	                         sizeof(renameMapPath_));
+	ImGui::SameLine();
+	if (ImGui::Button("Load map")) {
+		std::string error;
+		if (!workbench_.LoadRenameMap(renameMapPath_, error)) {
+			rigCompareStatus_ = error;
+		} else {
+			rigCompareStatus_ = "loaded " + std::to_string(workbench_.RenameMap().size()) + " entries";
+		}
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Clear")) {
+		workbench_.ClearRenameMap();
+		rigCompareStatus_ = "map cleared";
+	}
+	ImGui::TextDisabled("%zu rename entries (old anim bone -> model bone)", workbench_.RenameMap().size());
+
+	std::string modelName;
+	if (const scene::ViewmodelAsset* viewmodel = workbench_.Viewmodel()) {
+		modelName = viewmodel->gun.model.name;
+	} else if (const assets::ModelAsset* model = workbench_.Model()) {
+		modelName = model->model.name;
+	} else if (const assets::ModelAsset* body = workbench_.CharacterBody()) {
+		modelName = body->model.name;
+	}
+	if (ImGui::Button("Compare current anim to rig") && !workbench_.AnimName().empty() &&
+	    !modelName.empty()) {
+		std::vector<std::filesystem::path> roots;
+		for (const AssetRoot& root : assets_.Roots()) {
+			if (root.exists) {
+				roots.push_back(root.path);
+			}
+		}
+		wb::scene::BoneCompareResult result;
+		std::string error;
+		if (!commands::CompareBones(roots, workbench_.AnimName(), modelName, workbench_.RenameMap(), result,
+		                            error)) {
+			rigCompareStatus_ = error;
+		} else {
+			char text[256];
+			std::snprintf(text, sizeof(text),
+			              "%d channels, %d matched (%d renamed), %d missing", result.animChannels,
+			              result.matched, result.renamed, result.missing);
+			rigCompareStatus_ = text;
+		}
+	}
+	if (!rigCompareStatus_.empty()) {
+		ImGui::TextWrapped("%s", rigCompareStatus_.c_str());
 	}
 }
 

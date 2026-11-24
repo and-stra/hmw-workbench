@@ -285,6 +285,26 @@ private:
 		     {"description",
 		      "Render offscreen and return the PNG as image content plus its path; supports camera, overlays and contact sheets."},
 		     {"inputSchema", {{"type", "object"}, {"properties", screenshotProps}}}},
+		    {{"name", "compare_screenshot"},
+		     {"description",
+		      "Render two weapons/models with the same camera side by side or as a ghost overlay and return the PNG."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"a", str("First weapon or model name.")},
+		                       {"b", str("Second weapon or model name.")},
+		                       {"mode", str("'side' (default) or 'ghost'.")},
+		                       {"alpha", number("Ghost alpha 0..1 (default 0.45).")},
+		                       {"view", str("'firstperson' or 'orbit'.")},
+		                       {"width", integer("Panel width (default 1600).")},
+		                       {"height", integer("Panel height (default 900).")},
+		                       {"yaw", number("Camera yaw.")},
+		                       {"pitch", number("Camera pitch.")},
+		                       {"dist", number("Orbit distance.")},
+		                       {"fov", number("Vertical FOV override.")},
+		                       {"world", boolean("Use world models.")},
+		                       {"camo", str("Camo material/name for both.")},
+		                       {"path", str("Output PNG (relative to the repo root).")}}},
+		       {"required", {"a", "b"}}}}},
 		    {{"name", "get_bones"},
 		     {"description", "Posed bones in viewmodel space (name, parent, source, local/world position and rotation)."},
 		     {"inputSchema",
@@ -357,6 +377,29 @@ private:
 		     {"description",
 		      "Save the edited model in place (creates <name>.xmb.bak once, writes <model>.tags.json), re-read and validate it."},
 		     {"inputSchema", {{"type", "object"}, {"properties", json::object()}}}},
+		    {{"name", "hot_reload"},
+		     {"description",
+		      "Hot reload status/poll: watch the loaded weapon/model/character files and reload after a debounced change."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"action", str("status (default) or poll.")},
+		                       {"enabled", boolean("Enable/disable watching.")}}}}}},
+		    {{"name", "rename_map"},
+		     {"description",
+		      "Load a bone rename table JSON ({\"old_anim_bone\":\"new_model_bone\"}) used when sampling anims, or clear it."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"path", str("JSON file (relative to the working directory).")},
+		                       {"clear", boolean("Clear the current table.")}}}}}},
+		    {{"name", "compare_bones"},
+		     {"description",
+		      "List an anim's channels that do not match an xmodel's bones; applies a rename map when given."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"anim", str("Xanim name.")},
+		                       {"model", str("Xmodel name.")},
+		                       {"rename_map", str("Optional JSON rename table.")}}},
+		       {"required", {"anim", "model"}}}}},
 		});
 	}
 
@@ -378,6 +421,9 @@ private:
 		}
 		if (name == "screenshot") {
 			return Screenshot(args);
+		}
+		if (name == "compare_screenshot") {
+			return CompareScreenshot(args);
 		}
 		if (name == "get_bones") {
 			return GetBones(args);
@@ -411,6 +457,15 @@ private:
 		}
 		if (name == "save_model") {
 			return SaveModel(args);
+		}
+		if (name == "hot_reload") {
+			return HotReload(args);
+		}
+		if (name == "rename_map") {
+			return RenameMapTool(args);
+		}
+		if (name == "compare_bones") {
+			return CompareBonesTool(args);
 		}
 		return json{{"error", "unknown tool: " + name}};
 	}
@@ -717,8 +772,62 @@ private:
 		            {"png_base64", Base64(bytes)}};
 	}
 
-	json GetBones(const json& args) {
-		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr &&
+	json CompareScreenshot(const json& args) {
+		const std::string a = args.value("a", "");
+		const std::string b = args.value("b", "");
+		if (a.empty() || b.empty()) {
+			return json{{"error", "a and b are required"}};
+		}
+		commands::CompareOptions options;
+		options.width = std::clamp(args.value("width", 1600), 1, 3840);
+		options.height = std::clamp(args.value("height", 900), 1, 2160);
+		const std::string mode = ToLower(args.value("mode", "side"));
+		options.mode = mode == "ghost" ? commands::CompareMode::Ghost : commands::CompareMode::SideBySide;
+		options.ghostAlpha = std::clamp(args.value("alpha", 0.45f), 0.05f, 0.95f);
+		const std::string view = ToLower(args.value("view", ""));
+		options.hasView = view == "firstperson" || view == "fp" || view == "orbit";
+		options.firstPerson = view == "firstperson" || view == "fp";
+		options.yaw = args.value("yaw", 0.0f);
+		options.pitch = args.value("pitch", 0.0f);
+		options.distance = args.value("dist", 0.0f);
+		options.fov = args.value("fov", 0.0f);
+		options.world = args.value("world", false);
+		options.camo = args.value("camo", "");
+
+		std::filesystem::path output;
+		const std::string requestedPath = args.value("path", "");
+		if (!requestedPath.empty()) {
+			output = std::filesystem::path(requestedPath);
+			if (output.is_relative()) {
+				output = repoRoot_ / output;
+			}
+		} else {
+			char name[64];
+			std::snprintf(name, sizeof(name), "compare_%03d.png", ++shotCounter_);
+			output = repoRoot_ / "review" / "mcp" / name;
+		}
+		std::string error;
+		if (!commands::RenderComparison(workbench_, renderer_, a, b, options, output, error)) {
+			return json{{"error", error}};
+		}
+		std::ifstream file(output, std::ios::binary);
+		std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(file)),
+		                                 std::istreambuf_iterator<char>());
+		if (bytes.empty()) {
+			return json{{"error", "compare image is empty: " + output.string()}};
+		}
+		int width = 0;
+		int height = 0;
+		PngSize(bytes, width, height);
+		return json{{"path", output.string()},
+		            {"width", width},
+		            {"height", height},
+		            {"bytes", bytes.size()},
+		            {"mode", options.mode == commands::CompareMode::Ghost ? "ghost" : "side"},
+		            {"png_base64", Base64(bytes)}};
+	}
+
+	json GetBones(const json& args) {		if (workbench_.Viewmodel() == nullptr && workbench_.Model() == nullptr &&
 		    !workbench_.HasCharacter()) {
 			return json{{"error", "no weapon, model or character loaded"}};
 		}
@@ -1032,8 +1141,7 @@ private:
 		return json{{"reverted", tag}, {"dirty", workbench_.HasTagChanges()}};
 	}
 
-	json SaveModel(const json&) {
-		if (!workbench_.HasEditableModel()) {
+	json SaveModel(const json&) {		if (!workbench_.HasEditableModel()) {
 			return json{{"error", "no editable model loaded"}};
 		}
 		commands::ModelSaveResult saved;
@@ -1046,6 +1154,72 @@ private:
 		            {"tags_json", saved.tagsJson},
 		            {"validation", saved.validation},
 		            {"dirty", workbench_.HasTagChanges()}};
+	}
+
+	json HotReload(const json& args) {
+		if (args.contains("enabled") && args["enabled"].is_boolean()) {
+			workbench_.SetHotReloadEnabled(args["enabled"].get<bool>());
+		}
+		workbench_.PollHotReload();
+		json watched = json::array();
+		for (const std::string& path : workbench_.WatchedFiles()) {
+			watched.push_back(path);
+		}
+		return json{{"enabled", workbench_.HotReloadEnabled()},
+		            {"pending", workbench_.HotReloadPending()},
+		            {"reloads", workbench_.HotReloadCount()},
+		            {"status", workbench_.HotReloadStatus()},
+		            {"watched", watched}};
+	}
+
+	json RenameMapTool(const json& args) {
+		if (args.value("clear", false)) {
+			workbench_.ClearRenameMap();
+			return json{{"cleared", true}, {"entries", 0}};
+		}
+		const std::string path = args.value("path", "");
+		if (path.empty()) {
+			return json{{"error", "path is required (or clear=true)"}};
+		}
+		std::string error;
+		if (!workbench_.LoadRenameMap(std::filesystem::path(path), error)) {
+			return json{{"error", error}};
+		}
+		json entries = json::object();
+		for (const auto& [from, to] : workbench_.RenameMap()) {
+			entries[from] = to;
+		}
+		return json{{"loaded", path}, {"entries", workbench_.RenameMap().size()}, {"map", entries}};
+	}
+
+	json CompareBonesTool(const json& args) {
+		const std::string anim = args.value("anim", "");
+		const std::string model = args.value("model", "");
+		if (anim.empty() || model.empty()) {
+			return json{{"error", "anim and model are required"}};
+		}
+		std::map<std::string, std::string> rename = workbench_.RenameMap();
+		const std::string path = args.value("rename_map", "");
+		if (!path.empty()) {
+			std::string error;
+			if (!commands::LoadRenameTable(std::filesystem::path(path), rename, error)) {
+				return json{{"error", error}};
+			}
+		}
+		scene::BoneCompareResult result;
+		std::string error;
+		if (!commands::CompareBones(roots_, anim, model, rename, result, error)) {
+			return json{{"error", error}};
+		}
+		return json{{"anim", anim},
+		            {"model", model},
+		            {"channels", result.animChannels},
+		            {"model_bones", result.modelBones},
+		            {"matched", result.matched},
+		            {"renamed", result.renamed},
+		            {"missing", result.missing},
+		            {"renamed_channels", result.renamedChannels},
+		            {"missing_channels", result.missingChannels}};
 	}
 
 	void Handle(const json& message) {
@@ -1080,6 +1254,7 @@ private:
 			return;
 		}
 		if (method == "tools/call") {
+			workbench_.PollHotReload();
 			const auto& params = message.contains("params") ? message["params"] : json::object();
 			const std::string name = params.value("name", "");
 			const json args = params.contains("arguments") && params["arguments"].is_object()
@@ -1092,7 +1267,8 @@ private:
 				result = json{{"error", e.what()}};
 			}
 			const bool isError = result.contains("error");
-			if (!isError && name == "screenshot" && result.contains("png_base64")) {
+			if (!isError && (name == "screenshot" || name == "compare_screenshot") &&
+			    result.contains("png_base64")) {
 				json content = json::array();
 				content.emplace_back(
 				    json{{"type", "image"}, {"data", result["png_base64"]}, {"mimeType", "image/png"}});

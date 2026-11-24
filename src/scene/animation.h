@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -35,11 +36,29 @@ struct SkeletonPose {
 // parented to the hands `tag_weapon`; every animation channel is matched by bone name.
 // Bones without channels keep their parent-relative base pose.
 SkeletonPose BuildViewmodelPose(const ViewmodelAsset& viewmodel, const assets::XAnimData* baseAnim,
-                                float time, const assets::XAnimData* additiveAnim, float additiveTime);
+                                float time, const assets::XAnimData* additiveAnim, float additiveTime,
+                                const std::map<std::string, std::string>* rename = nullptr);
 
 // Single-model pose used by `-model` previews and the plain model inspector.
 SkeletonPose BuildModelPose(const assets::XModelData& model, const assets::XAnimData* baseAnim,
-                            float time, const assets::XAnimData* additiveAnim, float additiveTime);
+                            float time, const assets::XAnimData* additiveAnim, float additiveTime,
+                            const std::map<std::string, std::string>* rename = nullptr);
+
+// Anim-channel -> model-bone matching used by `compare_bones`: counts channels that have a
+// model bone, missing channels and channels rescued by the rename table (old anim bone -> new
+// model bone).
+struct BoneCompareResult {
+	int animChannels = 0;
+	int modelBones = 0;
+	int matched = 0;
+	int missing = 0;
+	int renamed = 0;
+	std::vector<std::string> missingChannels;
+	std::vector<std::string> renamedChannels;
+};
+
+BoneCompareResult CompareAnimToModel(const assets::XAnimData& anim, const assets::XModelData& model,
+                                     const std::map<std::string, std::string>& rename);
 
 // Palette for GPU skinning: inverse(bind pose) * animated pose per model bone, in the
 // model's own bone order. When no animation is active this is the identity (or, for the

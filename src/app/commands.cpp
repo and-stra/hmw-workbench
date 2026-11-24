@@ -7,6 +7,9 @@
 
 #include "assets/camo.h"
 
+#include <fstream>
+#include <nlohmann/json.hpp>
+
 namespace wb::commands {
 namespace {
 
@@ -348,6 +351,7 @@ bool Workbench::LoadCharacterInternal(const assets::CharacterFaction& faction, c
 			characterWarnings_.push_back("weapon " + weapon + ": " + weaponError);
 		}
 	}
+	RefreshWatchedFiles();
 	return true;
 }
 
@@ -499,6 +503,156 @@ void Workbench::SetCamoScale(float scale) {
 	for (AttachmentMount& mount : attachments_) {
 		set(mount.gpu.get());
 	}
+}
+
+void Workbench::RefreshWatchedFiles() {
+	watchedFiles_.clear();
+	const auto add = [this](const std::filesystem::path& path) {
+		if (path.empty()) {
+			return;
+		}
+		std::error_code ec;
+		const auto time = std::filesystem::last_write_time(path, ec);
+		if (ec) {
+			return;
+		}
+		for (const WatchedFile& existing : watchedFiles_) {
+			if (existing.path == path) {
+				return;
+			}
+		}
+		watchedFiles_.push_back({path, time});
+	};
+	const auto addModel = [this, &add](const assets::ModelAsset& model) {
+		if (const auto path = assets::FindModelFile(roots_, model.model.name); path.has_value()) {
+			add(*path);
+		}
+		if (!model.model.lodSurfaces.empty()) {
+			if (const auto path = assets::FindXSurfaceFile(roots_, model.model.lodSurfaces.front());
+			    path.has_value()) {
+				add(*path);
+			}
+		}
+	};
+
+	if (hasWeapon_) {
+		if (const auto path = assets::FindWeaponFile(roots_, weaponName_); path.has_value()) {
+			add(*path);
+		}
+		addModel(viewmodel_.gun);
+		addModel(viewmodel_.hands);
+		for (const AttachmentMount& mount : attachments_) {
+			addModel(mount.model);
+		}
+	}
+	if (hasModel_) {
+		addModel(model_);
+	}
+	if (hasCharacter_) {
+		addModel(characterBody_);
+		addModel(characterHead_);
+		addModel(characterWeaponModel_);
+	}
+	if (!animName_.empty()) {
+		if (const auto path = assets::FindAnimFile(roots_, animName_); path.has_value()) {
+			add(*path);
+		}
+	}
+}
+
+std::vector<std::string> Workbench::WatchedFiles() const {
+	std::vector<std::string> paths;
+	paths.reserve(watchedFiles_.size());
+	for (const WatchedFile& file : watchedFiles_) {
+		paths.push_back(file.path.string());
+	}
+	return paths;
+}
+
+void Workbench::PollHotReload() {
+	if (!hotReloadEnabled_) {
+		return;
+	}
+	if (watchedFiles_.empty()) {
+		RefreshWatchedFiles();
+	}
+	std::string changed;
+	for (WatchedFile& file : watchedFiles_) {
+		std::error_code ec;
+		const auto time = std::filesystem::last_write_time(file.path, ec);
+		if (ec || time == file.time) {
+			continue;
+		}
+		file.time = time;
+		changed = file.path.filename().string();
+	}
+	if (!changed.empty()) {
+		hotReloadPending_ = true;
+		hotReloadDetected_ = std::chrono::steady_clock::now();
+		hotReloadStatus_ = "changed: " + changed;
+		return;
+	}
+	if (hotReloadPending_ &&
+	    std::chrono::steady_clock::now() - hotReloadDetected_ > std::chrono::milliseconds(400)) {
+		hotReloadPending_ = false;
+		ReloadWatchedAsset();
+	}
+}
+
+bool Workbench::LoadRenameMap(const std::filesystem::path& path, std::string& error) {
+	std::map<std::string, std::string> table;
+	if (!LoadRenameTable(path, table, error)) {
+		return false;
+	}
+	renameMap_ = std::move(table);
+	BuildPose();
+	return true;
+}
+
+void Workbench::ReloadWatchedAsset() {
+	const std::string previousAnim = animName_;	const double previousTime = time_;
+	const bool previousPlaying = playing_;
+	const bool previousAdditive = additive_;
+	const Camera& camera = camera_;
+	const float yaw = camera.Yaw();
+	const float pitch = camera.Pitch();
+	const float distance = camera.Distance();
+	const DirectX::XMFLOAT3 target = camera.Target();
+	const bool firstPerson = viewMode_ == ViewMode::FirstPerson;
+
+	std::string error;
+	const std::string name = hasCharacter_ ? characterFaction_.id : (hasWeapon_ ? weaponName_ : modelName_);
+	bool ok = false;
+	if (hasCharacter_) {
+		ok = LoadCharacter(characterFaction_.id, characterWeaponName_, error);
+	} else if (hasWeapon_) {
+		ok = ReloadWeapon(error);
+	} else if (hasModel_) {
+		ok = ReloadModel(error);
+	}
+	if (!ok) {
+		hotReloadStatus_ = "reload failed: " + error;
+		return;
+	}
+	if (firstPerson && hasWeapon_) {
+		SetViewMode(ViewMode::FirstPerson);
+	} else {
+		camera_.SetTarget(target);
+		SetOrbitView(yaw, pitch, distance > 0.0f ? distance : settings_.camera.distance, 0.0f);
+	}
+	if (!previousAnim.empty()) {
+		std::string animError;
+		SetAdditive(previousAdditive);
+		if (PlayAnim(previousAnim, animError)) {
+			SetAnimTime(previousTime);
+			SetAnimPlaying(previousPlaying);
+		}
+	}
+	++hotReloadCount_;
+	char message[256];
+	std::snprintf(message, sizeof(message), "reloaded %s (%d)", name.c_str(), hotReloadCount_);
+	hotReloadStatus_ = message;
+	RefreshWatchedFiles();
 }
 
 void Workbench::RefreshAttachmentList() {
@@ -1243,6 +1397,7 @@ bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, 
 	UpdateViewCamera();
 	AutoPlayIdle();
 	ApplyCamo();
+	RefreshWatchedFiles();
 	BuildPose();
 	return true;
 }
@@ -1310,6 +1465,7 @@ bool Workbench::LoadModel(const std::string& model, std::string& error) {
 		FrameCamera();
 	}
 	ApplyCamo();
+	RefreshWatchedFiles();
 	BuildPose();
 	return true;
 }
@@ -1399,6 +1555,7 @@ bool Workbench::PlayAnim(const std::string& anim, std::string& error) {
 	} else {
 		idleAnim_.reset();
 	}
+	RefreshWatchedFiles();
 	BuildPose();
 	return true;
 }
@@ -1409,6 +1566,7 @@ void Workbench::StopAnim() {
 	animName_.clear();
 	playing_ = false;
 	time_ = 0.0;
+	RefreshWatchedFiles();
 	BuildPose();
 }
 
@@ -1460,6 +1618,7 @@ void Workbench::SetAdditive(bool additive) {
 }
 
 void Workbench::Update(double deltaSeconds) {
+	PollHotReload();
 	if (!primaryAnim_ || !playing_) {
 		return;
 	}
@@ -1736,7 +1895,8 @@ void Workbench::BuildPose() {
 	const float additiveTime = static_cast<float>(time_);
 
 	if (hasCharacter_) {
-		pose_ = scene::BuildModelPose(characterBody_.model, base, baseTime, additive, additiveTime);
+		pose_ = scene::BuildModelPose(characterBody_.model, base, baseTime, additive, additiveTime,
+		                              renameMap_.empty() ? nullptr : &renameMap_);
 		characterBodyPalette_ = scene::BuildBonePalette(characterBody_.model, pose_, pose_.modelBoneToPose);
 		characterHeadPalette_.clear();
 		DirectX::XMStoreFloat4x4(&characterHeadWorld_, DirectX::XMMatrixIdentity());
@@ -1789,7 +1949,8 @@ void Workbench::BuildPose() {
 	}
 
 	if (hasWeapon_) {
-		pose_ = scene::BuildViewmodelPose(viewmodel_, base, baseTime, additive, additiveTime);
+		pose_ = scene::BuildViewmodelPose(viewmodel_, base, baseTime, additive, additiveTime,
+		                                  renameMap_.empty() ? nullptr : &renameMap_);
 		if (ads_ && adsAnim_) {
 			for (scene::PoseBone& bone : pose_.bones) {
 				if (bone.name != "tag_ads") {
@@ -1830,7 +1991,8 @@ void Workbench::BuildPose() {
 			hideBones(gunPalette_, viewmodel_.gun.model);
 		}
 	} else if (hasModel_) {
-		pose_ = scene::BuildModelPose(model_.model, base, baseTime, additive, additiveTime);
+		pose_ = scene::BuildModelPose(model_.model, base, baseTime, additive, additiveTime,
+		                              renameMap_.empty() ? nullptr : &renameMap_);
 		modelPalette_ = scene::BuildBonePalette(model_.model, pose_, pose_.modelBoneToPose);
 	}
 }
@@ -2070,6 +2232,63 @@ void PrintFitReport(const AttachmentFitReport& report, std::FILE* out) {
 		             entry.requiredTag.empty() ? "-" : entry.requiredTag.c_str(), status.c_str(),
 		             nearest.c_str(), entry.note.empty() ? "" : "  ", entry.note.c_str());
 	}
+}
+
+bool LoadRenameTable(const std::filesystem::path& path, std::map<std::string, std::string>& table,
+                     std::string& error) {
+	table.clear();
+	nlohmann::json json;
+	try {
+		std::ifstream in(path);
+		if (!in) {
+			error = "rename map: cannot open " + path.string();
+			return false;
+		}
+		in >> json;
+	} catch (const std::exception& e) {
+		error = std::string("rename map: ") + e.what();
+		return false;
+	}
+	const nlohmann::json* source = &json;
+	if (json.is_object() && json.contains("rename") && json["rename"].is_object()) {
+		source = &json["rename"];
+	}
+	if (!source->is_object()) {
+		error = "rename map: expected a JSON object {\"old\":\"new\"}";
+		return false;
+	}
+	for (auto it = source->begin(); it != source->end(); ++it) {
+		if (!it.value().is_string()) {
+			error = "rename map: value for " + it.key() + " is not a string";
+			return false;
+		}
+		table[it.key()] = it.value().get<std::string>();
+	}
+	return true;
+}
+
+bool CompareBones(const std::vector<std::filesystem::path>& roots, const std::string& animName,
+                  const std::string& modelName, const std::map<std::string, std::string>& rename,
+                  scene::BoneCompareResult& result, std::string& error) {
+	const std::optional<std::filesystem::path> animPath = assets::FindAnimFile(roots, animName);
+	if (!animPath.has_value()) {
+		error = "animation not found: " + animName;
+		return false;
+	}
+	assets::XAnimData anim;
+	try {
+		anim = assets::LoadXAnim(*animPath);
+	} catch (const std::exception& e) {
+		error = std::string("anim: ") + e.what();
+		return false;
+	}
+	assets::ModelAsset model;
+	if (!assets::LoadModelAsset(modelName, roots, model, error, false)) {
+		error = "model " + modelName + ": " + error;
+		return false;
+	}
+	result = scene::CompareAnimToModel(anim, model.model, rename);
+	return true;
 }
 
 std::string AnimStateForTreeType(int type) { return StateForAnimTreeType(type); }

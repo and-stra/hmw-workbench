@@ -1,0 +1,170 @@
+﻿hmw-workbench M10 MCP comfort test
+date: 2026-11-24 23:34:11
+> initialize -> hmw-workbench
+
+> tools/call compare_screenshot {"mode":"side","height":600,"path":"review/M10/compare_side_via_mcp.png","b":"h2_m4_mp","yaw":35,"dist":40,"pitch":18,"view":"orbit","width":800,"a":"iw5_exocrossbow_mp"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M10/compare_side_via_mcp.png (1604x600, 318187 bytes)
+
+> tools/call compare_screenshot {"mode":"ghost","height":900,"path":"review/M10/compare_ghost_via_mcp.png","b":"h2_m4_mp","yaw":35,"dist":40,"alpha":0.45,"pitch":18,"view":"orbit","width":1200,"a":"iw5_exocrossbow_mp"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review/M10/compare_ghost_via_mcp.png (1200x900, 358978 bytes)
+
+> tools/call compare_bones {"anim":"mp_jug_maniac_idle","model":"vm_crossbow_base"}
+< {
+  "anim": "mp_jug_maniac_idle",
+  "channels": 93,
+  "matched": 1,
+  "missing": 92,
+  "missing_channels": [
+    "j_shorts_lift_ri",
+    "j_shorts_ri",
+    "j_kneebuldgeup_le",
+    "tag_bipod",
+    "j_mainroot",
+    "j_hip_le",
+    "j_hip_ri",
+    "torso_stabilizer",
+    "j_spinelower",
+    "j_hiptwist_le",
+    "j_hiptwist_ri",
+    "j_knee_le",
+    "j_knee_ri",
+    "j_spineupper",
+    "j_ankle_le",
+    "j_ankle_ri",
+    "j_kneebuldgelow_le",
+    "j_kneebuldgelow_ri",
+    "j_ball_le",
+    "j_ball_ri",
+    "j_clavicle_le",
+    "j_clavicle_ri",
+    "j_neck",
+    "j_head",
+    "j_shoulder_le",
+    "j_shoulder_ri",
+    "j_elbow_le",
+    "j_elbow_ri",
+    "j_shouldertwist_le",
+    "j_shouldertwist_ri",
+    "j_wrist_le",
+    "j_wrist_ri",
+    "j_wristbacktwist_le",
+    "j_wristbacktwist_ri",
+    "j_wristfronttwist_le",
+    "j_wristfronttwist_ri",
+    "j_wristtwist_le",
+    "j_wristtwist_ri",
+    "j_index_le_1",
+    "j_mid_le_1",
+    "j_pinky_le_1",
+    "j_ring_le_1",
+    "j_thumb_le_1",
+    "j_index_le_2",
+    "j_mid_le_2",
+    "j_pinky_le_2",
+    "j_ring_le_2",
+    "j_thumb_le_2",
+    "j_index_le_3",
+    "j_mid_le_3",
+    "j_pinky_le_3",
+    "j_ring_le_3",
+    "j_thumb_le_3",
+    "j_spine4",
+    "j_elbow_bulge_ri",
+    "j_ring_ri_3",
+    "j_coatfront_le",
+    "j_coatfront_ri",
+    "j_coatrear_le",
+    "j_coatrear_ri",
+    "j_shorts_le",
+    "j_shorts_lift_le",
+    "j_knee_bulge_le",
+ ...[truncated]
+
+> tools/call rename_map {"path":"C:\\Games\\cod-hwm\\hmw-workbench\\review\\M10\\rename_map_test.json"}
+< {
+  "entries": 1,
+  "loaded": "C:\\Games\\cod-hwm\\hmw-workbench\\review\\M10\\rename_map_test.json",
+  "map": {
+    "j_mainroot": "j_gun"
+  }
+}
+
+> tools/call compare_bones {"rename_map":"C:\\Games\\cod-hwm\\hmw-workbench\\review\\M10\\rename_map_test.json","anim":"mp_jug_maniac_idle","model":"vm_crossbow_base"}
+< {
+  "anim": "mp_jug_maniac_idle",
+  "channels": 93,
+  "matched": 2,
+  "missing": 91,
+  "missing_channels": [
+    "j_shorts_lift_ri",
+    "j_shorts_ri",
+    "j_kneebuldgeup_le",
+    "tag_bipod",
+    "j_hip_le",
+    "j_hip_ri",
+    "torso_stabilizer",
+    "j_spinelower",
+    "j_hiptwist_le",
+    "j_hiptwist_ri",
+    "j_knee_le",
+    "j_knee_ri",
+    "j_spineupper",
+    "j_ankle_le",
+    "j_ankle_ri",
+    "j_kneebuldgelow_le",
+    "j_kneebuldgelow_ri",
+    "j_ball_le",
+    "j_ball_ri",
+    "j_clavicle_le",
+    "j_clavicle_ri",
+    "j_neck",
+    "j_head",
+    "j_shoulder_le",
+    "j_shoulder_ri",
+    "j_elbow_le",
+    "j_elbow_ri",
+    "j_shouldertwist_le",
+    "j_shouldertwist_ri",
+    "j_wrist_le",
+    "j_wrist_ri",
+    "j_wristbacktwist_le",
+    "j_wristbacktwist_ri",
+    "j_wristfronttwist_le",
+    "j_wristfronttwist_ri",
+    "j_wristtwist_le",
+    "j_wristtwist_ri",
+    "j_index_le_1",
+    "j_mid_le_1",
+    "j_pinky_le_1",
+    "j_ring_le_1",
+    "j_thumb_le_1",
+    "j_index_le_2",
+    "j_mid_le_2",
+    "j_pinky_le_2",
+    "j_ring_le_2",
+    "j_thumb_le_2",
+    "j_index_le_3",
+    "j_mid_le_3",
+    "j_pinky_le_3",
+    "j_ring_le_3",
+    "j_thumb_le_3",
+    "j_spine4",
+    "j_elbow_bulge_ri",
+    "j_ring_ri_3",
+    "j_coatfront_le",
+    "j_coatfront_ri",
+    "j_coatrear_le",
+    "j_coatrear_ri",
+    "j_shorts_le",
+    "j_shorts_lift_le",
+    "j_knee_bulge_le",
+    "j_knee_bulge_ ...[truncated]
+
+checks:
+  PASS compare_screenshot side (1604x600)
+  PASS compare_screenshot ghost (1200x900)
+  PASS compare_bones without map (92 missing, 0 renamed)
+  PASS rename_map loaded 1 entry
+  PASS compare_bones with map (1 renamed: j_mainroot -> j_gun)
+
+result: 5 passed, 0 failed

@@ -111,6 +111,9 @@ relative to the current working directory unless they are absolute.
 | `-camo <camo_h1_name\|name>` | apply a camo (M6); `-camo-strength 0..1`, `-camo-scale n` |
 | `-world` | load the weapon's world model (no hands, orbit) and its attachments' world models |
 | `-character <faction>` | load an HMW player character (body + optional head); `-character-weapon <weapon>` mounts its world model on `tag_weapon_right` |
+| `-compare <a> <b>` | render two weapons/models with the same camera (with `-screenshot`); `-compare-mode side\|ghost`, `-compare-alpha 0..1` |
+| `-compare-bones <xanim> <xmodel>` | list anim channels that do not match the model bones; add `-rename-map <json>` |
+| `-rename-map <file.json>` | bone rename table (`{"old_anim_bone":"new_model_bone"}`) applied while sampling anims |
 | `-bones` / `-wire` / `-crosshair` / `-marktags` / `-grid` / `-nogrid` | overlays |
 | `-yaw <deg>` / `-pitch <deg>` / `-dist <units>` / `-fov <vertical deg>` | camera |
 | `-exposure <n>` | lighting exposure |
@@ -143,10 +146,15 @@ hmw-workbench.exe -roundtrip review\roundtrip.txt
 
 `hmw-workbench.exe -mcp` is a newline-delimited JSON-RPC MCP server over the same command layer
 (load weapons/models, attachments, anims, tags, camos, screenshots, fit report, validate). Tools:
-`list_assets`, `load_weapon`, `load_model`, `load_character`, `set_anim`, `screenshot`, `get_bones`,
-`get_tags`, `posedump`, `attachment_fit_report`, `compare_tags`, `validate`, `info`, `move_tag`,
-`add_tag`, `revert_tags`, `save_model`. Every tool and parameter, client configuration and a smoke
-test are in [docs/mcp.md](docs/mcp.md).
+`list_assets`, `load_weapon`, `load_model`, `load_character`, `set_anim`, `screenshot`,
+`compare_screenshot`, `get_bones`, `get_tags`, `posedump`, `attachment_fit_report`,
+`compare_tags`, `compare_bones`, `validate`, `info`, `move_tag`, `add_tag`, `revert_tags`,
+`save_model`, `hot_reload`, `rename_map`. Every tool and parameter, client configuration and a
+smoke test are in [docs/mcp.md](docs/mcp.md).
+
+The window app watches the loaded weapon/model/character files and reloads them when a dump file
+changes (debounced, Inspector → *Hot reload*). `-compare`, `-compare-bones` and `-rename-map` are
+the headless versions of the comparison and rename-map helpers.
 
 ## Porting a weapon
 
@@ -166,6 +174,10 @@ in [docs/camos.md](docs/camos.md).
 - `m7-window.ps1` - scripted window run, `review\M7\window-test.txt`.
 - `m7-regression.ps1` - `-validate`, `-roundtrip`, every M1-M6 review command and all the above,
   `review\M7\regression.txt` (large images under `review\M7\regression\`, gitignored).
+- `m8-world.ps1` - MCP world models + world fit report, `review\M8\mcp-world.txt`.
+- `m9-character.ps1` - MCP character/faction test, `review\M9\mcp-character.txt`.
+- `m10-hot-reload.ps1` - copy-file hot reload, `review\M10\hot-reload.txt`.
+- `m10-comfort.ps1` - MCP compare_screenshot + rename map, `review\M10\mcp-comfort.txt`.
 
 ## Repository layout
 

@@ -102,24 +102,34 @@ DirectX::XMFLOAT3 Rotate(const DirectX::XMFLOAT3& value, const DirectX::XMFLOAT4
 }
 
 void SampleBone(const std::string& name, const assets::XAnimData* baseAnim, float time,
-                const assets::XAnimData* additiveAnim, float additiveTime, PoseBone& bone) {
+                const assets::XAnimData* additiveAnim, float additiveTime, PoseBone& bone,
+                const std::map<std::string, std::string>* rename = nullptr) {
+	std::string channel = name;
+	if (rename != nullptr) {
+		for (const auto& [source, target] : *rename) {
+			if (target == name) {
+				channel = source;
+				break;
+			}
+		}
+	}
 	if (baseAnim != nullptr) {
 		DirectX::XMFLOAT4 rotation;
-		if (baseAnim->SampleRotation(name, time, rotation)) {
+		if (baseAnim->SampleRotation(channel, time, rotation)) {
 			bone.localQuat = rotation;
 		}
 		DirectX::XMFLOAT3 translation;
-		if (baseAnim->SampleTranslation(name, time, translation)) {
+		if (baseAnim->SampleTranslation(channel, time, translation)) {
 			bone.localPos = translation;
 		}
 	}
 	if (additiveAnim != nullptr) {
 		DirectX::XMFLOAT4 rotation;
-		if (additiveAnim->SampleRotation(name, additiveTime, rotation)) {
+		if (additiveAnim->SampleRotation(channel, additiveTime, rotation)) {
 			bone.localQuat = Normalize(Multiply(bone.localQuat, rotation));
 		}
 		DirectX::XMFLOAT3 translation;
-		if (additiveAnim->SampleTranslation(name, additiveTime, translation)) {
+		if (additiveAnim->SampleTranslation(channel, additiveTime, translation)) {
 			bone.localPos.x += translation.x;
 			bone.localPos.y += translation.y;
 			bone.localPos.z += translation.z;
@@ -178,7 +188,8 @@ int FindPoseBone(const std::unordered_map<std::string, int>& lookup, const char*
 } // namespace
 
 SkeletonPose BuildViewmodelPose(const ViewmodelAsset& viewmodel, const assets::XAnimData* baseAnim,
-                                float time, const assets::XAnimData* additiveAnim, float additiveTime) {
+                                float time, const assets::XAnimData* additiveAnim, float additiveTime,
+                                const std::map<std::string, std::string>* rename) {
 	SkeletonPose pose;
 	pose.animated = baseAnim != nullptr || additiveAnim != nullptr;
 	pose.baseAnim = baseAnim;
@@ -233,7 +244,7 @@ SkeletonPose BuildViewmodelPose(const ViewmodelAsset& viewmodel, const assets::X
 	}
 
 	for (PoseBone& bone : pose.bones) {
-		SampleBone(bone.name, baseAnim, time, additiveAnim, additiveTime, bone);
+		SampleBone(bone.name, baseAnim, time, additiveAnim, additiveTime, bone, rename);
 	}
 	ApplyDelta(baseAnim, time, pose);
 	ComposeWorld(pose);
@@ -241,7 +252,8 @@ SkeletonPose BuildViewmodelPose(const ViewmodelAsset& viewmodel, const assets::X
 }
 
 SkeletonPose BuildModelPose(const assets::XModelData& model, const assets::XAnimData* baseAnim,
-                            float time, const assets::XAnimData* additiveAnim, float additiveTime) {
+                            float time, const assets::XAnimData* additiveAnim, float additiveTime,
+                            const std::map<std::string, std::string>* rename) {
 	SkeletonPose pose;
 	pose.animated = baseAnim != nullptr || additiveAnim != nullptr;
 	pose.baseAnim = baseAnim;
@@ -259,7 +271,7 @@ SkeletonPose BuildModelPose(const assets::XModelData& model, const assets::XAnim
 		pose.bones.push_back(std::move(bone));
 	}
 	for (PoseBone& bone : pose.bones) {
-		SampleBone(bone.name, baseAnim, time, additiveAnim, additiveTime, bone);
+		SampleBone(bone.name, baseAnim, time, additiveAnim, additiveTime, bone, rename);
 	}
 	ApplyDelta(baseAnim, time, pose);
 	ComposeWorld(pose);
@@ -313,6 +325,37 @@ std::vector<int> MapBonesByName(const assets::XModelData& model, const SkeletonP
 		}
 	}
 	return map;
+}
+
+BoneCompareResult CompareAnimToModel(const assets::XAnimData& anim, const assets::XModelData& model,
+                                     const std::map<std::string, std::string>& rename) {
+	BoneCompareResult result;
+	result.animChannels = static_cast<int>(anim.boneNames.size());
+	result.modelBones = static_cast<int>(model.bones.size());
+	const auto hasBone = [&model](const std::string& name) {
+		for (const assets::BoneData& bone : model.bones) {
+			if (bone.name == name) {
+				return true;
+			}
+		}
+		return false;
+	};
+	for (const std::string& channel : anim.boneNames) {
+		if (hasBone(channel)) {
+			++result.matched;
+			continue;
+		}
+		const auto renameIt = rename.find(channel);
+		if (renameIt != rename.end() && hasBone(renameIt->second)) {
+			++result.matched;
+			++result.renamed;
+			result.renamedChannels.push_back(channel + " -> " + renameIt->second);
+			continue;
+		}
+		++result.missing;
+		result.missingChannels.push_back(channel);
+	}
+	return result;
 }
 
 } // namespace wb::scene

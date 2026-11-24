@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -113,6 +114,7 @@ public:
 	Workbench& operator=(const Workbench&) = delete;
 
 	void SetRoots(std::vector<std::filesystem::path> roots);
+	const std::vector<std::filesystem::path>& Roots() const { return roots_; }
 
 	// ---- loading ----
 	bool LoadWeapon(const std::string& weapon, const std::string& hands, bool firstPerson, std::string& error,
@@ -147,6 +149,21 @@ public:
 	DirectX::XMFLOAT3 CharacterWeaponTagWorld() const { return characterWeaponTagWorld_; }
 	bool CharacterWeaponFound() const { return characterWeaponFound_; }
 	const std::vector<DirectX::XMFLOAT4X4>& CharacterBodyPalette() const { return characterBodyPalette_; }
+
+	// ---- hot reload (M10) ----
+	bool HotReloadEnabled() const { return hotReloadEnabled_; }
+	void SetHotReloadEnabled(bool enabled) { hotReloadEnabled_ = enabled; }
+	int HotReloadCount() const { return hotReloadCount_; }
+	bool HotReloadPending() const { return hotReloadPending_; }
+	const std::string& HotReloadStatus() const { return hotReloadStatus_; }
+	void PollHotReload();
+	std::vector<std::string> WatchedFiles() const;
+
+	// ---- bone rename map (M10) ----
+	bool LoadRenameMap(const std::filesystem::path& path, std::string& error);
+	void ClearRenameMap() { renameMap_.clear(); BuildPose(); }
+	bool HasRenameMap() const { return !renameMap_.empty(); }
+	const std::map<std::string, std::string>& RenameMap() const { return renameMap_; }
 
 	// ---- attachments ----
 	bool Attach(const std::string& attachment, std::string& error);
@@ -298,6 +315,8 @@ private:
 	bool LoadAnimAsset(const std::string& name, std::optional<assets::XAnimData>& out, std::string& error) const;
 	bool LoadCharacterInternal(const assets::CharacterFaction& faction, const std::string& weapon,
 	                           std::string& error);
+	void RefreshWatchedFiles();
+	void ReloadWatchedAsset();
 
 	Settings& settings_;
 	AssetIndex& assets_;
@@ -357,6 +376,18 @@ private:
 	std::vector<std::string> characterMissing_;
 	std::vector<std::string> characterWarnings_;
 
+	struct WatchedFile {
+		std::filesystem::path path;
+		std::filesystem::file_time_type time;
+	};
+	std::vector<WatchedFile> watchedFiles_;
+	bool hotReloadEnabled_ = true;
+	bool hotReloadPending_ = false;
+	int hotReloadCount_ = 0;
+	std::string hotReloadStatus_;
+	std::chrono::steady_clock::time_point hotReloadDetected_{};
+	std::map<std::string, std::string> renameMap_;
+
 	std::vector<std::string> camoNames_;
 	std::string camoName_;
 	std::string camoTextureName_;
@@ -410,5 +441,38 @@ void PrintFitReport(const AttachmentFitReport& report, std::FILE* out);
 
 // Direct mapping used by the Inspector for animOverrides[].animTreeType.
 std::string AnimStateForTreeType(int type);
+
+enum class CompareMode { SideBySide, Ghost };
+
+struct CompareOptions {
+	int width = 1600;
+	int height = 900;
+	CompareMode mode = CompareMode::SideBySide;
+	float ghostAlpha = 0.45f;
+	bool firstPerson = false;
+	bool hasView = false;
+	float yaw = 0.0f;
+	float pitch = 0.0f;
+	float distance = 0.0f;
+	float fov = 0.0f;
+	float exposure = 1.0f;
+	bool world = false;
+	std::string camo;
+};
+
+// Renders asset `a` and asset `b` with the same camera: side by side (one output image with a
+// divider) or `b` ghosted over `a`. Weapon names load the weapon (gun/world model), other names
+// load a standalone model. The workbench is left with `b` loaded.
+bool RenderComparison(Workbench& workbench, Renderer& renderer, const std::string& a, const std::string& b,
+                      const CompareOptions& options, const std::filesystem::path& output,
+                      std::string& error);
+
+// Loads a rename table JSON ({"old_anim_bone": "new_model_bone"}) and compares an anim's
+// channels against a model's bones with that table applied.
+bool LoadRenameTable(const std::filesystem::path& path, std::map<std::string, std::string>& table,
+                     std::string& error);
+bool CompareBones(const std::vector<std::filesystem::path>& roots, const std::string& animName,
+                  const std::string& modelName, const std::map<std::string, std::string>& rename,
+                  scene::BoneCompareResult& result, std::string& error);
 
 } // namespace wb::commands

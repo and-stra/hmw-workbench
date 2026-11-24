@@ -10,6 +10,7 @@
 #include <cwchar>
 #include <filesystem>
 #include <iterator>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -102,6 +103,13 @@ struct Options {
 	std::string camoName;
 	std::string characterName;
 	std::string characterWeapon;
+	std::string compareA;
+	std::string compareB;
+	std::string compareMode = "side";
+	float compareAlpha = 0.45f;
+	std::filesystem::path renameMapPath;
+	std::string compareBonesAnim;
+	std::string compareBonesModel;
 	bool hasCamoStrength = false;
 	float camoStrength = 1.0f;
 	bool hasCamoScale = false;
@@ -162,6 +170,12 @@ void PrintUsage() {
 	    "                    [-anim <xanim>] [-time <s>] [-view orbit] [-screenshot <file.png>]\n"
 	    "      Load an HMW player character (body + optional head) and mount a world weapon on\n"
 	    "      tag_weapon_right/tag_inhand; third-person anims play on the player skeleton.\n"
+	    "  hmw-workbench.exe -compare <a> <b> -screenshot <file.png> [-compare-mode side|ghost]\n"
+	    "                    [-compare-alpha <0..1>] [-view orbit|firstperson] [-world] [-camo <name>]\n"
+	    "      Render two weapons/models with the same camera side by side or ghosted (M10).\n"
+	    "  hmw-workbench.exe -compare-bones <xanim> <xmodel> [-rename-map <file.json>]\n"
+	    "      List anim channels that do not match the model bones; an optional JSON map\n"
+	    "      {\"old_anim_bone\":\"new_model_bone\"} is applied while playing anims too.\n"
 	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>] [-world]\n"
 	    "      Text report: every attachment's view model, needed weapon tag, found/missing,\n"
 	    "      and the nearest weapon tags for missing ones. -world uses the world models.\n"
@@ -378,6 +392,43 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 	}
 
 	wb::commands::Workbench workbench(settings, assets, renderer, roots);
+	if (!options.renameMapPath.empty()) {
+		std::string error;
+		if (!workbench.LoadRenameMap(options.renameMapPath, error)) {
+			std::fprintf(stderr, "rename map: %s\n", error.c_str());
+			return 1;
+		}
+	}
+	if (!options.compareA.empty()) {
+		if (options.screenshotPath.empty()) {
+			std::fprintf(stderr, "-compare needs -screenshot <file.png>\n");
+			return 2;
+		}
+		wb::commands::CompareOptions compare;
+		compare.width = options.width;
+		compare.height = options.height;
+		compare.mode = options.compareMode == "ghost" ? wb::commands::CompareMode::Ghost
+		                                              : wb::commands::CompareMode::SideBySide;
+		compare.ghostAlpha = options.compareAlpha;
+		compare.firstPerson = options.viewFirstPerson;
+		compare.hasView = options.hasView;
+		compare.yaw = options.yaw;
+		compare.pitch = options.pitch;
+		compare.distance = options.distance;
+		compare.fov = options.fov;
+		compare.world = options.worldModel;
+		compare.camo = options.camoName;
+		std::string error;
+		if (!wb::commands::RenderComparison(workbench, renderer, options.compareA, options.compareB, compare,
+		                                   options.screenshotPath, error)) {
+			std::fprintf(stderr, "compare: %s\n", error.c_str());
+			return 1;
+		}
+		std::printf("compared %s + %s (%s) -> %s\n", options.compareA.c_str(), options.compareB.c_str(),
+		            compare.mode == wb::commands::CompareMode::Ghost ? "ghost" : "side by side",
+		            options.screenshotPath.string().c_str());
+		return 0;
+	}
 	bool hasAsset = false;
 	if (!options.characterName.empty()) {
 		std::string error;
@@ -762,6 +813,12 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 	wb::commands::Workbench workbench(settings, assets, renderer, roots);
 	const bool restoreLayout = std::filesystem::exists(exeDir / "imgui.ini");
 	wb::Application app(settings, assets, renderer, workbench, exeDir, restoreLayout);
+	if (!options.renameMapPath.empty()) {
+		std::string error;
+		if (!workbench.LoadRenameMap(options.renameMapPath, error)) {
+			std::fprintf(stderr, "rename map: %s\n", error.c_str());
+		}
+	}
 	if (!options.characterName.empty()) {
 		app.LoadCharacter(options.characterName, options.characterWeapon);
 	} else if (!options.weaponName.empty()) {
@@ -1024,6 +1081,44 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			} else {
 				options.characterWeapon = std::filesystem::path(value).string();
 			}
+		} else if (arg == L"-compare") {
+			if (i + 2 < argc) {
+				options.compareA = std::filesystem::path(argv[++i]).string();
+				options.compareB = std::filesystem::path(argv[++i]).string();
+			} else {
+				std::fputs("-compare needs two weapon/model names\n", stderr);
+				valid = false;
+			}
+		} else if (arg == L"-compare-mode") {
+			const wchar_t* value = nextValue();
+			const std::wstring mode = value != nullptr ? value : L"";
+			if (mode == L"side" || mode == L"sidebyside") {
+				options.compareMode = "side";
+			} else if (mode == L"ghost") {
+				options.compareMode = "ghost";
+			} else {
+				std::fputs("-compare-mode needs 'side' or 'ghost'\n", stderr);
+				valid = false;
+			}
+		} else if (arg == L"-compare-alpha") {
+			valid = ParseFloatArg(nextValue(), options.compareAlpha) && options.compareAlpha > 0.0f &&
+			        options.compareAlpha < 1.0f;
+		} else if (arg == L"-rename-map") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-rename-map needs a json file\n", stderr);
+				valid = false;
+			} else {
+				options.renameMapPath = std::filesystem::path(value);
+			}
+		} else if (arg == L"-compare-bones") {
+			if (i + 2 < argc) {
+				options.compareBonesAnim = std::filesystem::path(argv[++i]).string();
+				options.compareBonesModel = std::filesystem::path(argv[++i]).string();
+			} else {
+				std::fputs("-compare-bones needs an xanim and an xmodel\n", stderr);
+				valid = false;
+			}
 		} else if (arg == L"-fit-report") {
 			options.fitReport = true;
 			if (i + 1 < argc && argv[i + 1][0] != L'-') {
@@ -1135,6 +1230,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		CoUninitialize();
 		return 2;
 	}
+	if (!options.compareA.empty() && options.mode != Mode::Screenshot) {
+		EnsureHeadlessConsole();
+		std::fputs("-compare needs -screenshot <file.png>\n", stderr);
+		CoUninitialize();
+		return 2;
+	}
 	if (options.mode == Mode::Screenshot && options.screenshotPath.empty() && !options.poseDump &&
 	    !options.fitCrossbow) {
 		EnsureHeadlessConsole();
@@ -1150,10 +1251,44 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 	}
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 
+	if (!options.compareBonesAnim.empty()) {
+		EnsureHeadlessConsole();
+		std::map<std::string, std::string> rename;
+		std::string error;
+		if (!options.renameMapPath.empty() && !wb::commands::LoadRenameTable(options.renameMapPath, rename, error)) {
+			std::fprintf(stderr, "%s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		wb::scene::BoneCompareResult result;
+		if (!wb::commands::CompareBones(roots, options.compareBonesAnim, options.compareBonesModel, rename, result, error)) {
+			std::fprintf(stderr, "compare-bones: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		std::printf("anim: %s\nmodel: %s\nchannels: %d  model bones: %d  matched: %d  renamed: %d  missing: %d\n",
+		            options.compareBonesAnim.c_str(), options.compareBonesModel.c_str(), result.animChannels,
+		            result.modelBones, result.matched, result.renamed, result.missing);
+		if (!result.renamedChannels.empty()) {
+			std::printf("renamed channels:\n");
+			for (const std::string& name : result.renamedChannels) {
+				std::printf("  %s\n", name.c_str());
+			}
+		}
+		if (!result.missingChannels.empty()) {
+			std::printf("missing channels:");
+			for (const std::string& name : result.missingChannels) {
+				std::printf(" %s", name.c_str());
+			}
+			std::printf("\n");
+		}
+		CoUninitialize();
+		return 0;
+	}
+
 	if (options.fitReport) {
 		EnsureHeadlessConsole();
-		if (options.weaponName.empty()) {
-			std::fputs("-fit-report needs -weapon <name>\n", stderr);
+		if (options.weaponName.empty()) {			std::fputs("-fit-report needs -weapon <name>\n", stderr);
 			CoUninitialize();
 			return 2;
 		}

@@ -225,6 +225,41 @@ exists), writes `<model>.tags.json` next to it, re-reads the file and validates 
 
 Returns `{saved, backup, tags_json, validation, dirty}`.
 
+### `compare_screenshot`
+
+Render two weapons/models with the same camera and return a PNG: side by side (one image with a
+white divider) or `b` ghosted over `a`.
+
+| parameter | type | default | meaning |
+|---|---|---|---|
+| `a` / `b` | string | required | weapon json or xmodel names |
+| `mode` | string | `side` | `side` or `ghost` |
+| `alpha` | number | 0.45 | ghost blend |
+| `view` | string | – | `firstperson` or `orbit` |
+| `width` / `height` | int | 1600 / 900 | panel size (side output is `2*width+4`) |
+| `yaw` / `pitch` / `dist` / `fov` | number | – | camera (same for both) |
+| `world` | bool | false | use the world models |
+| `camo` | string | – | camo applied to both |
+| `path` | string | `review/mcp/compare_NNN.png` | output |
+
+### `hot_reload`
+
+The server polls the loaded weapon/model/character files on every tool call (400 ms debounce) and
+reloads them when a file changes. `{"action":"poll"}` forces a poll; `{"enabled":false}` stops
+watching; returns `{enabled,pending,reloads,status,watched}`.
+
+### `rename_map`
+
+Load a bone rename table `{"old_anim_bone":"new_model_bone"}` used while sampling animations
+(`{"path":"review/M10/rename_map_test.json"}`), or `{"clear":true}`. Returns the table and entry
+count.
+
+### `compare_bones`
+
+`{"anim":"mp_jug_maniac_idle","model":"vm_crossbow_base","rename_map":"..."}` → channels,
+model bones, matched/renamed/missing counts and the channel names. `rename_map` is optional; the
+current `rename_map` table is used otherwise.
+
 ## Example session
 
 ```json

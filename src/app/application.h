@@ -36,6 +36,7 @@ private:
 	void DrawWeaponInspector();
 	void DrawCamoSection();
 	void DrawCharacterSection();
+	void DrawRigTools();
 	void DrawTagEditor();
 	void DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspect);
 	void DrawAnimInspector();
@@ -77,8 +78,10 @@ private:
 	char attachmentSearch_[96] = {};
 	char camoSearch_[64] = {};
 	char characterWeapon_[64] = {};
+	char renameMapPath_[256] = {};
 	std::string characterFaction_;
 	std::string characterError_;
+	std::string rigCompareStatus_;
 	std::string selectedTag_;
 	int gizmoMode_ = 0; // 0 = translate, 1 = rotate
 	bool showGizmo_ = true;
