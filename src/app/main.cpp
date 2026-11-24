@@ -3,11 +3,13 @@
 #include <shellapi.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cwchar>
 #include <filesystem>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,8 +18,11 @@
 #include <imgui_impl_win32.h>
 
 #include "app/application.h"
+#include "app/info.h"
+#include "app/model_overlay.h"
 #include "app/settings.h"
 #include "assets/asset_index.h"
+#include "assets/model_asset.h"
 #include "render/camera.h"
 #include "render/renderer.h"
 
@@ -38,9 +43,15 @@ int g_clientHeight = 0;
 
 bool g_consoleAttached = false;
 
+enum class Mode { Window, Screenshot, Info, Validate };
+
 struct Options {
-	bool headless = false;
+	Mode mode = Mode::Window;
 	std::filesystem::path screenshotPath;
+	std::string modelName;
+	std::string infoName;
+	bool bones = false;
+	bool wire = false;
 	int width = 1600;
 	int height = 900;
 	bool hasYaw = false;
@@ -86,9 +97,14 @@ void PrintUsage() {
 	    "usage:\n"
 	    "  hmw-workbench.exe\n"
 	    "      Open the window.\n"
-	    "  hmw-workbench.exe -screenshot <file.png> [-width <n>] [-height <n>]\n"
-	    "                    [-yaw <deg>] [-pitch <deg>] [-dist <units>] [-fov <deg>]\n"
+	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel>] [-bones] [-wire]\n"
+	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
+	    "                    [-dist <units>] [-fov <deg>]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
+	    "  hmw-workbench.exe -info <xmodel>\n"
+	    "      Text dump: bones, tags, surfaces, materials, bounds.\n"
+	    "  hmw-workbench.exe -validate\n"
+	    "      Parse every .xmb in all roots plus its .xsb surface sets and material json.\n"
 	    "\n"
 	    "workbench.json next to the exe configures asset roots, window size and camera.\n",
 	    stdout);
@@ -160,26 +176,49 @@ void ApplyCameraOptions(wb::Camera& camera, const Options& options, const wb::Se
 	camera.SetFov(options.hasFov ? options.fov : settings.camera.fov);
 }
 
+float CameraRadius(const DirectX::XMFLOAT3& halfSize) {
+	return std::max({halfSize.x, halfSize.y, halfSize.z, 0.25f}) * 1.1f;
+}
+
+void DrawHeadlessBoneOverlay(wb::Renderer& renderer, const wb::assets::ModelAsset& model,
+                             const wb::Camera& camera, int width, int height, bool showAllNames) {
+	const ImVec2 displaySize(static_cast<float>(width), static_cast<float>(height));
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr;
+	io.DisplaySize = displaySize;
+	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+
+	if (!ImGui_ImplDX11_Init(renderer.Device(), renderer.Context())) {
+		std::fprintf(stderr, "overlay: ImGui_ImplDX11_Init failed\n");
+		ImGui::DestroyContext();
+		return;
+	}
+
+	ImGui_ImplDX11_NewFrame();
+	ImGui::NewFrame();
+
+	const float aspect = displaySize.x / displaySize.y;
+	DirectX::XMFLOAT4X4 viewProjection = {};
+	DirectX::XMStoreFloat4x4(&viewProjection, camera.ViewProjection(aspect));
+	wb::DrawModelOverlay(ImGui::GetBackgroundDrawList(), ImVec2(0.0f, 0.0f), displaySize, viewProjection,
+	                     model.model, -1, showAllNames);
+
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	ImGui_ImplDX11_Shutdown();
+	ImGui::DestroyContext();
+}
+
 int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& settings, const Options& options) {
-	std::printf("hmw-workbench M0 (headless)\n");
+	std::printf("hmw-workbench M1 (headless)\n");
 
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 	wb::AssetIndex assets;
 	assets.Scan(roots);
-
-	std::printf("asset roots:\n");
-	for (size_t i = 0; i < assets.Roots().size(); ++i) {
-		const wb::AssetRoot& root = assets.Roots()[i];
-		if (root.exists) {
-			std::printf("  [%zu] %s\n        %d weapons, %d models, %d anims\n", i + 1, root.path.string().c_str(),
-			            root.weaponCount, root.modelCount, root.animCount);
-		} else {
-			std::printf("  [%zu] %s (missing)\n", i + 1, root.path.string().c_str());
-		}
-	}
-	std::printf("assets: %d weapons, %d models, %d anims (%d total, duplicates shadowed by earlier roots)\n",
-	            assets.Count(wb::AssetKind::Weapon), assets.Count(wb::AssetKind::Model),
-	            assets.Count(wb::AssetKind::Anim), assets.TotalCount());
+	std::printf("assets: %d weapons, %d models, %d anims (%d total)\n", assets.Count(wb::AssetKind::Weapon),
+	            assets.Count(wb::AssetKind::Model), assets.Count(wb::AssetKind::Anim), assets.TotalCount());
 
 	wb::Renderer renderer;
 	wb::RendererDesc desc;
@@ -192,14 +231,51 @@ int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& setting
 	}
 
 	wb::Camera camera;
-	ApplyCameraOptions(camera, options, settings);
+	wb::assets::ModelAsset model;
+	std::unique_ptr<wb::GpuModel> gpuModel;
 
-	const float aspect = static_cast<float>(options.width) / static_cast<float>(options.height);
-	DirectX::XMFLOAT4X4 viewProjection = {};
-	DirectX::XMStoreFloat4x4(&viewProjection, camera.ViewProjection(aspect));
-	if (!renderer.RenderGrid(viewProjection, options.width, options.height)) {
-		std::fprintf(stderr, "failed to render the grid\n");
+	if (!options.modelName.empty()) {
+		std::string error;
+		if (!wb::assets::LoadModelAsset(options.modelName, roots, model, error, true)) {
+			std::fprintf(stderr, "cannot load model %s: %s\n", options.modelName.c_str(), error.c_str());
+			return 1;
+		}
+		std::string uploadError;
+		gpuModel = renderer.UploadModel(model, uploadError);
+		if (!gpuModel) {
+			std::fprintf(stderr, "cannot upload model %s: %s\n", options.modelName.c_str(),
+			             uploadError.c_str());
+			return 1;
+		}
+		std::printf("model: %s (%zu surfaces, %u bones, %zu materials, %zu images)\n",
+		            model.model.name.c_str(), model.surfaceSet.surfaces.size(), model.model.numBones,
+		            model.materials.size(), model.images.size());
+		for (const std::string& warning : model.warnings) {
+			std::printf("warning: %s\n", warning.c_str());
+		}
+		camera.SetFov(options.hasFov ? options.fov : settings.camera.fov);
+		camera.Frame(model.boundsCenter, CameraRadius(model.boundsHalf));
+		if (options.hasYaw || options.hasPitch) {
+			camera.SetYawPitch(options.hasYaw ? options.yaw : camera.Yaw(),
+			                   options.hasPitch ? options.pitch : camera.Pitch());
+		}
+		if (options.hasDistance) {
+			camera.SetDistance(options.distance);
+		}
+	} else {
+		ApplyCameraOptions(camera, options, settings);
+	}
+
+	if (!renderer.BeginScene(options.width, options.height)) {
+		std::fprintf(stderr, "failed to begin the scene\n");
 		return 1;
+	}
+	renderer.RenderGrid(camera);
+	if (gpuModel) {
+		renderer.RenderModel(*gpuModel, camera, options.wire, nullptr);
+		if (options.bones) {
+			DrawHeadlessBoneOverlay(renderer, model, camera, options.width, options.height, true);
+		}
 	}
 
 	std::error_code ec;
@@ -216,7 +292,8 @@ int RunHeadless(const std::filesystem::path& exeDir, const wb::Settings& setting
 	return 0;
 }
 
-int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HINSTANCE instance) {
+int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HINSTANCE instance,
+                const Options& options) {
 	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 	wb::AssetIndex assets;
 	assets.Scan(roots);
@@ -309,6 +386,9 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 
 	const bool restoreLayout = std::filesystem::exists(exeDir / "imgui.ini");
 	wb::Application app(settings, assets, renderer, exeDir, restoreLayout);
+	if (!options.modelName.empty()) {
+		app.LoadModelByName(options.modelName);
+	}
 
 	bool quit = false;
 	while (!quit) {
@@ -394,9 +474,32 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 				std::fputs("-screenshot needs a file name\n", stderr);
 				valid = false;
 			} else {
-				options.headless = true;
+				options.mode = Mode::Screenshot;
 				options.screenshotPath = std::filesystem::path(value);
 			}
+		} else if (arg == L"-info") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-info needs an xmodel name\n", stderr);
+				valid = false;
+			} else {
+				options.mode = Mode::Info;
+				options.infoName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-validate") {
+			options.mode = Mode::Validate;
+		} else if (arg == L"-model") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-model needs an xmodel name\n", stderr);
+				valid = false;
+			} else {
+				options.modelName = std::filesystem::path(value).string();
+			}
+		} else if (arg == L"-bones") {
+			options.bones = true;
+		} else if (arg == L"-wire") {
+			options.wire = true;
 		} else if (arg == L"-width") {
 			valid = ParseIntArg(nextValue(), options.width) && options.width > 0;
 		} else if (arg == L"-height") {
@@ -436,13 +539,20 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 
 	const std::filesystem::path exeDir = ExeDirectory();
 	wb::Settings settings = wb::LoadSettings(exeDir);
+	const std::vector<std::filesystem::path> roots = wb::ResolveAssetRoots(settings, exeDir);
 
 	int result = 0;
-	if (options.headless) {
+	if (options.mode == Mode::Info) {
+		EnsureHeadlessConsole();
+		result = wb::PrintModelInfo(options.infoName, roots) ? 0 : 1;
+	} else if (options.mode == Mode::Validate) {
+		EnsureHeadlessConsole();
+		result = wb::RunValidate(roots) == 0 ? 0 : 1;
+	} else if (options.mode == Mode::Screenshot) {
 		EnsureHeadlessConsole();
 		result = RunHeadless(exeDir, settings, options);
 	} else {
-		result = RunWindowed(exeDir, settings, instance);
+		result = RunWindowed(exeDir, settings, instance, options);
 	}
 
 	CoUninitialize();

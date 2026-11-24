@@ -1,0 +1,30 @@
+model: wpn_h1_melee_combat_knife_vm
+xmodel: C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\xmodel\wpn_h1_melee_combat_knife_vm.xmb
+bones: 2 (1 root)
+surfaces: 1 (7315 vertices, 13250 triangles)
+scale: 1.0000  flags: 0x0000
+bounds: mid (4.196 0.014 -0.029) half (7.144 0.820 1.224)
+lod0 surfaces: wpn_h1_melee_combat_knife_lodvm100
+xsurface: C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\xsurface\wpn_h1_melee_combat_knife_lodvm100.xsb
+
+tags: 2
+  tag_knife                    bone 0   world (0.000 0.000 0.000)
+  tag_knife_fx                 bone 1   world (7.086 -0.001 -0.868)
+
+bones:
+  idx  name                         parent local position                local quaternion            world position
+  0    tag_knife                    -1     (0.000 0.000 0.000)  (0.0000 0.0000 0.0000 1.0000)  (0.000 0.000 0.000)
+  1    tag_knife_fx                 0      (7.086 -0.001 -0.868)  (0.0000 0.7071 0.0000 0.7071)  (7.086 -0.001 -0.868)
+
+surfaces (LOD0):
+  [ 0] verts=7315   tris=13250  flags=0x0002 rigid=1  material=m/mtl_wpn_h1_knife_base
+
+materials: 1
+  m/mtl_wpn_h1_knife_base
+    json: C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\materials\m/mtl_wpn_h1_knife_base.json
+    techset: m_l_sm_lmpb_r0c0n0sd0om0_nfwpf
+    specular   ~mtl_wpn_h1_knife_base_spc-rg~23ea9d14       image file found
+    normal     mtl_wpn_h1_knife_base_nml                    image file found
+    occlusion  ~mtl_wpn_h1_knife_base_occ-l                 image file found
+    color      mtl_wpn_h1_knife_base_col                    image file found
+    environment ~envbrdflut_ggx_16-rg                        image file found

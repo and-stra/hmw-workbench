@@ -34,6 +34,11 @@ Repo: `C:\Games\cod-hwm\hmw-workbench` (its own git repo). It must never touch `
   `tag_thermal_scope`, `tag_target_enhancer`, `tag_flash`, `tag_clip`…), so HMW optics won't find their tag.
   **Fitting = add or move tags in the weapon xmodel** (and save the `.xmb`). Verify the mounting rule in H1 code before M4.
 
+- **Coordinate system**: the game is Z-up (X forward, Y left, Z up), units are inches. The workbench keeps game
+  coordinates everywhere (bones, tags, edits, `-info` output); only the camera/view converts. Viewmodels are about
+  10–40 units big, so the grid needs 1/10/100 unit steps.
+- **Reference source** may be cloned into `hmw-workbench\.ref\` (gitignored), never anywhere else.
+
 ## Tech
 
 - C++20, Visual Studio 2022 Build Tools, premake5 (same setup as cod-mwx), Release x64, one `hmw-workbench.exe`.

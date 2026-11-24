@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <iterator>
@@ -9,6 +10,8 @@
 
 #include <d3dcompiler.h>
 #include <DirectXTex.h>
+
+#include "render/camera.h"
 
 namespace wb {
 namespace {
@@ -45,12 +48,98 @@ float4 PSMain(PSInput input) : SV_TARGET
 }
 )";
 
+constexpr char kModelShader[] = R"(
+cbuffer ModelConstants : register(b0)
+{
+    row_major float4x4 gViewProjection;
+    float4 gCameraPosition;
+    float4 gLightDirection;
+    float4 gParams;
+};
+
+Texture2D gAlbedo : register(t0);
+Texture2D gNormalMap : register(t1);
+Texture2D gSpecMap : register(t2);
+SamplerState gLinear : register(s0);
+
+struct VSInput
+{
+    float3 position : POSITION;
+    float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float binormalSign : BINORMAL;
+    float2 uv : TEXCOORD0;
+};
+
+struct PSInput
+{
+    float4 position : SV_POSITION;
+    float3 worldPosition : TEXCOORD0;
+    float3 normal : TEXCOORD1;
+    float3 tangent : TEXCOORD2;
+    float3 bitangent : TEXCOORD3;
+    float2 uv : TEXCOORD4;
+};
+
+PSInput VSMain(VSInput input)
+{
+    PSInput output;
+    output.position = mul(float4(input.position, 1.0f), gViewProjection);
+    output.worldPosition = input.position;
+
+    float3 n = normalize(input.normal);
+    float3 t = input.tangent - n * dot(n, input.tangent);
+    if (length(t) < 1.0e-5f)
+    {
+        t = (abs(n.z) < 0.9f) ? cross(n, float3(0.0f, 0.0f, 1.0f)) : cross(n, float3(0.0f, 1.0f, 0.0f));
+    }
+    t = normalize(t);
+    float signValue = input.binormalSign < 0.0f ? -1.0f : 1.0f;
+
+    output.normal = n;
+    output.tangent = t;
+    output.bitangent = cross(n, t) * signValue;
+    output.uv = input.uv;
+    return output;
+}
+
+float4 PSMain(PSInput input) : SV_TARGET
+{
+    float3 albedo = gAlbedo.Sample(gLinear, input.uv).rgb;
+
+    float2 normalXY = gNormalMap.Sample(gLinear, input.uv).xy * 2.0f - 1.0f;
+    float normalZ = sqrt(saturate(1.0f - dot(normalXY, normalXY)));
+    float3 n = normalize(input.tangent * normalXY.x + input.bitangent * normalXY.y + input.normal * normalZ);
+
+    float3 lightDirection = normalize(gLightDirection.xyz);
+    float3 viewDirection = normalize(gCameraPosition.xyz - input.worldPosition);
+    float3 halfVector = normalize(lightDirection + viewDirection);
+
+    float ndl = saturate(dot(n, lightDirection));
+    float specularMask = gSpecMap.Sample(gLinear, input.uv).r;
+    float specular = pow(saturate(dot(n, halfVector)), gParams.x) * (0.12f + specularMask * 0.88f);
+
+    float3 color = albedo * (0.42f + 0.82f * ndl) + specular * float3(0.85f, 0.88f, 0.92f);
+    return float4(color, 1.0f);
+}
+)";
+
 struct GridVertex {
-	DirectX::XMFLOAT4 position; // xyz used, w must be 1
+	DirectX::XMFLOAT4 position;
 	DirectX::XMFLOAT4 color;
 };
 
-bool CompileShader(const char* entryPoint, const char* target, ID3DBlob** blob) {
+struct alignas(16) ModelConstants {
+	DirectX::XMFLOAT4X4 viewProjection;
+	DirectX::XMFLOAT4 cameraPosition;
+	DirectX::XMFLOAT4 lightDirection;
+	DirectX::XMFLOAT4 params;
+};
+
+static_assert(sizeof(assets::SurfaceVertex) == 48);
+static_assert(sizeof(ModelConstants) == 112);
+
+bool CompileShader(const char* source, const char* entryPoint, const char* target, ID3DBlob** blob) {
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
 	flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -59,15 +148,15 @@ bool CompileShader(const char* entryPoint, const char* target, ID3DBlob** blob) 
 #endif
 
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
-	const HRESULT hr = D3DCompile(kGridShader, sizeof(kGridShader) - 1, "grid.hlsl", nullptr, nullptr,
-	                              entryPoint, target, flags, 0, blob, &errorBlob);
+	const HRESULT hr = D3DCompile(source, std::strlen(source), "workbench.hlsl", nullptr, nullptr, entryPoint,
+	                              target, flags, 0, blob, &errorBlob);
 	if (FAILED(hr)) {
 		const char* message = errorBlob ? static_cast<const char*>(errorBlob->GetBufferPointer()) : "unknown error";
-		std::fprintf(stderr, "grid shader (%s) failed: %s\n", entryPoint, message);
+		std::fprintf(stderr, "shader (%s) failed: %s\n", entryPoint, message);
 		return false;
 	}
 	if (errorBlob && errorBlob->GetBufferSize() > 0) {
-		std::fprintf(stderr, "grid shader (%s) warnings: %s\n", entryPoint,
+		std::fprintf(stderr, "shader (%s) warnings: %s\n", entryPoint,
 		             static_cast<const char*>(errorBlob->GetBufferPointer()));
 	}
 	return true;
@@ -79,13 +168,26 @@ void AddLine(std::vector<GridVertex>& vertices, const DirectX::XMFLOAT3& a, cons
 	vertices.push_back({DirectX::XMFLOAT4(b.x, b.y, b.z, 1.0f), color});
 }
 
+void AddGridLevel(std::vector<GridVertex>& vertices, int step, int halfExtent,
+                  const DirectX::XMFLOAT4& color) {
+	const float extent = static_cast<float>(halfExtent);
+	for (int i = -halfExtent; i <= halfExtent; i += step) {
+		if (i == 0) {
+			continue; // axes are drawn separately
+		}
+		const float offset = static_cast<float>(i);
+		AddLine(vertices, DirectX::XMFLOAT3(offset, -extent, 0.0f), DirectX::XMFLOAT3(offset, extent, 0.0f), color);
+		AddLine(vertices, DirectX::XMFLOAT3(-extent, offset, 0.0f), DirectX::XMFLOAT3(extent, offset, 0.0f), color);
+	}
+}
+
 } // namespace
 
 bool Renderer::Initialize(const RendererDesc& desc) {
 	if (!CreateDeviceAndSwapChain(desc.hwnd, desc.width, desc.height)) {
 		return false;
 	}
-	if (!CreateGridResources()) {
+	if (!CreateGridResources() || !CreateModelResources()) {
 		return false;
 	}
 	if (!swapChain_ && !EnsureSceneTarget(desc.width, desc.height)) {
@@ -96,6 +198,17 @@ bool Renderer::Initialize(const RendererDesc& desc) {
 
 void Renderer::Shutdown() {
 	ReleaseSceneTarget();
+	blackTexture_.Reset();
+	flatNormalTexture_.Reset();
+	checkerTexture_.Reset();
+	samplerState_.Reset();
+	wireframeState_.Reset();
+	solidState_.Reset();
+	modelConstantBuffer_.Reset();
+	modelInputLayout_.Reset();
+	modelPs_.Reset();
+	modelVs_.Reset();
+	gridDepthState_.Reset();
 	gridConstantBuffer_.Reset();
 	gridVertexBuffer_.Reset();
 	gridInputLayout_.Reset();
@@ -198,7 +311,8 @@ bool Renderer::ResizeSwapChain(int width, int height) {
 bool Renderer::CreateGridResources() {
 	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob;
 	Microsoft::WRL::ComPtr<ID3DBlob> psBlob;
-	if (!CompileShader("VSMain", "vs_5_0", &vsBlob) || !CompileShader("PSMain", "ps_5_0", &psBlob)) {
+	if (!CompileShader(kGridShader, "VSMain", "vs_5_0", &vsBlob) ||
+	    !CompileShader(kGridShader, "PSMain", "ps_5_0", &psBlob)) {
 		return false;
 	}
 
@@ -222,36 +336,26 @@ bool Renderer::CreateGridResources() {
 		return false;
 	}
 
-	// Grid on the XZ plane plus axes: red = X, green = Y, blue = Z.
-	const DirectX::XMFLOAT4 minorColor(0.20f, 0.21f, 0.245f, 1.0f);
-	const DirectX::XMFLOAT4 majorColor(0.27f, 0.29f, 0.33f, 1.0f);
+	// Grid on the XY plane (game space is Z-up) with 1/10/100 unit steps.
+	const DirectX::XMFLOAT4 color1(0.285f, 0.305f, 0.35f, 1.0f);
+	const DirectX::XMFLOAT4 color10(0.215f, 0.23f, 0.27f, 1.0f);
+	const DirectX::XMFLOAT4 color100(0.165f, 0.175f, 0.205f, 1.0f);
 	const DirectX::XMFLOAT4 xAxisColor(0.72f, 0.24f, 0.24f, 1.0f);
 	const DirectX::XMFLOAT4 yAxisColor(0.28f, 0.70f, 0.30f, 1.0f);
-	const DirectX::XMFLOAT4 zAxisColor(0.24f, 0.42f, 0.78f, 1.0f);
+	const DirectX::XMFLOAT4 zAxisColor(0.24f, 0.42f, 0.90f, 1.0f);
 
-	constexpr int halfExtent = 50;
 	std::vector<GridVertex> vertices;
-	vertices.reserve(static_cast<size_t>(halfExtent * 8 + 16));
+	vertices.reserve(3 * 101 * 4 + 16);
+	AddGridLevel(vertices, 100, 5000, color100);
+	AddGridLevel(vertices, 10, 500, color10);
+	AddGridLevel(vertices, 1, 50, color1);
 
-	for (int i = -halfExtent; i <= halfExtent; ++i) {
-		const float offset = static_cast<float>(i);
-		const bool isAxis = i == 0;
-		const bool isMajor = i % 5 == 0;
-		const DirectX::XMFLOAT4 color = isMajor ? majorColor : minorColor;
-
-		if (!isAxis) {
-			AddLine(vertices, DirectX::XMFLOAT3(offset, 0.0f, -static_cast<float>(halfExtent)),
-			        DirectX::XMFLOAT3(offset, 0.0f, static_cast<float>(halfExtent)), color);
-			AddLine(vertices, DirectX::XMFLOAT3(-static_cast<float>(halfExtent), 0.0f, offset),
-			        DirectX::XMFLOAT3(static_cast<float>(halfExtent), 0.0f, offset), color);
-		}
-	}
-
-	AddLine(vertices, DirectX::XMFLOAT3(-static_cast<float>(halfExtent), 0.0f, 0.0f),
-	        DirectX::XMFLOAT3(static_cast<float>(halfExtent), 0.0f, 0.0f), xAxisColor);
-	AddLine(vertices, DirectX::XMFLOAT3(0.0f, 0.0f, -static_cast<float>(halfExtent)),
-	        DirectX::XMFLOAT3(0.0f, 0.0f, static_cast<float>(halfExtent)), zAxisColor);
-	AddLine(vertices, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f), yAxisColor);
+	constexpr float axisExtent = 50.0f;
+	AddLine(vertices, DirectX::XMFLOAT3(-axisExtent, 0.0f, 0.0f), DirectX::XMFLOAT3(axisExtent, 0.0f, 0.0f),
+	        xAxisColor);
+	AddLine(vertices, DirectX::XMFLOAT3(0.0f, -axisExtent, 0.0f), DirectX::XMFLOAT3(0.0f, axisExtent, 0.0f),
+	        yAxisColor);
+	AddLine(vertices, DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 5.0f), zAxisColor);
 
 	gridVertexCount_ = static_cast<UINT>(vertices.size());
 
@@ -276,6 +380,156 @@ bool Renderer::CreateGridResources() {
 		return false;
 	}
 
+	D3D11_DEPTH_STENCIL_DESC depthDesc = {};
+	depthDesc.DepthEnable = FALSE;
+	depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthDesc.DepthFunc = D3D11_COMPARISON_NEVER;
+	hr = device_->CreateDepthStencilState(&depthDesc, &gridDepthState_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	return true;
+}
+
+bool Renderer::CreateModelResources() {
+	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob;
+	Microsoft::WRL::ComPtr<ID3DBlob> psBlob;
+	if (!CompileShader(kModelShader, "VSMain", "vs_5_0", &vsBlob) ||
+	    !CompileShader(kModelShader, "PSMain", "ps_5_0", &psBlob)) {
+		return false;
+	}
+
+	HRESULT hr = device_->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr,
+	                                         &modelVs_);
+	if (FAILED(hr)) {
+		return false;
+	}
+	hr = device_->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &modelPs_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	const D3D11_INPUT_ELEMENT_DESC layout[] = {
+	    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(assets::SurfaceVertex, position),
+	     D3D11_INPUT_PER_VERTEX_DATA, 0},
+	    {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(assets::SurfaceVertex, normal),
+	     D3D11_INPUT_PER_VERTEX_DATA, 0},
+	    {"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(assets::SurfaceVertex, tangent),
+	     D3D11_INPUT_PER_VERTEX_DATA, 0},
+	    {"BINORMAL", 0, DXGI_FORMAT_R32_FLOAT, 0, offsetof(assets::SurfaceVertex, binormalSign),
+	     D3D11_INPUT_PER_VERTEX_DATA, 0},
+	    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(assets::SurfaceVertex, uv),
+	     D3D11_INPUT_PER_VERTEX_DATA, 0},
+	};
+	hr = device_->CreateInputLayout(layout, static_cast<UINT>(std::size(layout)), vsBlob->GetBufferPointer(),
+	                                vsBlob->GetBufferSize(), &modelInputLayout_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	D3D11_BUFFER_DESC constantDesc = {};
+	constantDesc.ByteWidth = sizeof(ModelConstants);
+	constantDesc.Usage = D3D11_USAGE_DYNAMIC;
+	constantDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	constantDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	hr = device_->CreateBuffer(&constantDesc, nullptr, &modelConstantBuffer_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	D3D11_RASTERIZER_DESC rasterDesc = {};
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.CullMode = D3D11_CULL_NONE;
+	rasterDesc.FrontCounterClockwise = FALSE;
+	rasterDesc.DepthClipEnable = TRUE;
+	hr = device_->CreateRasterizerState(&rasterDesc, &solidState_);
+	if (FAILED(hr)) {
+		return false;
+	}
+	rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	hr = device_->CreateRasterizerState(&rasterDesc, &wireframeState_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	D3D11_SAMPLER_DESC samplerDesc = {};
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	hr = device_->CreateSamplerState(&samplerDesc, &samplerState_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	return CreateDefaultTextures();
+}
+
+bool Renderer::CreateDefaultTextures() {
+	// Checker for missing color maps.
+	constexpr int checkerSize = 64;
+	constexpr int checkerCell = 8;
+	std::vector<std::uint8_t> checker(checkerSize * checkerSize * 4);
+	for (int y = 0; y < checkerSize; ++y) {
+		for (int x = 0; x < checkerSize; ++x) {
+			const bool light = ((x / checkerCell) + (y / checkerCell)) % 2 == 0;
+			const std::uint8_t value = light ? 150 : 70;
+			std::uint8_t* pixel = &checker[(static_cast<std::size_t>(y) * checkerSize + x) * 4];
+			pixel[0] = light ? 160 : 80;
+			pixel[1] = value;
+			pixel[2] = light ? 180 : 90;
+			pixel[3] = 255;
+		}
+	}
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = checkerSize;
+	desc.Height = checkerSize;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_IMMUTABLE;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	D3D11_SUBRESOURCE_DATA data = {};
+	data.pSysMem = checker.data();
+	data.SysMemPitch = checkerSize * 4;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+	HRESULT hr = device_->CreateTexture2D(&desc, &data, &texture);
+	if (FAILED(hr)) {
+		return false;
+	}
+	hr = device_->CreateShaderResourceView(texture.Get(), nullptr, &checkerTexture_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
+	const std::uint8_t flatNormal[4] = {128, 128, 255, 255};
+	const std::uint8_t black[4] = {0, 0, 0, 255};
+	auto make1x1 = [this](const std::uint8_t pixel[4], ComPtr<ID3D11ShaderResourceView>& out) {
+		D3D11_TEXTURE2D_DESC desc1 = {};
+		desc1.Width = 1;
+		desc1.Height = 1;
+		desc1.MipLevels = 1;
+		desc1.ArraySize = 1;
+		desc1.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc1.SampleDesc.Count = 1;
+		desc1.Usage = D3D11_USAGE_IMMUTABLE;
+		desc1.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		D3D11_SUBRESOURCE_DATA data1 = {};
+		data1.pSysMem = pixel;
+		data1.SysMemPitch = 4;
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture1;
+		if (FAILED(device_->CreateTexture2D(&desc1, &data1, &texture1))) {
+			return false;
+		}
+		return SUCCEEDED(device_->CreateShaderResourceView(texture1.Get(), nullptr, &out));
+	};
+	if (!make1x1(flatNormal, flatNormalTexture_) || !make1x1(black, blackTexture_)) {
+		return false;
+	}
 	return true;
 }
 
@@ -344,7 +598,7 @@ void Renderer::ReleaseSceneTarget() {
 	sceneHeight_ = 0;
 }
 
-bool Renderer::RenderGrid(const DirectX::XMFLOAT4X4& viewProjection, int width, int height) {
+bool Renderer::BeginScene(int width, int height) {
 	if (!EnsureSceneTarget(width, height)) {
 		return false;
 	}
@@ -355,8 +609,6 @@ bool Renderer::RenderGrid(const DirectX::XMFLOAT4X4& viewProjection, int width, 
 
 	ID3D11RenderTargetView* renderTargets[] = {sceneRtv_.Get()};
 	context_->OMSetRenderTargets(1, renderTargets, depthDsv_.Get());
-	context_->OMSetDepthStencilState(nullptr, 0);
-	context_->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
 
 	D3D11_VIEWPORT viewport = {};
 	viewport.Width = static_cast<float>(sceneWidth_);
@@ -365,11 +617,25 @@ bool Renderer::RenderGrid(const DirectX::XMFLOAT4X4& viewProjection, int width, 
 	viewport.MaxDepth = 1.0f;
 	context_->RSSetViewports(1, &viewport);
 
+	context_->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+	context_->RSSetState(solidState_.Get());
+	return true;
+}
+
+void Renderer::RenderGrid(const Camera& camera) {
+	if (!gridVertexBuffer_ || sceneWidth_ <= 0 || sceneHeight_ <= 0) {
+		return;
+	}
+
+	const float aspect = static_cast<float>(sceneWidth_) / static_cast<float>(sceneHeight_);
+	DirectX::XMFLOAT4X4 viewProjection = {};
+	DirectX::XMStoreFloat4x4(&viewProjection, camera.ViewProjection(aspect));
+
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 	if (FAILED(context_->Map(gridConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
-		return false;
+		return;
 	}
-	std::memcpy(mapped.pData, &viewProjection, sizeof(DirectX::XMFLOAT4X4));
+	std::memcpy(mapped.pData, &viewProjection, sizeof(viewProjection));
 	context_->Unmap(gridConstantBuffer_.Get(), 0);
 
 	const UINT stride = sizeof(GridVertex);
@@ -377,6 +643,7 @@ bool Renderer::RenderGrid(const DirectX::XMFLOAT4X4& viewProjection, int width, 
 	ID3D11Buffer* vertexBuffer = gridVertexBuffer_.Get();
 	ID3D11Buffer* constantBuffer = gridConstantBuffer_.Get();
 
+	context_->OMSetDepthStencilState(gridDepthState_.Get(), 0);
 	context_->IASetInputLayout(gridInputLayout_.Get());
 	context_->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 	context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
@@ -384,7 +651,197 @@ bool Renderer::RenderGrid(const DirectX::XMFLOAT4X4& viewProjection, int width, 
 	context_->VSSetConstantBuffers(0, 1, &constantBuffer);
 	context_->PSSetShader(gridPs_.Get(), nullptr, 0);
 	context_->Draw(gridVertexCount_, 0);
-	return true;
+
+	context_->OMSetDepthStencilState(nullptr, 0);
+}
+
+void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wireframe,
+                           const std::vector<bool>* visibleSurfaces) {
+	if (model.surfaces.empty() || sceneWidth_ <= 0 || sceneHeight_ <= 0) {
+		return;
+	}
+
+	const float aspect = static_cast<float>(sceneWidth_) / static_cast<float>(sceneHeight_);
+	ModelConstants constants = {};
+	DirectX::XMStoreFloat4x4(&constants.viewProjection, camera.ViewProjection(aspect));
+	const DirectX::XMFLOAT3 eye = camera.Eye();
+	constants.cameraPosition = DirectX::XMFLOAT4(eye.x, eye.y, eye.z, 1.0f);
+	constants.lightDirection = DirectX::XMFLOAT4(0.35f, -0.45f, 0.82f, 0.0f);
+	constants.params = DirectX::XMFLOAT4(48.0f, 0.0f, 0.0f, 0.0f);
+
+	D3D11_MAPPED_SUBRESOURCE mapped = {};
+	if (FAILED(context_->Map(modelConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+		return;
+	}
+	std::memcpy(mapped.pData, &constants, sizeof(constants));
+	context_->Unmap(modelConstantBuffer_.Get(), 0);
+
+	ID3D11Buffer* constantBuffer = modelConstantBuffer_.Get();
+	ID3D11ShaderResourceView* textures[3] = {checkerTexture_.Get(), flatNormalTexture_.Get(), blackTexture_.Get()};
+	ID3D11SamplerState* sampler = samplerState_.Get();
+
+	context_->OMSetDepthStencilState(nullptr, 0);
+	context_->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+	context_->RSSetState(wireframe ? wireframeState_.Get() : solidState_.Get());
+	context_->IASetInputLayout(modelInputLayout_.Get());
+	context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context_->VSSetShader(modelVs_.Get(), nullptr, 0);
+	context_->VSSetConstantBuffers(0, 1, &constantBuffer);
+	context_->PSSetShader(modelPs_.Get(), nullptr, 0);
+	context_->PSSetConstantBuffers(0, 1, &constantBuffer);
+	context_->PSSetSamplers(0, 1, &sampler);
+
+	for (std::size_t i = 0; i < model.surfaces.size(); ++i) {
+		const GpuSurface& surface = model.surfaces[i];
+		if (surface.indexCount == 0 || !surface.vertexBuffer || !surface.indexBuffer) {
+			continue;
+		}
+		if (visibleSurfaces != nullptr && i < visibleSurfaces->size() && !(*visibleSurfaces)[i]) {
+			continue;
+		}
+
+		textures[0] = checkerTexture_.Get();
+		textures[1] = flatNormalTexture_.Get();
+		textures[2] = blackTexture_.Get();
+		if (surface.materialIndex >= 0 && surface.materialIndex < static_cast<int>(model.materials.size())) {
+			const GpuMaterial& material = model.materials[static_cast<std::size_t>(surface.materialIndex)];
+			if (material.albedo) {
+				textures[0] = material.albedo.Get();
+			}
+			if (material.normal) {
+				textures[1] = material.normal.Get();
+			}
+			if (material.specular) {
+				textures[2] = material.specular.Get();
+			}
+		}
+		context_->PSSetShaderResources(0, 3, textures);
+
+		const UINT stride = sizeof(assets::SurfaceVertex);
+		const UINT offset = 0;
+		ID3D11Buffer* vertexBuffer = surface.vertexBuffer.Get();
+		ID3D11Buffer* indexBuffer = surface.indexBuffer.Get();
+		context_->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		context_->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R16_UINT, 0);
+		context_->DrawIndexed(surface.indexCount, 0, 0);
+	}
+
+	context_->RSSetState(solidState_.Get());
+}
+
+ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(const assets::ImageData& image, std::string& error) {
+	if (!image.available || image.pixels.empty()) {
+		error = image.note.empty() ? "no pixel data" : image.note;
+		return nullptr;
+	}
+
+	std::size_t rowPitch = 0;
+	std::size_t slicePitch = 0;
+	const HRESULT pitchResult = DirectX::ComputePitch(static_cast<DXGI_FORMAT>(image.format), image.width,
+	                                                  image.height, rowPitch, slicePitch);
+	if (FAILED(pitchResult) || slicePitch == 0) {
+		error = "unsupported texture format " + std::to_string(image.format);
+		return nullptr;
+	}
+	if (image.pixels.size() < slicePitch) {
+		error = "texture data is smaller than one mip level";
+		return nullptr;
+	}
+
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = image.width;
+	desc.Height = image.height;
+	desc.MipLevels = 1;
+	desc.ArraySize = 1;
+	desc.Format = static_cast<DXGI_FORMAT>(image.format);
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_IMMUTABLE;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	D3D11_SUBRESOURCE_DATA data = {};
+	data.pSysMem = image.pixels.data();
+	data.SysMemPitch = static_cast<UINT>(rowPitch);
+	data.SysMemSlicePitch = static_cast<UINT>(slicePitch);
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+	HRESULT hr = device_->CreateTexture2D(&desc, &data, &texture);
+	if (FAILED(hr)) {
+		error = "CreateTexture2D failed (format " + std::to_string(image.format) + ")";
+		return nullptr;
+	}
+	ComPtr<ID3D11ShaderResourceView> view;
+	hr = device_->CreateShaderResourceView(texture.Get(), nullptr, &view);
+	if (FAILED(hr)) {
+		error = "CreateShaderResourceView failed";
+		return nullptr;
+	}
+	return view;
+}
+
+std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model, std::string& error) {
+	auto gpu = std::make_unique<GpuModel>();
+	gpu->boundsCenter = model.boundsCenter;
+	gpu->boundsHalf = model.boundsHalf;
+
+	gpu->materials.resize(model.materials.size());
+	for (std::size_t i = 0; i < model.materials.size(); ++i) {
+		const assets::MaterialSlot& slot = model.materials[i];
+		GpuMaterial& material = gpu->materials[i];
+		std::string textureError;
+		const auto applyTexture = [&](int imageIndex, ComPtr<ID3D11ShaderResourceView>& target) {
+			if (imageIndex < 0 || imageIndex >= static_cast<int>(model.images.size())) {
+				return;
+			}
+			ComPtr<ID3D11ShaderResourceView> view =
+			    CreateTexture(model.images[static_cast<std::size_t>(imageIndex)], textureError);
+			if (view) {
+				target = std::move(view);
+			}
+		};
+		applyTexture(slot.colorImage, material.albedo);
+		applyTexture(slot.normalImage, material.normal);
+		applyTexture(slot.specularImage, material.specular);
+	}
+
+	gpu->surfaces.resize(model.surfaceSet.surfaces.size());
+	for (std::size_t i = 0; i < model.surfaceSet.surfaces.size(); ++i) {
+		const assets::SurfaceData& source = model.surfaceSet.surfaces[i];
+		GpuSurface& surface = gpu->surfaces[i];
+		surface.materialIndex = source.materialIndex;
+		surface.indexCount = static_cast<UINT>(source.indices.size());
+
+		if (source.vertices.empty() || source.indices.empty()) {
+			continue;
+		}
+		if (source.vertices.size() > 65535) {
+			error = "surface " + std::to_string(i) + " has more than 65535 vertices";
+			return nullptr;
+		}
+
+		D3D11_BUFFER_DESC vertexDesc = {};
+		vertexDesc.ByteWidth = static_cast<UINT>(source.vertices.size() * sizeof(assets::SurfaceVertex));
+		vertexDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		vertexDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		D3D11_SUBRESOURCE_DATA vertexData = {};
+		vertexData.pSysMem = source.vertices.data();
+		if (FAILED(device_->CreateBuffer(&vertexDesc, &vertexData, &surface.vertexBuffer))) {
+			error = "failed to create vertex buffer for surface " + std::to_string(i);
+			return nullptr;
+		}
+
+		D3D11_BUFFER_DESC indexDesc = {};
+		indexDesc.ByteWidth = static_cast<UINT>(source.indices.size() * sizeof(std::uint16_t));
+		indexDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		indexDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		D3D11_SUBRESOURCE_DATA indexData = {};
+		indexData.pSysMem = source.indices.data();
+		if (FAILED(device_->CreateBuffer(&indexDesc, &indexData, &surface.indexBuffer))) {
+			error = "failed to create index buffer for surface " + std::to_string(i);
+			return nullptr;
+		}
+	}
+
+	return gpu;
 }
 
 bool Renderer::SaveSceneToPng(const std::filesystem::path& path) {

@@ -1,0 +1,77 @@
+FAIL material m/mtl_crossbow_scope_base: material json not found
+FAIL material m/mtl_crossbow_target: material json not found
+FAIL material m/mtl_m990_glass: material json not found
+FAIL material ms/mtl_crossbow_scope_base: material json not found
+FAIL material m/mtl_player_emblem: material json not found
+FAIL material m/mtl_crossbow_glass_base: material json not found
+FAIL material m/mtl_iron_sights_color: material json not found
+FAIL material m/mtl_mors_lens: material json not found
+FAIL material m/mtl_wep_shared_lens: material json not found
+FAIL material m/mtl_mors_lens_inner: material json not found
+FAIL material m/mtl_crossbow_crosshair: material json not found
+FAIL material m/mtl_wpn_h1_sni_m21_bipod: material json not found
+FAIL material m/mtl_wpn_h1_lmg_m249_receiver_base: material json not found
+FAIL material m/mtl_wpn_h1_sni_m82a1_bipod: material json not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod0101: file not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod1100: file not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod2100: file not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod3100: file not found
+FAIL xsurface vm_h1_bipod_rpd_lodvm101: file not found
+FAIL material m/mtl_wpn_h1_smg_ak74u_receiver_base: material json not found
+FAIL xsurface npc_h1_foregrip_m1014_lod0101: file not found
+FAIL xsurface npc_h1_foregrip_m1014_lod1100: file not found
+FAIL xsurface npc_h1_foregrip_m1014_lod2100: file not found
+FAIL xsurface npc_h1_foregrip_m1014_lod3100: file not found
+FAIL xsurface vm_h1_foregrip_m1014_lodvm100: file not found
+FAIL material m/mtl_wpn_h1_smg_mini_uzi_stock_base: material json not found
+FAIL xsurface npc_h1_launcher_gp25_lod0101: file not found
+FAIL xsurface npc_h1_launcher_gp25_lod1100: file not found
+FAIL xsurface npc_h1_launcher_gp25_lod2100: file not found
+FAIL xsurface npc_h1_launcher_gp25_lod3100: file not found
+FAIL xsurface vm_h1_launcher_gp25_lodvm100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod0101: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod1100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod2100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod3100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod4100: file not found
+FAIL xsurface vm_h1_launcher_m203_m16_lodvm100: file not found
+FAIL material m/mtl_attach_h1_basic_rail_short: material json not found
+FAIL xsurface vm_launcher_m203_lodvm100: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod0101: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod1100: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod2100: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod3100: file not found
+FAIL xsurface vm_h1_optic_reflex_variant_ads_mp_lodvm100: file not found
+FAIL xsurface npc_h1_optics_holosight_lod0101: file not found
+FAIL xsurface npc_h1_optics_holosight_lod1100: file not found
+FAIL xsurface npc_h1_optics_holosight_lod2100: file not found
+FAIL xsurface npc_h1_optics_holosight_lod3100: file not found
+FAIL xsurface vm_h1_optics_holosight_lodvm100: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod0101: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod1100: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod2100: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod3100: file not found
+FAIL xsurface vm_h1_scope_acog_mp_lodvm100: file not found
+FAIL xsurface vm_h1_silencer_russian_lodvm100: file not found
+FAIL xsurface vm_h1_silencer_smg_lodvm100: file not found
+FAIL xsurface vm_h1_underbarrel_shotgun_lodvm100: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod0300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod1300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod2300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod3300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod4300: file not found
+FAIL material m/mtl_viewmodel_arab_opfor_glove: material json not found
+FAIL material m/mtl_viewmodel_h1_usmc_ghillie: material json not found
+FAIL material m/mtl_viewmodel_h1_usmc_ghillie_netting: material json not found
+FAIL material m/mtl_viewmodel_h1_usmc_ghillie_alpha: material json not found
+FAIL xsurface vm_h1_desert_marines400: file not found
+FAIL xsurface viewmodel_heartbeat_iw5100: file not found
+FAIL xsurface viewmodel_zoom_scope100: file not found
+FAIL material m/mtl_wpn_h1_sticker_placeholder: material json not found
+
+summary:
+  xmodels:   ok 272, failed 0
+  xsurfaces: ok 198, failed 48
+  materials: ok 52, failed 22
+  missing surface files: 48, missing materials: 22
+  models with missing surface data: 92

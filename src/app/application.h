@@ -2,6 +2,7 @@
 
 #include <array>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,7 @@
 
 #include "app/settings.h"
 #include "assets/asset_index.h"
+#include "assets/model_asset.h"
 #include "render/camera.h"
 #include "render/renderer.h"
 
@@ -21,6 +23,7 @@ public:
 
 	void Frame();
 	bool WantsClose() const { return wantsClose_; }
+	void LoadModelByName(const std::string& name);
 
 private:
 	void DrawMenuBar();
@@ -28,11 +31,14 @@ private:
 	void DrawViewportPanel();
 	void DrawInspectorPanel();
 	void DrawTimelinePanel();
+	void DrawModelInspector();
 	void BuildLayout(ImGuiID dockspaceId, const ImVec2& size);
 	void HandleViewportInput(const ImVec2& viewportSize);
 	void RebuildFilter();
 	void RescanAssets();
 	void FrameCamera();
+	void LoadSelectedModel();
+	void ReloadModel();
 
 	const AssetEntry* SelectedEntry() const;
 
@@ -49,6 +55,18 @@ private:
 	char search_[128] = {};
 	std::string lastFilter_;
 	std::array<std::vector<int>, kAssetKindCount> filtered_;
+
+	assets::ModelAsset model_;
+	std::unique_ptr<GpuModel> gpuModel_;
+	std::string modelError_;
+	std::string loadedModelName_;
+	std::string loadedModelPath_;
+	bool modelVisible_ = true;
+	bool showBones_ = false;
+	bool showAllBoneNames_ = true;
+	bool wireframe_ = false;
+	int selectedBone_ = -1;
+	std::vector<bool> surfaceVisible_;
 };
 
 } // namespace wb

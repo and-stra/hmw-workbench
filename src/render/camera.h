@@ -4,8 +4,8 @@
 
 namespace wb {
 
-// Orbit camera around a target point. Yaw/pitch are in degrees, distance in world units.
-// Angles are clamped so the view matrix never degenerates.
+// Orbit camera around a target point in game space (Z-up, X forward, Y left).
+// Yaw/pitch are in degrees, distance in world units.
 class Camera {
 public:
 	using XMFLOAT3 = DirectX::XMFLOAT3;
@@ -30,7 +30,7 @@ public:
 	void Orbit(float dxPixels, float dyPixels);
 	void Pan(float dxPixels, float dyPixels, float viewportHeight);
 	void Zoom(float wheelDelta);
-	void Frame(float radius);
+	void Frame(const XMFLOAT3& center, float radius);
 
 private:
 	XMFLOAT3 target_{0.0f, 0.0f, 0.0f};

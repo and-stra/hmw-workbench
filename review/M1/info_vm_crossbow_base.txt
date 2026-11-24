@@ -1,0 +1,138 @@
+model: vm_crossbow_base
+xmodel: C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\zonetool\mod\xmodel\vm_crossbow_base.xmb
+bones: 36 (1 root)
+surfaces: 20 (23835 vertices, 24454 triangles)
+scale: 1.0000  flags: 0x0200
+bounds: mid (7.760 0.000 2.314) half (18.997 10.983 5.056)
+lod0 surfaces: 010296ab_3f739e8a_100
+xsurface: C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\zonetool\mod\xsurface\010296ab_3f739e8a_100.xsb
+
+tags: 17
+  tag_acog_2                   bone 5   world (3.378 0.000 6.027)
+  tag_clip                     bone 6   world (4.710 -0.000 4.404)
+  tag_directhack               bone 7   world (18.503 0.566 2.605)
+  tag_eotech                   bone 8   world (3.116 0.000 6.123)
+  tag_flash                    bone 9   world (22.359 0.000 4.413)
+  tag_lasersight               bone 10  world (19.213 -0.804 2.648)
+  tag_loot                     bone 11  world (0.000 0.000 1.000)
+  tag_parabolic_mic            bone 12  world (18.687 0.590 2.588)
+  tag_red_dot                  bone 13  world (3.243 0.000 5.736)
+  tag_scope                    bone 14  world (2.803 0.000 6.023)
+  tag_sight_off                bone 15  world (6.897 0.000 5.659)
+  tag_sight_on                 bone 16  world (6.328 0.000 5.688)
+  tag_target_enhancer          bone 17  world (2.975 0.000 6.336)
+  tag_thermal_scope            bone 18  world (3.458 0.000 6.080)
+  tag_tracker                  bone 19  world (18.256 0.535 2.632)
+  tag_ui_ammo                  bone 20  world (1.960 -1.139 6.379)
+  tag_vrd                      bone 21  world (2.921 0.000 6.040)
+
+bones:
+  idx  name                         parent local position                local quaternion            world position
+  0    j_gun                        -1     (0.000 0.000 0.000)  (0.0000 0.0000 0.0000 1.0000)  (0.000 0.000 0.000)
+  1    bow_l                        0      (23.156 6.210 4.188)  (0.0000 0.0000 0.9847 0.1742)  (23.156 6.210 4.188)
+  2    bow_r                        0      (23.156 -6.210 4.188)  (-0.1742 0.9847 0.0000 0.0000)  (23.156 -6.210 4.188)
+  3    chargehandle                 0      (1.736 0.000 4.314)  (0.0000 0.0000 0.0000 1.0000)  (1.736 0.000 4.314)
+  4    string_c                     0      (1.736 0.000 4.404)  (0.0000 0.0000 0.0000 1.0000)  (1.736 0.000 4.404)
+  5    tag_acog_2                   0      (3.378 0.000 6.027)  (0.0000 0.0000 0.0000 1.0000)  (3.378 0.000 6.027)
+  6    tag_clip                     0      (4.710 -0.000 4.404)  (0.0000 0.0000 0.0000 1.0000)  (4.710 -0.000 4.404)
+  7    tag_directhack               0      (18.503 0.566 2.605)  (0.0000 0.0000 0.0000 1.0000)  (18.503 0.566 2.605)
+  8    tag_eotech                   0      (3.116 0.000 6.123)  (0.0000 0.0000 0.0000 1.0000)  (3.116 0.000 6.123)
+  9    tag_flash                    0      (22.359 0.000 4.413)  (0.0000 0.0000 0.0000 1.0000)  (22.359 0.000 4.413)
+  10   tag_lasersight               0      (19.213 -0.804 2.648)  (1.0000 0.0000 0.0000 0.0000)  (19.213 -0.804 2.648)
+  11   tag_loot                     0      (0.000 0.000 1.000)  (0.0000 0.0000 0.0000 1.0000)  (0.000 0.000 1.000)
+  12   tag_parabolic_mic            0      (18.687 0.590 2.588)  (0.0000 0.0000 0.0000 1.0000)  (18.687 0.590 2.588)
+  13   tag_red_dot                  0      (3.243 0.000 5.736)  (0.0000 0.0000 0.0000 1.0000)  (3.243 0.000 5.736)
+  14   tag_scope                    0      (2.803 0.000 6.023)  (0.0000 0.0000 0.0000 1.0000)  (2.803 0.000 6.023)
+  15   tag_sight_off                0      (6.897 0.000 5.659)  (0.0000 0.0000 0.0000 1.0000)  (6.897 0.000 5.659)
+  16   tag_sight_on                 0      (6.328 0.000 5.688)  (0.0000 0.0000 0.0000 1.0000)  (6.328 0.000 5.688)
+  17   tag_target_enhancer          0      (2.975 0.000 6.336)  (0.0000 0.0000 0.0000 1.0000)  (2.975 0.000 6.336)
+  18   tag_thermal_scope            0      (3.458 0.000 6.080)  (0.0000 0.0000 0.0000 1.0000)  (3.458 0.000 6.080)
+  19   tag_tracker                  0      (18.256 0.535 2.632)  (0.0000 0.0000 0.0000 1.0000)  (18.256 0.535 2.632)
+  20   tag_ui_ammo                  0      (1.960 -1.139 6.379)  (0.0000 0.0000 0.0000 1.0000)  (1.960 -1.139 6.379)
+  21   tag_vrd                      0      (2.921 0.000 6.040)  (0.0000 0.0000 0.0000 1.0000)  (2.921 0.000 6.040)
+  22   cablecross1_l                1      (11.835 10.934 -4.409)  (0.0000 0.0000 0.1742 0.9847)  (8.288 -0.000 -0.221)
+  23   cablecross1_r                2      (11.835 10.934 3.966)  (0.0000 0.0000 0.1742 0.9847)  (8.288 -0.000 0.221)
+  24   string_cl                    4      (-1.630 0.174 -4.404)  (0.9462 0.3237 0.0000 0.0000)  (0.107 0.174 0.000)
+  25   string_cr                    4      (-1.630 -0.174 -4.404)  (0.0000 0.0000 -0.3237 0.9462)  (0.107 -0.174 0.000)
+  26   wheel_l                      1      (11.835 10.934 -4.188)  (0.0000 0.0000 0.1742 0.9847)  (8.288 -0.000 0.000)
+  27   wheel_r                      2      (11.835 10.934 4.188)  (0.0000 0.0000 0.1742 0.9847)  (8.288 -0.000 0.000)
+  28   cablecross2a_l               26     (8.196 1.862 -0.006)  (0.4058 0.9124 -0.0217 0.0489)  (0.092 -1.862 -0.006)
+  29   cablecross2a_r               27     (8.196 -1.862 -0.006)  (-0.4058 -0.9124 -0.0217 0.0489)  (0.092 -1.862 0.006)
+  30   stringwheel_l                26     (7.241 0.792 0.217)  (0.0000 0.0000 0.3237 0.9462)  (1.047 -0.792 0.217)
+  31   stringwheel_r                27     (7.241 -0.792 0.217)  (0.0000 0.0000 0.3237 0.9462)  (1.047 -0.792 -0.217)
+  32   cablecross2b_l               28     (-0.236 -2.518 0.019)  (-0.4058 -0.9124 0.0217 0.0489)  (1.803 0.000 0.000)
+  33   cablecross2b_r               29     (2.515 -0.024 0.264)  (0.4058 0.9124 0.0217 0.0489)  (1.803 0.000 -0.000)
+  34   stringwheel2_l               30     (-0.568 -0.562 -0.217)  (0.0000 0.0000 0.0000 1.0000)  (1.152 0.000 0.000)
+  35   stringwheel2_r               31     (0.403 0.690 -0.217)  (0.0000 0.0000 0.0000 1.0000)  (1.152 0.000 0.000)
+
+surfaces (LOD0):
+  [ 0] verts=983    tris=954    flags=0x0002 rigid=1  material=m/mtl_crossbow_scope_base
+  [ 1] verts=53     tris=70     flags=0x0022 rigid=1  material=ms/mtl_crossbow_scope_base
+  [ 2] verts=4      tris=2      flags=0x0002 rigid=1  material=m/mtl_player_emblem
+  [ 3] verts=10     tris=8      flags=0x0002 rigid=1  material=m/mtl_crossbow_target
+  [ 4] verts=10230  tris=11442  flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [ 5] verts=2960   tris=2924   flags=0x0006 rigid=0  material=m/mtl_crossbow_base
+       blend weights=5920 bytes (XBlendInfo), table=94720 bytes
+  [ 6] verts=1164   tris=960    flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [ 7] verts=802    tris=1032   flags=0x0026 rigid=0  material=ms/mtl_crossbow_base
+       blend weights=1884 bytes (XBlendInfo), table=25664 bytes
+  [ 8] verts=1767   tris=1712   flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [ 9] verts=1767   tris=1712   flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [10] verts=63     tris=72     flags=0x0022 rigid=1  material=ms/mtl_crossbow_base
+  [11] verts=404    tris=472    flags=0x0022 rigid=1  material=ms/mtl_crossbow_base
+  [12] verts=810    tris=598    flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [13] verts=810    tris=598    flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [14] verts=349    tris=436    flags=0x0022 rigid=1  material=ms/mtl_crossbow_base
+  [15] verts=349    tris=436    flags=0x0022 rigid=1  material=ms/mtl_crossbow_base
+  [16] verts=450    tris=350    flags=0x0002 rigid=1  material=m/mtl_crossbow_base
+  [17] verts=62     tris=84     flags=0x0022 rigid=1  material=ms/mtl_crossbow_base
+  [18] verts=6      tris=4      flags=0x0002 rigid=1  material=m/mtl_crossbow_glass_base
+  [19] verts=792    tris=588    flags=0x0002 rigid=1  material=m/mtl_iron_sights_color
+
+materials: 8
+  m/mtl_crossbow_scope_base
+    json: missing (material json not found)
+  ms/mtl_crossbow_scope_base
+    json: missing (material json not found)
+  m/mtl_player_emblem
+    json: missing (material json not found)
+  m/mtl_crossbow_target
+    json: missing (material json not found)
+  m/mtl_crossbow_base
+    json: C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\zonetool\mod\materials\m/mtl_crossbow_base.json
+    techset: m_l_sm_lmpb_dc1dn1ds1dg1dna1_r0c0n0sd0sr0om0_nfwpf_ctq_s1
+    color      cloak_detail3                                image file found
+    color      camo_transparent_col                         image file found
+    specular   ~crossbow_spc-rgb&crossbow_cos-l-67          image file found
+    normal     crossbow_nml                                 image file found
+    normal     camo_nml                                     image file found
+    occlusion  ~crossbow_occ-l                              image file found
+    color      crossbow_col                                 image file found
+    color      crossbow_mask_02                             image file found
+    specular   ~camo_spcmaps_01_spc-rgb&camo~b29a8732       image file found
+    environment ~envbrdflut_ggx_16-rg                        image file found
+  m/mtl_crossbow_base
+    json: C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\zonetool\mod\materials\m/mtl_crossbow_base.json
+    techset: m_l_sm_lmpb_dc1dn1ds1dg1dna1_r0c0n0sd0sr0om0_nfwpf_ctq_s1
+    color      cloak_detail3                                image file found
+    color      camo_transparent_col                         image file found
+    specular   ~crossbow_spc-rgb&crossbow_cos-l-67          image file found
+    normal     crossbow_nml                                 image file found
+    normal     camo_nml                                     image file found
+    occlusion  ~crossbow_occ-l                              image file found
+    color      crossbow_col                                 image file found
+    color      crossbow_mask_02                             image file found
+    specular   ~camo_spcmaps_01_spc-rgb&camo~b29a8732       image file found
+    environment ~envbrdflut_ggx_16-rg                        image file found
+  m/mtl_crossbow_glass_base
+    json: missing (material json not found)
+  m/mtl_iron_sights_color
+    json: missing (material json not found)
+
+warnings (6):
+  material m/mtl_crossbow_scope_base: json not found
+  material ms/mtl_crossbow_scope_base: json not found
+  material m/mtl_player_emblem: json not found
+  material m/mtl_crossbow_target: json not found
+  material m/mtl_crossbow_glass_base: json not found
+  material m/mtl_iron_sights_color: json not found

@@ -16,6 +16,9 @@ obj/
 workbench.json
 imgui.ini
 
+# Reference source checkouts (read-only reference, never committed)
+.ref/
+
 # OS / editor noise
 Thumbs.db
 desktop.ini
