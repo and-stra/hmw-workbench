@@ -33,6 +33,8 @@ private:
 	void DrawTimelinePanel();
 	void DrawModelInspector();
 	void DrawWeaponInspector();
+	void DrawTagEditor();
+	void DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspect);
 	void DrawAnimInspector();
 	void BuildLayout(ImGuiID dockspaceId, const ImVec2& size);
 	void HandleViewportInput(const ImVec2& viewportSize);
@@ -70,6 +72,16 @@ private:
 	std::vector<std::string> handsOptions_;
 	bool firstPersonRequested_ = false;
 	char attachmentSearch_[96] = {};
+	std::string selectedTag_;
+	int gizmoMode_ = 0; // 0 = translate, 1 = rotate
+	bool showGizmo_ = true;
+	bool showGhost_ = true;
+	std::string tagSaveStatus_;
+	char newTagName_[64] = "tag_";
+	char newTagCopy_[64] = "tag_red_dot";
+	std::string newTagParent_;
+	float newTagPos_[3] = {0.0f, 0.0f, 0.0f};
+	float newTagRot_[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
 } // namespace wb

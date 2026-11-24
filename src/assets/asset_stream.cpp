@@ -48,6 +48,12 @@ void AssetStream::EnsureAvailable(std::size_t bytes, const char* what) const {
 	}
 }
 
+void AssetStream::Record(RecordedItem item) {
+	if (recorder_ != nullptr) {
+		recorder_->push_back(std::move(item));
+	}
+}
+
 std::uint8_t AssetStream::ReadType() {
 	EnsureAvailable(1, "a type tag");
 	return data_[position_++];
@@ -81,6 +87,10 @@ std::string AssetStream::ReadString() {
 		EnsureAvailable(1, "a string header");
 		const std::uint8_t existing = data_[position_++];
 		if (!existing) {
+			RecordedItem item;
+			item.type = type;
+			item.existing = false;
+			Record(std::move(item));
 			return {};
 		}
 		Entry entry;
@@ -88,6 +98,12 @@ std::string AssetStream::ReadString() {
 		entry.offset = position_;
 		entry.text = ReadCString();
 		entries_.push_back(std::move(entry));
+		RecordedItem item;
+		item.type = type;
+		item.existing = true;
+		item.text = entries_.back().text;
+		item.entryIndex = static_cast<std::uint32_t>(entries_.size() - 1);
+		Record(std::move(item));
 		return entries_.back().text;
 	}
 	if (type == kTypeOffset) {
@@ -103,6 +119,11 @@ std::string AssetStream::ReadString() {
 		if (sub != 0) {
 			throw AssetError("string offset has a non-zero sub-index");
 		}
+		RecordedItem item;
+		item.type = type;
+		item.refIndex = index;
+		item.refSub = sub;
+		Record(std::move(item));
 		return entry.text;
 	}
 	throw AssetError("expected a string, got tag " + std::to_string(type));
@@ -114,6 +135,10 @@ std::string AssetStream::ReadAssetName() {
 		EnsureAvailable(1, "an asset header");
 		const std::uint8_t existing = data_[position_++];
 		if (!existing) {
+			RecordedItem item;
+			item.type = type;
+			item.existing = false;
+			Record(std::move(item));
 			return {};
 		}
 		Entry entry;
@@ -121,6 +146,12 @@ std::string AssetStream::ReadAssetName() {
 		entry.offset = position_;
 		entry.text = ReadCString();
 		entries_.push_back(std::move(entry));
+		RecordedItem item;
+		item.type = type;
+		item.existing = true;
+		item.text = entries_.back().text;
+		item.entryIndex = static_cast<std::uint32_t>(entries_.size() - 1);
+		Record(std::move(item));
 		return entries_.back().text;
 	}
 	if (type == kTypeOffset) {
@@ -136,6 +167,11 @@ std::string AssetStream::ReadAssetName() {
 		if (sub != 0) {
 			throw AssetError("asset offset has a non-zero sub-index");
 		}
+		RecordedItem item;
+		item.type = type;
+		item.refIndex = index;
+		item.refSub = sub;
+		Record(std::move(item));
 		return entry.text;
 	}
 	throw AssetError("expected an asset reference, got tag " + std::to_string(type));
@@ -149,6 +185,11 @@ ArrayView<T> AssetStream::ReadArrayView() {
 		EnsureAvailable(1, "an array header");
 		const std::uint8_t existing = data_[position_++];
 		if (!existing) {
+			RecordedItem item;
+			item.type = type;
+			item.existing = false;
+			item.elementSize = sizeof(T);
+			Record(std::move(item));
 			return {};
 		}
 		const std::uint32_t count = ReadU32();
@@ -163,6 +204,15 @@ ArrayView<T> AssetStream::ReadArrayView() {
 		entry.count = count;
 		entry.elementSize = sizeof(T);
 		entries_.push_back(entry);
+		RecordedItem item;
+		item.type = type;
+		item.existing = true;
+		item.count = count;
+		item.elementSize = sizeof(T);
+		item.body.assign(data_.begin() + static_cast<std::ptrdiff_t>(offset),
+		                 data_.begin() + static_cast<std::ptrdiff_t>(offset + bytes));
+		item.entryIndex = static_cast<std::uint32_t>(entries_.size() - 1);
+		Record(std::move(item));
 		return {reinterpret_cast<const T*>(data_.data() + offset), count};
 	}
 	if (type == kTypeOffset) {
@@ -178,6 +228,12 @@ ArrayView<T> AssetStream::ReadArrayView() {
 		if (sub > entry.count) {
 			throw AssetError("array offset is out of range");
 		}
+		RecordedItem item;
+		item.type = type;
+		item.refIndex = index;
+		item.refSub = sub;
+		item.elementSize = sizeof(T);
+		Record(std::move(item));
 		return {reinterpret_cast<const T*>(data_.data() + entry.offset + static_cast<std::size_t>(sub) * sizeof(T)),
 		        entry.count - sub};
 	}
@@ -190,6 +246,10 @@ std::vector<std::uint8_t> AssetStream::ReadRawBytes() {
 		EnsureAvailable(1, "a raw header");
 		const std::uint8_t existing = data_[position_++];
 		if (!existing) {
+			RecordedItem item;
+			item.type = type;
+			item.existing = false;
+			Record(std::move(item));
 			return {};
 		}
 		const std::uint32_t size = ReadU32();
@@ -203,6 +263,14 @@ std::vector<std::uint8_t> AssetStream::ReadRawBytes() {
 		entry.count = size;
 		entry.elementSize = 1;
 		entries_.push_back(entry);
+		RecordedItem item;
+		item.type = type;
+		item.existing = true;
+		item.count = size;
+		item.body.assign(data_.begin() + static_cast<std::ptrdiff_t>(offset),
+		                 data_.begin() + static_cast<std::ptrdiff_t>(offset + size));
+		item.entryIndex = static_cast<std::uint32_t>(entries_.size() - 1);
+		Record(std::move(item));
 		return std::vector<std::uint8_t>(data_.begin() + static_cast<std::ptrdiff_t>(offset),
 		                                 data_.begin() + static_cast<std::ptrdiff_t>(offset + size));
 	}

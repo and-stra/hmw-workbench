@@ -8,9 +8,19 @@
 #include <cstring>
 
 namespace wb::assets {
+
+class AssetStream;
+
+XModelData ParseXModel(AssetStream& stream);
+
 XModelData LoadXModel(const std::filesystem::path& path) {
 	AssetStream stream = AssetStream::FromFile(path);
+	XModelData model = ParseXModel(stream);
+	model.path = path;
+	return model;
+}
 
+XModelData ParseXModel(AssetStream& stream) {
 	const std::vector<h1::XModelRaw> header = stream.ReadSingle<h1::XModelRaw>();
 	if (header.empty()) {
 		throw AssetError("missing XModel struct");
@@ -18,7 +28,6 @@ XModelData LoadXModel(const std::filesystem::path& path) {
 	const h1::XModelRaw& raw = header.front();
 
 	XModelData model;
-	model.path = path;
 	model.name = stream.ReadString();
 	model.numBones = raw.numBones;
 	model.numRootBones = raw.numRootBones;
@@ -119,6 +128,7 @@ XModelData LoadXModel(const std::filesystem::path& path) {
 			const h1::DObjAnimMat& mat = baseMat[i];
 			bone.worldQuat = DirectX::XMFLOAT4(mat.quat[0], mat.quat[1], mat.quat[2], mat.quat[3]);
 			bone.worldPos = DirectX::XMFLOAT3(mat.trans[0], mat.trans[1], mat.trans[2]);
+			bone.bindTransWeight = mat.transWeight;
 		}
 		if (i >= raw.numRootBones) {
 			const std::size_t tagIndex = i - raw.numRootBones;
@@ -126,6 +136,12 @@ XModelData LoadXModel(const std::filesystem::path& path) {
 				bone.tagPosition = DirectX::XMFLOAT3(tagPositions[tagIndex].x, tagPositions[tagIndex].y,
 				                                     tagPositions[tagIndex].z);
 				bone.hasTagPosition = true;
+			}
+			if (tagIndex < tagAngles.size()) {
+				bone.tagAngle[0] = tagAngles[tagIndex].x;
+				bone.tagAngle[1] = tagAngles[tagIndex].y;
+				bone.tagAngle[2] = tagAngles[tagIndex].z;
+				bone.tagAngle[3] = tagAngles[tagIndex].base;
 			}
 		}
 

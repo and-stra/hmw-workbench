@@ -1,0 +1,7 @@
+
+roundtrip summary:
+  files:     523
+  identical: 523
+  different: 0
+  errors:    0
+  output:    C:\Games\cod-hwm\hmw-workbench\build\roundtrip

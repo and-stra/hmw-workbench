@@ -151,6 +151,39 @@ void StoreZero(DirectX::XMFLOAT4X4& matrix) {
 	std::memset(&matrix, 0, sizeof(matrix));
 }
 
+DirectX::XMFLOAT4 NormalizeQuat(DirectX::XMFLOAT4 q) {
+	const float length = std::sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+	if (length > 1.0e-8f) {
+		q.x /= length;
+		q.y /= length;
+		q.z /= length;
+		q.w /= length;
+	} else {
+		q = {0.0f, 0.0f, 0.0f, 1.0f};
+	}
+	return q;
+}
+
+DirectX::XMFLOAT4 InverseQuat(const DirectX::XMFLOAT4& q) {
+	DirectX::XMFLOAT4 out;
+	DirectX::XMStoreFloat4(&out, DirectX::XMQuaternionInverse(DirectX::XMLoadFloat4(&q)));
+	return out;
+}
+
+DirectX::XMFLOAT4 MultiplyQuat(const DirectX::XMFLOAT4& a, const DirectX::XMFLOAT4& b) {
+	DirectX::XMFLOAT4 out;
+	DirectX::XMStoreFloat4(&out, DirectX::XMQuaternionMultiply(DirectX::XMLoadFloat4(&a),
+	                                                          DirectX::XMLoadFloat4(&b)));
+	return out;
+}
+
+DirectX::XMFLOAT3 Rotate(const DirectX::XMFLOAT3& value, const DirectX::XMFLOAT4& q) {
+	DirectX::XMFLOAT3 out;
+	DirectX::XMStoreFloat3(&out, DirectX::XMVector3Rotate(DirectX::XMLoadFloat3(&value),
+	                                                      DirectX::XMLoadFloat4(&q)));
+	return out;
+}
+
 float BoundsRadius(const DirectX::XMFLOAT3& halfSize) {
 	return std::max({halfSize.x, halfSize.y, halfSize.z, 0.25f}) * 1.1f;
 }
@@ -193,6 +226,7 @@ void Workbench::SetRoots(std::vector<std::filesystem::path> roots) {
 
 void Workbench::ClearWeapon() {
 	ClearAttachments();
+	ClearEditableDocument();
 	attachmentCatalogValid_ = false;
 	attachmentCatalog_.clear();
 	hasWeapon_ = false;
@@ -212,6 +246,9 @@ void Workbench::ClearModel() {
 	gpuModel_.reset();
 	modelError_.clear();
 	modelSurfaceVisible_.clear();
+	if (!documentIsWeapon_) {
+		ClearEditableDocument();
+	}
 }
 
 void Workbench::ClearAttachments() {
@@ -434,6 +471,406 @@ void Workbench::DetachAll() {
 	BuildPose();
 }
 
+void Workbench::ClearEditableDocument() {
+	document_.reset();
+	documentIsWeapon_ = false;
+}
+
+void Workbench::LoadEditableDocumentForWeapon(const std::string& modelName) {
+	ClearEditableDocument();
+	const std::optional<std::filesystem::path> path = assets::FindModelFile(roots_, modelName);
+	if (!path.has_value()) {
+		return;
+	}
+	auto document = std::make_unique<assets::XModelDocument>();
+	std::string error;
+	if (assets::LoadXModelDocument(*path, *document, error)) {
+		document_ = std::move(document);
+		documentIsWeapon_ = true;
+	}
+}
+
+void Workbench::LoadEditableDocumentForModel(const std::string& modelName) {
+	ClearEditableDocument();
+	const std::optional<std::filesystem::path> path = assets::FindModelFile(roots_, modelName);
+	if (!path.has_value()) {
+		return;
+	}
+	auto document = std::make_unique<assets::XModelDocument>();
+	std::string error;
+	if (assets::LoadXModelDocument(*path, *document, error)) {
+		document_ = std::move(document);
+		documentIsWeapon_ = false;
+	}
+}
+
+std::string Workbench::EditableModelName() const {
+	return document_ ? document_->model.name : std::string();
+}
+
+void Workbench::SyncDocumentToScene() {
+	if (!document_) {
+		return;
+	}
+	if (documentIsWeapon_ && hasWeapon_) {
+		viewmodel_.gun.model = document_->model;
+		attachmentCatalogValid_ = false;
+	} else if (!documentIsWeapon_ && hasModel_) {
+		model_.model = document_->model;
+	}
+	BuildPose();
+}
+
+std::vector<TagEditInfo> Workbench::EditableTags() const {
+	std::vector<TagEditInfo> tags;
+	if (!document_) {
+		return tags;
+	}
+	for (std::size_t i = 0; i < document_->model.bones.size(); ++i) {
+		const assets::BoneData& bone = document_->model.bones[i];
+		if (!bone.IsTag()) {
+			continue;
+		}
+		TagEditInfo info;
+		info.name = bone.name;
+		info.parent = bone.parent >= 0
+		                  ? document_->model.bones[static_cast<std::size_t>(bone.parent)].name
+		                  : std::string();
+		info.localPos = bone.localPos;
+		info.localQuat = bone.localQuat;
+		info.worldPos = bone.worldPos;
+		info.added = i < document_->addedBones.size() && document_->addedBones[i];
+		tags.push_back(info);
+	}
+	return tags;
+}
+
+bool Workbench::HasTagChanges() const {
+	return document_ != nullptr && assets::HasTagChanges(*document_);
+}
+
+bool Workbench::MoveTagLocal(const std::string& tag, const DirectX::XMFLOAT3& localPos,
+                             const DirectX::XMFLOAT4& localQuat, std::string& error) {
+	if (!document_) {
+		error = "no editable model loaded";
+		return false;
+	}
+	if (!assets::MoveTagLocal(*document_, tag, localPos, localQuat, error)) {
+		return false;
+	}
+	SyncDocumentToScene();
+	return true;
+}
+
+bool Workbench::TagPoseWorld(const std::string& tag, DirectX::XMFLOAT4X4& out) const {
+	const int index = FindPoseBone(pose_, tag);
+	if (index < 0) {
+		return false;
+	}
+	DirectX::XMStoreFloat4x4(&out, PoseBoneMatrix(pose_.bones[static_cast<std::size_t>(index)]));
+	return true;
+}
+
+bool Workbench::TagGhostWorld(const std::string& tag, DirectX::XMFLOAT3& out) const {
+	if (!document_) {
+		return false;
+	}
+	for (std::size_t i = 0; i < document_->originalModel.bones.size(); ++i) {
+		const assets::BoneData& original = document_->originalModel.bones[i];
+		if (original.name != tag) {
+			continue;
+		}
+		DirectX::XMFLOAT4 parentQuat{0.0f, 0.0f, 0.0f, 1.0f};
+		DirectX::XMFLOAT3 parentPos{0.0f, 0.0f, 0.0f};
+		if (original.parent >= 0 &&
+		    static_cast<std::size_t>(original.parent) < document_->originalModel.bones.size()) {
+			const assets::BoneData& parent =
+			    document_->originalModel.bones[static_cast<std::size_t>(original.parent)];
+			// Follow the animated parent in the current pose when possible.
+			const int poseIndex = FindPoseBone(pose_, parent.name);
+			if (poseIndex >= 0) {
+				parentQuat = pose_.bones[static_cast<std::size_t>(poseIndex)].worldQuat;
+				parentPos = pose_.bones[static_cast<std::size_t>(poseIndex)].worldPos;
+			} else {
+				parentQuat = parent.worldQuat;
+				parentPos = parent.worldPos;
+			}
+		}
+		const DirectX::XMFLOAT3 rotated = Rotate(original.localPos, parentQuat);
+		out = {parentPos.x + rotated.x, parentPos.y + rotated.y, parentPos.z + rotated.z};
+		return true;
+	}
+	return false;
+}
+
+bool Workbench::MoveTagWorld(const std::string& tag, const DirectX::XMFLOAT3& worldPos,
+                             const DirectX::XMFLOAT4& worldQuat, std::string& error) {
+	const int index = FindPoseBone(pose_, tag);
+	if (index < 0) {
+		error = "tag not in the pose: " + tag;
+		return false;
+	}
+	const scene::PoseBone& bone = pose_.bones[static_cast<std::size_t>(index)];
+	if (bone.parent < 0) {
+		error = "tag has no parent";
+		return false;
+	}
+	const scene::PoseBone& parent = pose_.bones[static_cast<std::size_t>(bone.parent)];
+	const DirectX::XMFLOAT4 inverseParent =
+	    InverseQuat(parent.worldQuat);
+	const DirectX::XMFLOAT3 offset = {worldPos.x - parent.worldPos.x, worldPos.y - parent.worldPos.y,
+	                                 worldPos.z - parent.worldPos.z};
+	const DirectX::XMFLOAT3 localPos = Rotate(offset, inverseParent);
+	const DirectX::XMFLOAT4 localQuat = NormalizeQuat(DirectX::XMFLOAT4{
+	    worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w});
+	const DirectX::XMFLOAT4 local = NormalizeQuat(MultiplyQuat(localQuat, inverseParent));
+	return MoveTagLocal(tag, localPos, local, error);
+}
+
+bool Workbench::AddTag(const std::string& tag, const std::string& parent, const std::string& copyFrom,
+                       const DirectX::XMFLOAT3& localPos, const DirectX::XMFLOAT4& localQuat,
+                       std::string& error) {
+	if (!document_) {
+		error = "no editable model loaded";
+		return false;
+	}
+	if (!assets::AddTag(*document_, tag, parent, copyFrom, localPos, localQuat, error)) {
+		return false;
+	}
+	SyncDocumentToScene();
+	return true;
+}
+
+bool Workbench::RevertTag(const std::string& tag, std::string& error) {
+	if (!document_) {
+		error = "no editable model loaded";
+		return false;
+	}
+	if (!assets::RevertTag(*document_, tag, error)) {
+		return false;
+	}
+	SyncDocumentToScene();
+	return true;
+}
+
+void Workbench::RevertAllTags() {
+	if (!document_) {
+		return;
+	}
+	auto document = std::make_unique<assets::XModelDocument>();
+	std::string error;
+	const bool isWeapon = documentIsWeapon_;
+	if (assets::LoadXModelDocument(document_->path, *document, error)) {
+		document_ = std::move(document);
+		documentIsWeapon_ = isWeapon;
+		SyncDocumentToScene();
+	}
+}
+
+bool Workbench::SaveEditedModel(ModelSaveResult& result, std::string& error) {
+	if (!document_) {
+		error = "no editable model loaded";
+		return false;
+	}
+	const std::filesystem::path path = document_->path;
+	const std::filesystem::path backup = std::filesystem::path(path.string() + ".bak");
+	std::error_code ec;
+	if (!std::filesystem::exists(backup, ec)) {
+		std::filesystem::copy_file(path, backup, std::filesystem::copy_options::none, ec);
+		if (ec) {
+			error = "cannot create " + backup.string() + ": " + ec.message();
+			return false;
+		}
+	}
+	if (!assets::SaveXModelDocument(*document_, path, error)) {
+		return false;
+	}
+	const std::filesystem::path tagsPath =
+	    path.parent_path() / (path.stem().string() + ".tags.json");
+	if (!assets::WriteTagsJson(*document_, path, tagsPath, error)) {
+		return false;
+	}
+
+	// Re-read the saved model and run the same checks as -validate on it.
+	auto reloaded = std::make_unique<assets::XModelDocument>();
+	std::string reloadError;
+	if (!assets::LoadXModelDocument(path, *reloaded, reloadError)) {
+		error = "saved file does not reload: " + reloadError;
+		return false;
+	}
+	const bool isWeapon = documentIsWeapon_;
+	document_ = std::move(reloaded);
+	documentIsWeapon_ = isWeapon;
+	SyncDocumentToScene();
+
+	assets::ModelAsset asset;
+	std::string assetError;
+	if (!assets::LoadModelAssetFromFile(path, roots_, asset, assetError, false)) {
+		result.validation = "FAILED: " + assetError;
+	} else {
+		int missingMaterials = 0;
+		for (const assets::MaterialSlot& slot : asset.materials) {
+			if (!slot.jsonFound) {
+				++missingMaterials;
+			}
+		}
+		char buffer[256];
+		std::snprintf(buffer, sizeof(buffer), "ok: %zu surfaces, %zu materials, %d material json missing",
+		              asset.surfaceSet.surfaces.size(), asset.materials.size(), missingMaterials);
+		result.validation = buffer;
+	}
+	result.path = path.string();
+	result.backup = backup.string();
+	result.tagsJson = tagsPath.string();
+	return true;
+}
+
+bool Workbench::FitTagToReticle(const std::string& tag, const std::string& attachment,
+                                TagFitResult& result, std::string& error) {
+	if (!document_) {
+		error = "no editable model loaded";
+		return false;
+	}
+	if (!camera_.IsFirstPerson()) {
+		error = "fit needs the first-person view";
+		return false;
+	}
+	if (!Attach(attachment, error)) {
+		return false;
+	}
+	const AttachmentMount* mount = nullptr;
+	for (const AttachmentMount& candidate : attachments_) {
+		if (candidate.requiredTag == tag || candidate.name == attachment) {
+			mount = &candidate;
+			break;
+		}
+	}
+	if (mount == nullptr || mount->reticleWorlds.empty() || mount->reticles.empty()) {
+		error = "attachment has no mounted reticle for " + tag;
+		return false;
+	}
+
+	const int boneIndex = FindModelBone(document_->model, tag);
+	if (boneIndex < 0) {
+		error = "tag not found: " + tag;
+		return false;
+	}
+	result = TagFitResult{};
+	result.tag = tag;
+	result.attachment = mount->name;
+	result.sourceLocalPos = document_->model.bones[static_cast<std::size_t>(boneIndex)].localPos;
+	result.localDelta = {0.0f, 0.0f, 0.0f};
+	const DirectX::XMFLOAT3 startWorldPos =
+	    document_->model.bones[static_cast<std::size_t>(boneIndex)].worldPos;
+
+	const bool previousAutoAlign = adsAutoAlign_;
+	adsAutoAlign_ = false;
+	ads_ = true;
+	LoadAdsAnim();
+	UpdateViewCamera();
+	BuildPose();
+
+	const int iterations = 6;
+	for (int iteration = 0; iteration < iterations; ++iteration) {
+		const AttachmentMount* current = nullptr;
+		for (const AttachmentMount& candidate : attachments_) {
+			if (candidate.requiredTag == tag) {
+				current = &candidate;
+				break;
+			}
+		}
+		if (current == nullptr || current->reticleWorlds.empty()) {
+			error = "attachment did not mount on " + tag;
+			break;
+		}
+		const DirectX::XMMATRIX reticleWorld =
+		    DirectX::XMLoadFloat4x4(&current->reticleWorlds.front());
+		const DirectX::XMVECTOR aim = DirectX::XMVector3Transform(
+		    DirectX::XMLoadFloat3(&current->reticles.front().boundsCenter), reticleWorld);
+		const DirectX::XMFLOAT3 eye = camera_.Eye();
+		const DirectX::XMFLOAT3 look = camera_.LookTarget();
+		DirectX::XMFLOAT3 forward = {look.x - eye.x, look.y - eye.y, look.z - eye.z};
+		const float length =
+		    std::sqrt(forward.x * forward.x + forward.y * forward.y + forward.z * forward.z);
+		if (length < 1.0e-5f) {
+			error = "no camera direction";
+			break;
+		}
+		forward.x /= length;
+		forward.y /= length;
+		forward.z /= length;
+		const DirectX::XMVECTOR forwardVector =
+		    DirectX::XMVectorSet(forward.x, forward.y, forward.z, 0.0f);
+		const DirectX::XMVECTOR eyeVector = DirectX::XMLoadFloat3(&eye);
+		const float along = DirectX::XMVectorGetX(DirectX::XMVector3Dot(
+		    DirectX::XMVectorSubtract(aim, eyeVector), forwardVector));
+		const DirectX::XMVECTOR onAxis =
+		    DirectX::XMVectorAdd(eyeVector, DirectX::XMVectorScale(forwardVector, along));
+		DirectX::XMFLOAT3 delta;
+		DirectX::XMStoreFloat3(&delta, DirectX::XMVectorSubtract(onAxis, aim));
+		const float distance = std::sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+		if (distance < 5.0e-4f) {
+			result.iterations = iteration;
+			break;
+		}
+
+		const int poseTag = FindPoseBone(pose_, tag);
+		if (poseTag < 0 || pose_.bones[static_cast<std::size_t>(poseTag)].parent < 0) {
+			error = "tag is not in the pose";
+			break;
+		}
+		const scene::PoseBone& poseBone = pose_.bones[static_cast<std::size_t>(poseTag)];
+		const scene::PoseBone& parent = pose_.bones[static_cast<std::size_t>(poseBone.parent)];
+		const DirectX::XMFLOAT3 localDelta = Rotate(delta, InverseQuat(parent.worldQuat));
+		const assets::BoneData& bone = document_->model.bones[static_cast<std::size_t>(boneIndex)];
+		const DirectX::XMFLOAT3 newLocal = {bone.localPos.x + localDelta.x,
+		                                    bone.localPos.y + localDelta.y,
+		                                    bone.localPos.z + localDelta.z};
+		if (!assets::MoveTagLocal(*document_, tag, newLocal, bone.localQuat, error)) {
+			break;
+		}
+		SyncDocumentToScene();
+		result.iterations = iteration + 1;
+	}
+
+	const assets::BoneData& finalBone = document_->model.bones[static_cast<std::size_t>(boneIndex)];
+	result.finalLocalPos = finalBone.localPos;
+	result.localDelta = {finalBone.localPos.x - result.sourceLocalPos.x,
+	                     finalBone.localPos.y - result.sourceLocalPos.y,
+	                     finalBone.localPos.z - result.sourceLocalPos.z};
+	result.startWorldPos = startWorldPos;
+	result.finalWorldPos = finalBone.worldPos;
+	result.worldDelta = {finalBone.worldPos.x - result.startWorldPos.x,
+	                     finalBone.worldPos.y - result.startWorldPos.y,
+	                     finalBone.worldPos.z - result.startWorldPos.z};
+	result.anim = EffectiveAnimForState("ADS_UP");
+	result.screenX = 0.0f;
+	result.screenY = 0.0f;
+	if (mount != nullptr) {
+		const DirectX::XMMATRIX viewProjection = camera_.ViewProjection(1920.0f / 1016.0f);
+		const AttachmentMount* current = nullptr;
+		for (const AttachmentMount& candidate : attachments_) {
+			if (candidate.requiredTag == tag) {
+				current = &candidate;
+				break;
+			}
+		}
+		if (current != nullptr && !current->reticleWorlds.empty()) {
+			const DirectX::XMVECTOR aim = DirectX::XMVector3Transform(
+			    DirectX::XMLoadFloat3(&current->reticles.front().boundsCenter),
+			    DirectX::XMLoadFloat4x4(&current->reticleWorlds.front()));
+			const DirectX::XMVECTOR clip = DirectX::XMVector3TransformCoord(aim, viewProjection);
+			DirectX::XMFLOAT3 ndc;
+			DirectX::XMStoreFloat3(&ndc, clip);
+			result.screenX = (ndc.x * 0.5f + 0.5f) * 1920.0f;
+			result.screenY = (1.0f - (ndc.y * 0.5f + 0.5f)) * 1016.0f;
+		}
+	}
+	adsAutoAlign_ = previousAutoAlign;
+	BuildPose();
+	return error.empty();
+}
+
 bool Workbench::OverrideAppliesToAttachment(const assets::WeaponAnimOverride& entry) const {
 	if (attachments_.empty()) {
 		return false;
@@ -538,6 +975,7 @@ bool Workbench::LoadWeapon(const std::string& weapon, const std::string& hands, 
 	hasWeapon_ = true;
 	gunSurfaceVisible_.assign(viewmodel_.gun.surfaceSet.surfaces.size(), true);
 	handsSurfaceVisible_.assign(viewmodel_.hands.surfaceSet.surfaces.size(), true);
+	LoadEditableDocumentForWeapon(viewmodel_.weapon.gunModel);
 
 	RefreshAnimLists();
 
@@ -608,6 +1046,7 @@ bool Workbench::LoadModel(const std::string& model, std::string& error) {
 	model_ = std::move(loaded);
 	gpuModel_ = std::move(gpu);
 	hasModel_ = true;
+	LoadEditableDocumentForModel(model_.model.name);
 	modelSurfaceVisible_.assign(model_.surfaceSet.surfaces.size(), true);
 	if (!hasWeapon_) {
 		FrameCamera();
@@ -1044,7 +1483,7 @@ void Workbench::BuildPose() {
 			}
 		}
 		UpdateAttachmentWorlds();
-		if (AlignAdsToReticle()) {
+		if (adsAutoAlign_ && AlignAdsToReticle()) {
 			UpdateAttachmentWorlds();
 		}
 		handsPalette_ = scene::BuildBonePalette(viewmodel_.hands.model, pose_, pose_.handsBoneToPose);

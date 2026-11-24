@@ -1,0 +1,142 @@
+﻿hmw-workbench M5 MCP write-tool test
+exe: C:\Games\cod-hwm\hmw-workbench\build\bin\Release\hmw-workbench.exe
+> initialize
+< hmw-workbench 2025-06-18
+
+> tools/call load_weapon {"hands":"viewhands_tf141","weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [],
+  "first_person": true,
+  "gun_model": "vm_crossbow_base",
+  "hands": "viewhands_tf141",
+  "hands_source": "explicit",
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp"
+}
+
+> tools/call get_tags {"name":"tag_reflex"}
+< {
+  "count": 1,
+  "tags": [
+    {
+      "added": false,
+      "local_pos": [
+        3.2427539825439453,
+        6.376158125931397e-05,
+        6.091953277587891
+      ],
+      "name": "tag_reflex",
+      "world_pos": [
+        11.473653793334961,
+        -3.1609363555908203,
+        57.81715393066406
+      ]
+    }
+  ]
+}
+
+> tools/call move_tag {"tag":"tag_reflex","pos":[3.2528,6.38E-05,6.091953]}
+< {
+  "dirty": true,
+  "local_pos": [
+    3.2527999877929688,
+    6.379999831551686e-05,
+    6.091952800750732
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "j_gun",
+  "tag": "tag_reflex",
+  "world_pos": [
+    3.2527999877929688,
+    6.379999831551686e-05,
+    6.091952800750732
+  ]
+}
+
+> tools/call revert_tags {"tag":"tag_reflex"}
+< {
+  "dirty": false,
+  "reverted": "tag_reflex"
+}
+
+> tools/call add_tag {"parent":"j_gun","copy_from":"tag_red_dot","tag":"tag_workbench_test"}
+< {
+  "added": true,
+  "dirty": true,
+  "local_pos": [
+    3.2427539825439453,
+    0.0,
+    5.735755920410156
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "j_gun",
+  "tag": "tag_workbench_test",
+  "world_pos": [
+    3.2427539825439453,
+    0.0,
+    5.735755920410156
+  ]
+}
+
+> tools/call get_tags {"name":"tag_workbench_test"}
+< {
+  "count": 1,
+  "tags": [
+    {
+      "added": true,
+      "local_pos": [
+        3.2427539825439453,
+        0.0,
+        5.735755920410156
+      ],
+      "name": "tag_workbench_test",
+      "world_pos": [
+        11.473653793334961,
+        -3.1610000133514404,
+        57.46095657348633
+      ]
+    }
+  ]
+}
+
+> tools/call revert_tags {}
+< {
+  "dirty": false,
+  "reverted": "all"
+}
+
+> tools/call get_tags {"name":"tag_workbench_test"}
+< {
+  "count": 0,
+  "tags": []
+}
+
+checks:
+  PASS load_weapon
+  PASS loaded crossbow
+  PASS get_tags
+  PASS tag_reflex present
+  PASS move_tag
+  PASS move_tag (dirty)
+  PASS revert_tags
+  PASS revert_tags single (clean)
+  PASS add_tag
+  PASS add_tag
+  PASS get_tags
+  PASS get_tags sees the added tag
+  PASS revert_tags
+  PASS revert_tags all (clean)
+  PASS get_tags
+  PASS added tag removed by revert
+
+result: 16 passed, 0 failed

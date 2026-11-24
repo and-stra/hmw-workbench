@@ -22,6 +22,20 @@ struct ArrayView {
 	std::uint32_t count = 0;
 };
 
+// One read operation, used by the .xmb round-trip writer. Inline items keep their body and
+// the entry index they got in the reader's reference table; offset items keep index/sub.
+struct RecordedItem {
+	std::uint8_t type = 0; // original type tag (6 string, 7 asset, 8 array, 9 offset, 10 raw)
+	bool existing = false;
+	std::uint32_t count = 0;
+	std::uint32_t elementSize = 1;
+	std::vector<std::uint8_t> body;
+	std::uint32_t refIndex = 0;
+	std::uint32_t refSub = 0;
+	std::string text;
+	std::uint32_t entryIndex = 0xFFFFFFFFu;
+};
+
 // Reader for the tagged stream written by x64-zt's assetmanager (see
 // .ref/x64-zt/src/zonetool/zonetool/utils/io/assetmanager.hpp). Every dumped item is
 // prefixed with a type byte (and an "existing" byte for container types). Offsets
@@ -83,6 +97,8 @@ public:
 
 	std::vector<std::uint8_t> ReadRawBytes();
 
+	void SetRecorder(std::vector<RecordedItem>* recorder) { recorder_ = recorder; }
+
 	template <typename T>
 	void SkipRaw() {
 		ReadRawView<T>();
@@ -114,10 +130,12 @@ private:
 	std::string ReadCString();
 	void EnsureAvailable(std::size_t bytes, const char* what) const;
 	std::uint32_t ReadU32();
+	void Record(RecordedItem item);
 
 	std::vector<std::uint8_t> data_;
 	std::size_t position_ = 0;
 	std::vector<Entry> entries_;
+	std::vector<RecordedItem>* recorder_ = nullptr;
 };
 
 } // namespace wb::assets

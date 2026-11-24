@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <fstream>
+#include <iterator>
 #include <set>
 #include <string>
 #include <vector>
@@ -11,6 +13,7 @@
 #include "assets/model_asset.h"
 #include "assets/weapon.h"
 #include "assets/xanim.h"
+#include "assets/xmodel_document.h"
 #include "assets/xsurface.h"
 
 namespace wb {
@@ -63,8 +66,10 @@ bool PrintModelInfo(const std::string& name, const std::vector<std::filesystem::
 		if (!bone.IsTag()) {
 			continue;
 		}
-		std::printf("  %-28s bone %-3zu world (%.3f %.3f %.3f)\n", bone.name.c_str(), i, bone.worldPos.x,
-		            bone.worldPos.y, bone.worldPos.z);
+		std::printf("  %-28s bone %-3zu world (%.3f %.3f %.3f)  tagpos (%.3f %.3f %.3f)  angle (%d %d %d %d)\n",
+		            bone.name.c_str(), i, bone.worldPos.x, bone.worldPos.y, bone.worldPos.z,
+		            bone.tagPosition.x, bone.tagPosition.y, bone.tagPosition.z, bone.tagAngle[0],
+		            bone.tagAngle[1], bone.tagAngle[2], bone.tagAngle[3]);
 	}
 	std::printf("\n");
 
@@ -245,6 +250,96 @@ int RunValidate(const std::vector<std::filesystem::path>& roots) {
 	            missingMaterials.size());
 	std::printf("  models with missing surface data: %zu\n", modelsMissingSurfaces.size());
 	return modelFailed + surfaceFailed + materialFailed;
+}
+
+int RunRoundTrip(const std::vector<std::filesystem::path>& roots, const std::filesystem::path& outputDir,
+                 std::FILE* out) {
+	int total = 0;
+	int identical = 0;
+	int different = 0;
+	int errors = 0;
+	std::vector<std::filesystem::path> files;
+	for (std::size_t rootIndex = 0; rootIndex < roots.size(); ++rootIndex) {
+		const std::filesystem::path folder = roots[rootIndex] / "xmodel";
+		std::error_code ec;
+		for (std::filesystem::directory_iterator it(folder, ec), end; !ec && it != end; it.increment(ec)) {
+			std::error_code fileEc;
+			if (it->is_regular_file(fileEc) && it->path().extension() == ".xmb") {
+				files.push_back(it->path());
+			}
+		}
+	}
+	std::sort(files.begin(), files.end());
+
+	for (const std::filesystem::path& source : files) {
+		++total;
+		std::vector<std::uint8_t> original;
+		{
+			std::ifstream in(source, std::ios::binary);
+			original.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+		}
+		if (original.empty()) {
+			std::fprintf(out, "FAIL read %s\n", source.string().c_str());
+			++errors;
+			continue;
+		}
+
+		assets::XModelDocument document;
+		std::string error;
+		if (!assets::LoadXModelDocument(source, document, error)) {
+			std::fprintf(out, "FAIL parse %s: %s\n", source.string().c_str(), error.c_str());
+			++errors;
+			continue;
+		}
+
+		std::filesystem::path target = outputDir / source.parent_path().parent_path().filename() /
+		                               source.filename();
+		std::error_code ec;
+		std::filesystem::create_directories(target.parent_path(), ec);
+		if (!assets::SaveXModelDocument(document, target, error)) {
+			std::fprintf(out, "FAIL write %s: %s\n", source.string().c_str(), error.c_str());
+			++errors;
+			continue;
+		}
+
+		std::vector<std::uint8_t> written;
+		{
+			std::ifstream in(target, std::ios::binary);
+			written.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+		}
+		if (written == original) {
+			++identical;
+		} else {
+			++different;
+			std::size_t first = 0;
+			const std::size_t limit = std::min(original.size(), written.size());
+			while (first < limit && original[first] == written[first]) {
+				++first;
+			}
+			std::fprintf(out, "DIFF %s (original %zu B, written %zu B, first difference at %zu)\n",
+			             source.string().c_str(), original.size(), written.size(), first);
+		}
+
+		// Re-read the written file: it must parse and keep the bone count/name.
+		try {
+			const assets::XModelData reloaded = assets::LoadXModel(target);
+			if (reloaded.numBones != document.model.numBones || reloaded.name != document.model.name) {
+				std::fprintf(out, "FAIL reload %s: bone count/name changed\n", target.string().c_str());
+				++errors;
+			}
+		} catch (const std::exception& e) {
+			std::fprintf(out, "FAIL reload %s: %s\n", target.string().c_str(), e.what());
+			++errors;
+		}
+	}
+
+	std::fprintf(out, "\nroundtrip summary:\n");
+	std::fprintf(out, "  files:     %d\n", total);
+	std::fprintf(out, "  identical: %d\n", identical);
+	std::fprintf(out, "  different: %d\n", different);
+	std::fprintf(out, "  errors:    %d\n", errors);
+	std::fprintf(out, "  output:    %s\n", outputDir.string().c_str());
+	return different + errors;
 }
 
 bool PrintAnimInfo(const std::string& name, const std::vector<std::filesystem::path>& roots) {

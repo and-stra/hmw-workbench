@@ -14,7 +14,9 @@
 #include "assets/asset_index.h"
 #include "assets/attachment.h"
 #include "assets/model_asset.h"
+#include "assets/weapon.h"
 #include "assets/xanim.h"
+#include "assets/xmodel_document.h"
 #include "render/camera.h"
 #include "render/renderer.h"
 #include "scene/animation.h"
@@ -56,6 +58,37 @@ struct AttachmentFitReport {
 	std::string handsModel;
 	std::vector<std::string> weaponTags;
 	std::vector<AttachmentFitEntry> attachments;
+};
+
+struct TagEditInfo {
+	std::string name;
+	std::string parent;
+	DirectX::XMFLOAT3 localPos{};
+	DirectX::XMFLOAT4 localQuat{0.0f, 0.0f, 0.0f, 1.0f};
+	DirectX::XMFLOAT3 worldPos{};
+	bool added = false;
+};
+
+struct ModelSaveResult {
+	std::string path;
+	std::string backup;
+	std::string tagsJson;
+	std::string validation;
+};
+
+struct TagFitResult {
+	std::string tag;
+	std::string attachment;
+	std::string anim;
+	DirectX::XMFLOAT3 sourceLocalPos{};
+	DirectX::XMFLOAT3 finalLocalPos{};
+	DirectX::XMFLOAT3 localDelta{};
+	DirectX::XMFLOAT3 startWorldPos{};
+	DirectX::XMFLOAT3 finalWorldPos{};
+	DirectX::XMFLOAT3 worldDelta{};
+	float screenX = 0.0f;
+	float screenY = 0.0f;
+	int iterations = 0;
 };
 
 // Plain scene/command layer shared by the UI, the CLI and (later) the MCP server.
@@ -103,6 +136,29 @@ public:
 	bool IsAnimOverrideActive(const assets::WeaponAnimOverride& entry) const {
 		return OverrideAppliesToAttachment(entry);
 	}
+
+	// ---- tag editing (weapon gun model or standalone model) ----
+	bool HasEditableModel() const { return document_ != nullptr; }
+	const assets::XModelDocument* Document() const { return document_.get(); }
+	std::string EditableModelName() const;
+	std::vector<TagEditInfo> EditableTags() const;
+	bool HasTagChanges() const;
+	bool MoveTagLocal(const std::string& tag, const DirectX::XMFLOAT3& localPos,
+	                  const DirectX::XMFLOAT4& localQuat, std::string& error);
+	bool MoveTagWorld(const std::string& tag, const DirectX::XMFLOAT3& worldPos,
+	                  const DirectX::XMFLOAT4& worldQuat, std::string& error);
+	bool AddTag(const std::string& tag, const std::string& parent, const std::string& copyFrom,
+	            const DirectX::XMFLOAT3& localPos, const DirectX::XMFLOAT4& localQuat,
+	            std::string& error);
+	bool RevertTag(const std::string& tag, std::string& error);
+	void RevertAllTags();
+	bool TagPoseWorld(const std::string& tag, DirectX::XMFLOAT4X4& out) const;
+	bool TagGhostWorld(const std::string& tag, DirectX::XMFLOAT3& out) const;
+	bool SaveEditedModel(ModelSaveResult& result, std::string& error);
+	void SetAdsAutoAlign(bool enabled) { adsAutoAlign_ = enabled; }
+	bool AdsAutoAlign() const { return adsAutoAlign_; }
+	bool FitTagToReticle(const std::string& tag, const std::string& attachment,
+	                     TagFitResult& result, std::string& error);
 
 	// ---- animation ----
 	bool PlayAnim(const std::string& anim, std::string& error);
@@ -185,6 +241,10 @@ private:
 	void ClearWeapon();
 	void ClearModel();
 	void ClearAttachments();
+	void ClearEditableDocument();
+	void LoadEditableDocumentForWeapon(const std::string& modelName);
+	void LoadEditableDocumentForModel(const std::string& modelName);
+	void SyncDocumentToScene();
 	void RebuildHiddenTags();
 	void UpdateAttachmentWorlds();
 	bool AlignAdsToReticle();
@@ -230,6 +290,9 @@ private:
 	std::vector<std::string> hiddenTags_;
 	std::vector<AttachmentFitEntry> attachmentCatalog_;
 	bool attachmentCatalogValid_ = false;
+	std::unique_ptr<assets::XModelDocument> document_;
+	bool documentIsWeapon_ = false;
+	bool adsAutoAlign_ = true;
 
 	std::string animName_;
 	std::optional<assets::XAnimData> primaryAnim_;

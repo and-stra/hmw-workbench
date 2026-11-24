@@ -5,8 +5,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include <imgui_internal.h>
+#include <ImGuizmo.h>
 
 #include "app/model_overlay.h"
 
@@ -278,6 +280,10 @@ void Application::DrawViewportPanel() {
 
 	HandleViewportInput(available);
 
+	if (workbench_.HasEditableModel() && !selectedTag_.empty() && showGizmo_) {
+		DrawGizmo(imageOrigin, available, aspect);
+	}
+
 	const assets::ModelAsset* standalone = workbench_.Model();
 	if (showBones_ && standalone != nullptr && !standalone->model.bones.empty()) {
 		DirectX::XMFLOAT4X4 viewProjection = {};
@@ -314,6 +320,9 @@ void Application::HandleViewportInput(const ImVec2& viewportSize) {
 	Camera& camera = workbench_.GetCamera();
 	const bool active = ImGui::IsItemActive();
 	const bool hovered = ImGui::IsItemHovered();
+	if (ImGuizmo::IsUsing() || ImGuizmo::IsOver()) {
+		return;
+	}
 
 	if (active) {
 		const ImVec2 delta = io.MouseDelta;
@@ -357,6 +366,8 @@ void Application::DrawInspectorPanel() {
 
 	ImGui::SeparatorText("Model");
 	DrawModelInspector();
+
+	DrawTagEditor();
 
 	ImGui::SeparatorText("Animation");
 	DrawAnimInspector();
@@ -680,6 +691,249 @@ void Application::DrawWeaponInspector() {
 		if (!mount.tagFound) {
 			ImGui::TextColored(ImVec4(1.0f, 0.42f, 0.42f, 1.0f), "weapon has no %s (%s drawn at the weapon origin)",
 			                   mount.requiredTag.c_str(), mount.name.c_str());
+		}
+	}
+}
+
+void Application::DrawTagEditor() {
+	if (!workbench_.HasEditableModel()) {
+		return;
+	}
+	ImGui::SeparatorText("Tags (edit + save)");
+	const std::vector<commands::TagEditInfo> tags = workbench_.EditableTags();
+	const bool dirty = workbench_.HasTagChanges();
+	if (dirty) {
+		ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.3f, 1.0f), "%s  * modified *",
+		                   workbench_.EditableModelName().c_str());
+	} else {
+		ImGui::Text("%s", workbench_.EditableModelName().c_str());
+	}
+	ImGui::TextDisabled("%zu tags  |  %s", tags.size(),
+	                    workbench_.Document() ? workbench_.Document()->path.string().c_str() : "");
+
+	const bool hasSelection = !selectedTag_.empty();
+	if (ImGui::BeginChild("##tag_list", ImVec2(0.0f, 130.0f), ImGuiChildFlags_Borders)) {
+		for (const commands::TagEditInfo& tag : tags) {
+			ImGui::PushID(tag.name.c_str());
+			char label[192];
+			std::snprintf(label, sizeof(label), "%s%s", tag.name.c_str(), tag.added ? "  [added]" : "");
+			if (ImGui::Selectable(label, tag.name == selectedTag_)) {
+				selectedTag_ = tag.name;
+			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("parent %s\nlocal (%.3f %.3f %.3f)\nworld (%.3f %.3f %.3f)",
+				                  tag.parent.c_str(), tag.localPos.x, tag.localPos.y, tag.localPos.z,
+				                  tag.worldPos.x, tag.worldPos.y, tag.worldPos.z);
+			}
+			ImGui::PopID();
+		}
+	}
+	ImGui::EndChild();
+
+	if (hasSelection) {
+		const commands::TagEditInfo* selected = nullptr;
+		for (const commands::TagEditInfo& tag : tags) {
+			if (tag.name == selectedTag_) {
+				selected = &tag;
+			}
+		}
+		if (selected == nullptr) {
+			selectedTag_.clear();
+		} else {
+			float position[3] = {selected->localPos.x, selected->localPos.y, selected->localPos.z};
+			float rotation[4] = {selected->localQuat.x, selected->localQuat.y, selected->localQuat.z,
+			                     selected->localQuat.w};
+			ImGui::Text("%s  (parent %s)", selected->name.c_str(), selected->parent.c_str());
+			bool changed = false;
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			changed |= ImGui::DragFloat3("local position", position, 0.01f, -1000.0f, 1000.0f, "%.3f");
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			changed |= ImGui::DragFloat4("local rotation", rotation, 0.005f, -1.0f, 1.0f, "%.4f");
+			if (changed) {
+				const float length = std::sqrt(rotation[0] * rotation[0] + rotation[1] * rotation[1] +
+				                               rotation[2] * rotation[2] + rotation[3] * rotation[3]);
+				if (length > 1.0e-6f) {
+					for (float& value : rotation) {
+						value /= length;
+					}
+				} else {
+					rotation[3] = 1.0f;
+				}
+				std::string error;
+				if (!workbench_.MoveTagLocal(selected->name,
+				                             {position[0], position[1], position[2]},
+				                             {rotation[0], rotation[1], rotation[2], rotation[3]}, error)) {
+					tagSaveStatus_ = error;
+				}
+			}
+			ImGui::Checkbox("Gizmo", &showGizmo_);
+			ImGui::SameLine();
+			ImGui::Checkbox("Ghost of original", &showGhost_);
+			ImGui::SameLine();
+			if (ImGui::RadioButton("Move", gizmoMode_ == 0)) {
+				gizmoMode_ = 0;
+			}
+			ImGui::SameLine();
+			if (ImGui::RadioButton("Rotate", gizmoMode_ == 1)) {
+				gizmoMode_ = 1;
+			}
+			if (ImGui::Button("Revert tag")) {
+				std::string error;
+				if (!workbench_.RevertTag(selected->name, error)) {
+					tagSaveStatus_ = error;
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Revert all")) {
+				workbench_.RevertAllTags();
+				tagSaveStatus_.clear();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Save model")) {
+				commands::ModelSaveResult saved;
+				std::string error;
+				if (workbench_.SaveEditedModel(saved, error)) {
+					tagSaveStatus_ = "saved " + saved.path + "  (.bak: " + saved.backup + ")  " +
+					                 saved.validation;
+				} else {
+					tagSaveStatus_ = error;
+				}
+			}
+			if (!tagSaveStatus_.empty()) {
+				ImGui::TextWrapped("%s", tagSaveStatus_.c_str());
+			}
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Add tag")) {
+		ImGui::InputTextWithHint("##new_tag_name", "tag_reflex", newTagName_, sizeof(newTagName_));
+		// Tags HMW attachments need, from the fit catalog.
+		std::vector<std::string> needed;
+		for (const commands::AttachmentFitEntry& entry : workbench_.AttachmentCatalog()) {
+			if (!entry.requiredTag.empty() &&
+			    std::find(needed.begin(), needed.end(), entry.requiredTag) == needed.end()) {
+				needed.push_back(entry.requiredTag);
+			}
+		}
+		std::sort(needed.begin(), needed.end());
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::BeginCombo("needed tag", "(pick from the fit report)")) {
+			for (const std::string& name : needed) {
+				if (ImGui::Selectable(name.c_str())) {
+					std::snprintf(newTagName_, sizeof(newTagName_), "%s", name.c_str());
+				}
+			}
+			ImGui::EndCombo();
+		}
+		std::vector<std::string> bones;
+		if (const assets::XModelDocument* document = workbench_.Document()) {
+			for (const assets::BoneData& bone : document->model.bones) {
+				bones.push_back(bone.name);
+			}
+		}
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::BeginCombo("parent", newTagParent_.empty() ? "(j_gun / tag_weapon)" : newTagParent_.c_str())) {
+			if (ImGui::Selectable("(j_gun / tag_weapon)", newTagParent_.empty())) {
+				newTagParent_.clear();
+			}
+			for (const std::string& name : bones) {
+				if (ImGui::Selectable(name.c_str(), newTagParent_ == name)) {
+					newTagParent_ = name;
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::BeginCombo("copy transform from", newTagCopy_)) {
+			for (const commands::TagEditInfo& tag : tags) {
+				if (ImGui::Selectable(tag.name.c_str(), std::string(newTagCopy_) == tag.name)) {
+					std::snprintf(newTagCopy_, sizeof(newTagCopy_), "%s", tag.name.c_str());
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::DragFloat3("##new_tag_pos", newTagPos_, 0.01f, -1000.0f, 1000.0f, "pos %.3f");
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::DragFloat4("##new_tag_rot", newTagRot_, 0.005f, -1.0f, 1.0f, "rot %.4f");
+		if (ImGui::Button("Add tag")) {
+			std::string error;
+			if (workbench_.AddTag(newTagName_, newTagParent_, newTagCopy_,
+			                      {newTagPos_[0], newTagPos_[1], newTagPos_[2]},
+			                      {newTagRot_[0], newTagRot_[1], newTagRot_[2], newTagRot_[3]}, error)) {
+				selectedTag_ = newTagName_;
+				tagSaveStatus_.clear();
+			} else {
+				tagSaveStatus_ = error;
+			}
+		}
+	}
+}
+
+void Application::DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspect) {
+	if (!workbench_.HasEditableModel() || selectedTag_.empty() || !showGizmo_) {
+		return;
+	}
+	DirectX::XMFLOAT4X4 pose = {};
+	if (!workbench_.TagPoseWorld(selectedTag_, pose)) {
+		return;
+	}
+	const Camera& camera = workbench_.GetCamera();
+	const auto columnMajor = [](const DirectX::XMMATRIX& matrix, float out[16]) {
+		DirectX::XMFLOAT4X4 transposed;
+		DirectX::XMStoreFloat4x4(&transposed, DirectX::XMMatrixTranspose(matrix));
+		std::memcpy(out, &transposed, sizeof(transposed));
+	};
+	float view[16] = {};
+	float projection[16] = {};
+	float model[16] = {};
+	columnMajor(camera.View(), view);
+	columnMajor(camera.Projection(aspect), projection);
+	columnMajor(DirectX::XMLoadFloat4x4(&pose), model);
+
+	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+	ImGuizmo::SetRect(origin.x, origin.y, size.x, size.y);
+	const ImGuizmo::OPERATION operation =
+	    gizmoMode_ == 1 ? ImGuizmo::ROTATE : ImGuizmo::TRANSLATE;
+	ImGuizmo::Manipulate(view, projection, operation, ImGuizmo::LOCAL, model);
+	if (ImGuizmo::IsUsing()) {
+		DirectX::XMFLOAT4X4 transposed;
+		std::memcpy(&transposed, model, sizeof(transposed));
+		const DirectX::XMMATRIX world =
+		    DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&transposed));
+		DirectX::XMVECTOR scale;
+		DirectX::XMVECTOR rotation;
+		DirectX::XMVECTOR translation;
+		if (DirectX::XMMatrixDecompose(&scale, &rotation, &translation, world)) {
+			DirectX::XMFLOAT3 position;
+			DirectX::XMFLOAT4 quat;
+			DirectX::XMStoreFloat3(&position, translation);
+			DirectX::XMStoreFloat4(&quat, DirectX::XMQuaternionNormalize(rotation));
+			std::string error;
+			if (!workbench_.MoveTagWorld(selectedTag_, position, quat, error)) {
+				tagSaveStatus_ = error;
+			}
+		}
+	}
+
+	if (showGhost_) {
+		DirectX::XMFLOAT3 ghost;
+		if (workbench_.TagGhostWorld(selectedTag_, ghost)) {
+			const DirectX::XMMATRIX viewProjection = camera.ViewProjection(aspect);
+			const DirectX::XMVECTOR clip =
+			    DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&ghost), viewProjection);
+			DirectX::XMFLOAT3 ndc;
+			DirectX::XMStoreFloat3(&ndc, clip);
+			const float x = origin.x + (ndc.x * 0.5f + 0.5f) * size.x;
+			const float y = origin.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * size.y;
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			drawList->AddCircle(ImVec2(x, y), 7.0f, IM_COL32(255, 180, 60, 220), 16, 2.0f);
+			drawList->AddLine(ImVec2(x - 10.0f, y), ImVec2(x + 10.0f, y),
+			                  IM_COL32(255, 180, 60, 180), 1.0f);
+			drawList->AddLine(ImVec2(x, y - 10.0f), ImVec2(x, y + 10.0f),
+			                  IM_COL32(255, 180, 60, 180), 1.0f);
+			drawList->AddText(ImVec2(x + 9.0f, y + 4.0f), IM_COL32(255, 200, 120, 220), "original");
 		}
 	}
 }

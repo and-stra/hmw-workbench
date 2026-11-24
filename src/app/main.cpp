@@ -30,6 +30,7 @@
 #include "assets/asset_index.h"
 #include "assets/model_asset.h"
 #include "assets/xanim.h"
+#include "assets/xmodel_document.h"
 #include "render/camera.h"
 #include "render/renderer.h"
 #include "scene/viewmodel.h"
@@ -51,7 +52,7 @@ int g_clientHeight = 0;
 
 bool g_consoleAttached = false;
 
-enum class Mode { Window, Screenshot, Info, Validate, Mcp };
+enum class Mode { Window, Screenshot, Info, Validate, Mcp, RoundTrip, EditTest };
 
 struct Options {
 	Mode mode = Mode::Window;
@@ -94,6 +95,12 @@ struct Options {
 	std::vector<std::string> attachNames;
 	bool fitReport = false;
 	std::filesystem::path fitReportPath;
+	bool roundTrip = false;
+	std::filesystem::path roundTripPath;
+	bool fitCrossbow = false;
+	bool noAdsAlign = false;
+	std::filesystem::path editTestSource;
+	std::filesystem::path editTestTarget;
 	std::string caption;
 };
 
@@ -138,17 +145,22 @@ void PrintUsage() {
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
 	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
 	    "                    [-crosshair] [-marktags]\n"
-	    "                    [-caption <text>]\n"
+	    "                    [-caption <text>] [-no-ads-align]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
 	    "  hmw-workbench.exe -fit-report -weapon <name> [-hands <viewhands>]\n"
 	    "      Text report: every attachment's view model, needed weapon tag, found/missing,\n"
 	    "      and the nearest weapon tags for missing ones.\n"
+	    "  hmw-workbench.exe -fit-crossbow -weapon iw5_exocrossbow_mp\n"
+	    "      Add/fit tag_reflex, tag_acog and tag_silencer on the crossbow and save the xmb\n"
+	    "      (with .bak and .tags.json).\n"
 	    "  hmw-workbench.exe -info <xmodel|xanim>\n"
 	    "      Text dump: model bones/tags/surfaces/materials, or anim frames/notetracks.\n"
 	    "  hmw-workbench.exe -posedump [-weapon <name>| -model <xmodel>] [-anim <xanim>] [-time <s>] [file]\n"
 	    "      Text dump of the posed hands+gun skeleton (world positions, anim channels, bounds).\n"
 	    "  hmw-workbench.exe -validate\n"
 	    "      Parse every .xmb in all roots plus its .xsb surface sets and material json.\n"
+	    "  hmw-workbench.exe -roundtrip [report.txt]\n"
+	    "      Read and write every .xmb into build\\roundtrip and byte-compare (must be 100%).\n"
 	    "  hmw-workbench.exe -mcp\n"
 	    "      Stdio MCP server: load weapons/models/attachments, pose anims and render offscreen PNGs.\n"
 	    "\n"
@@ -226,6 +238,79 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	}
 
 	return DefWindowProcW(hwnd, message, wParam, lParam);
+}
+
+void RunCrossbowFit(wb::commands::Workbench& workbench) {
+	const std::vector<wb::commands::TagEditInfo> tags = workbench.EditableTags();
+	const auto has = [&tags](const std::string& name) {
+		for (const auto& tag : tags) {
+			if (tag.name == name) {
+				return true;
+			}
+		}
+		return false;
+	};
+	std::string error;
+	const DirectX::XMFLOAT3 zero{0.0f, 0.0f, 0.0f};
+	const DirectX::XMFLOAT4 identity{0.0f, 0.0f, 0.0f, 1.0f};
+	if (!has("tag_reflex") &&
+	    !workbench.AddTag("tag_reflex", "j_gun", "tag_red_dot", zero, identity, error)) {
+		std::fprintf(stderr, "add tag_reflex: %s\n", error.c_str());
+		return;
+	}
+	if (!has("tag_acog") &&
+	    !workbench.AddTag("tag_acog", "j_gun", "tag_acog_2", zero, identity, error)) {
+		std::fprintf(stderr, "add tag_acog: %s\n", error.c_str());
+		return;
+	}
+	if (!has("tag_silencer") &&
+	    !workbench.AddTag("tag_silencer", "j_gun", "tag_flash", zero, identity, error)) {
+		std::fprintf(stderr, "add tag_silencer: %s\n", error.c_str());
+		return;
+	}
+
+	workbench.SetAdsAutoAlign(false);
+	wb::commands::TagFitResult reflex;
+	if (workbench.Attach("reflexmwr", error) &&
+	    workbench.FitTagToReticle("tag_reflex", "reflexmwr", reflex, error)) {
+		std::printf("fit tag_reflex: final local (%.4f %.4f %.4f) screen (%.1f %.1f) iterations %d anim %s\n",
+		            reflex.finalLocalPos.x, reflex.finalLocalPos.y, reflex.finalLocalPos.z, reflex.screenX,
+		            reflex.screenY, reflex.iterations, reflex.anim.c_str());
+	} else {
+		std::fprintf(stderr, "fit tag_reflex: %s\n", error.c_str());
+	}
+	workbench.Detach("reflexmwr");
+
+	wb::commands::TagFitResult acog;
+	if (workbench.Attach("acogmwr", error) &&
+	    workbench.FitTagToReticle("tag_acog", "acogmwr", acog, error)) {
+		std::printf("fit tag_acog: final local (%.4f %.4f %.4f) screen (%.1f %.1f) iterations %d anim %s\n",
+		            acog.finalLocalPos.x, acog.finalLocalPos.y, acog.finalLocalPos.z, acog.screenX,
+		            acog.screenY, acog.iterations, acog.anim.c_str());
+	} else {
+		std::fprintf(stderr, "fit tag_acog: %s\n", error.c_str());
+	}
+	workbench.Detach("acogmwr");
+	workbench.SetAds(false);
+
+	const std::vector<wb::commands::TagEditInfo> finalTags = workbench.EditableTags();
+	for (const char* name : {"tag_red_dot", "tag_acog_2", "tag_flash", "tag_reflex", "tag_acog",
+	                         "tag_silencer"}) {
+		for (const auto& tag : finalTags) {
+			if (tag.name == name) {
+				std::printf("tag %-14s parent %-10s local (%.4f %.4f %.4f)\n", tag.name.c_str(),
+				            tag.parent.c_str(), tag.localPos.x, tag.localPos.y, tag.localPos.z);
+			}
+		}
+	}
+
+	wb::commands::ModelSaveResult saved;
+	if (!workbench.SaveEditedModel(saved, error)) {
+		std::fprintf(stderr, "save: %s\n", error.c_str());
+		return;
+	}
+	std::printf("saved: %s\nbackup: %s\ntags: %s\nvalidation: %s\n", saved.path.c_str(),
+	            saved.backup.c_str(), saved.tagsJson.c_str(), saved.validation.c_str());
 }
 
 void ApplyWorkbenchView(wb::commands::Workbench& workbench, const Options& options,
@@ -320,6 +405,13 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 			} else {
 				std::fprintf(stderr, "attach %s: %s\n", attachment.c_str(), attachError.c_str());
 			}
+		}
+		if (options.noAdsAlign) {
+			workbench.SetAdsAutoAlign(false);
+		}
+		if (options.fitCrossbow) {
+			RunCrossbowFit(workbench);
+			return 0;
 		}
 		hasAsset = true;
 	} else if (!options.modelName.empty()) {
@@ -617,6 +709,21 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.mode = Mode::Validate;
 		} else if (arg == L"-mcp") {
 			options.mode = Mode::Mcp;
+		} else if (arg == L"-roundtrip") {
+			options.mode = Mode::RoundTrip;
+			options.roundTrip = true;
+			if (i + 1 < argc && argv[i + 1][0] != L'-') {
+				options.roundTripPath = std::filesystem::path(argv[++i]);
+			}
+		} else if (arg == L"-edit-test") {
+			options.mode = Mode::EditTest;
+			if (i + 2 < argc) {
+				options.editTestSource = std::filesystem::path(argv[++i]);
+				options.editTestTarget = std::filesystem::path(argv[++i]);
+			} else {
+				std::fputs("-edit-test needs <source.xmb> <target.xmb>\n", stderr);
+				valid = false;
+			}
 		} else if (arg == L"-model") {
 			const wchar_t* value = nextValue();
 			if (value == nullptr) {
@@ -680,6 +787,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			}
 		} else if (arg == L"-crosshair") {
 			options.crosshair = true;
+		} else if (arg == L"-fit-crossbow") {
+			options.fitCrossbow = true;
+		} else if (arg == L"-no-ads-align") {
+			options.noAdsAlign = true;
 		} else if (arg == L"-fit-report") {
 			options.fitReport = true;
 			if (i + 1 < argc && argv[i + 1][0] != L'-') {
@@ -778,13 +889,21 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 	if (options.poseDump && options.mode == Mode::Window) {
 		options.mode = Mode::Screenshot;
 	}
+	if (options.fitCrossbow && options.mode == Mode::Window) {
+		options.mode = Mode::Screenshot;
+	}
+	if (options.fitCrossbow) {
+		options.viewFirstPerson = true;
+		options.hasView = true;
+	}
 	if (!options.modelName.empty() && !options.weaponName.empty()) {
 		EnsureHeadlessConsole();
 		std::fputs("-model and -weapon cannot be combined\n", stderr);
 		CoUninitialize();
 		return 2;
 	}
-	if (options.mode == Mode::Screenshot && options.screenshotPath.empty() && !options.poseDump) {
+	if (options.mode == Mode::Screenshot && options.screenshotPath.empty() && !options.poseDump &&
+	    !options.fitCrossbow) {
 		EnsureHeadlessConsole();
 		std::fputs("-screenshot needs a file name\n", stderr);
 		CoUninitialize();
@@ -826,6 +945,86 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		if (file != nullptr) {
 			std::fclose(file);
 		}
+		CoUninitialize();
+		return 0;
+	}
+
+	if (options.roundTrip) {
+		EnsureHeadlessConsole();
+		const std::filesystem::path repoRoot = exeDir.parent_path().parent_path().parent_path();
+		const std::filesystem::path outputDir = repoRoot / "build" / "roundtrip";
+		std::FILE* out = stdout;
+		std::FILE* file = nullptr;
+		if (!options.roundTripPath.empty()) {
+			if (_wfopen_s(&file, options.roundTripPath.c_str(), L"w") == 0 && file != nullptr) {
+				out = file;
+			} else {
+				std::fprintf(stderr, "roundtrip: cannot write %s\n",
+				             options.roundTripPath.string().c_str());
+			}
+		}
+		const int failures = wb::RunRoundTrip(roots, outputDir, out);
+		if (file != nullptr) {
+			std::fclose(file);
+		}
+		CoUninitialize();
+		return failures == 0 ? 0 : 1;
+	}
+
+	if (options.mode == Mode::EditTest) {
+		EnsureHeadlessConsole();
+		wb::assets::XModelDocument document;
+		std::string error;
+		if (!wb::assets::LoadXModelDocument(options.editTestSource, document, error)) {
+			std::fprintf(stderr, "edit-test load: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		const std::string testTag = "tag_test_workbench";
+		if (!wb::assets::AddTag(document, testTag, "j_gun", "tag_red_dot", {0.0f, 0.0f, 0.0f},
+		                        {0.0f, 0.0f, 0.0f, 1.0f}, error)) {
+			std::fprintf(stderr, "edit-test add: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		int testIndex = -1;
+		for (std::size_t i = 0; i < document.model.bones.size(); ++i) {
+			if (document.model.bones[i].name == testTag) {
+				testIndex = static_cast<int>(i);
+			}
+		}
+		const auto original = document.model.bones[static_cast<std::size_t>(testIndex)];
+		if (!wb::assets::MoveTagLocal(document, testTag,
+		                              {original.localPos.x + 1.0f, original.localPos.y + 2.0f,
+		                               original.localPos.z + 3.0f},
+		                              original.localQuat, error)) {
+			std::fprintf(stderr, "edit-test move: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		if (!wb::assets::SaveXModelDocument(document, options.editTestTarget, error)) {
+			std::fprintf(stderr, "edit-test save: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		wb::assets::XModelDocument reloaded;
+		if (!wb::assets::LoadXModelDocument(options.editTestTarget, reloaded, error)) {
+			std::fprintf(stderr, "edit-test reload: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		std::printf("edit-test: %zu -> %zu bones, tag_test present %s, saved %s\n",
+		            document.originalModel.bones.size(), reloaded.model.bones.size(),
+		            (reloaded.model.bones.size() == document.model.bones.size() ? "yes" : "no"),
+		            options.editTestTarget.string().c_str());
+		wb::assets::ModelAsset asset;
+		if (!wb::assets::LoadModelAssetFromFile(options.editTestTarget, roots, asset, error, false)) {
+			std::fprintf(stderr, "edit-test validate: %s\n", error.c_str());
+			CoUninitialize();
+			return 1;
+		}
+		std::printf("edit-test validate: ok %zu surfaces %zu materials\n", asset.surfaceSet.surfaces.size(),
+		            asset.materials.size());
 		CoUninitialize();
 		return 0;
 	}

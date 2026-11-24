@@ -10,6 +10,8 @@
 
 namespace wb::assets {
 
+class AssetStream;
+
 struct BoneData {
 	std::string name;
 	int parent = -1;
@@ -19,6 +21,8 @@ struct BoneData {
 	DirectX::XMFLOAT3 worldPos{0.0f, 0.0f, 0.0f};
 	DirectX::XMFLOAT3 tagPosition{0.0f, 0.0f, 0.0f};
 	bool hasTagPosition = false;
+	std::int16_t tagAngle[4] = {0, 0, 0, 0};
+	float bindTransWeight = 1.0f;
 
 	bool IsTag() const { return name.rfind("tag_", 0) == 0; }
 };
@@ -44,5 +48,8 @@ struct XModelData {
 // its arrays, strings and sub-asset names). World bone transforms are computed from the
 // base pose (baseMat) for the static preview.
 XModelData LoadXModel(const std::filesystem::path& path);
+
+// Parses an already-open .xmb stream (used by the round-trip writer with a recorder).
+XModelData ParseXModel(AssetStream& stream);
 
 } // namespace wb::assets

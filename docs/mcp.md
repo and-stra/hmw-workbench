@@ -162,6 +162,46 @@ Text info for a weapon, xmodel or xanim (the `-info` CLI dump).
 Weapon output includes `gunModel`, `worldModel`, `handModel`, `adsZoomFov`, `hideTags`, the
 attachment list and every state + anim override with its mapped state.
 
+### `move_tag`
+
+Move/rotate a tag on the loaded weapon/model. The transform is **local to the tag's parent bone**
+unless `world` is true (viewmodel space).
+
+| parameter | type | meaning |
+|---|---|---|
+| `tag` | string | tag bone name |
+| `pos` | number[3] | position |
+| `rot` | number[4] | quaternion x,y,z,w (optional, default identity) |
+| `world` | bool | interpret `pos`/`rot` in viewmodel space |
+
+Returns the tag's parent, local position/rotation, world position and the dirty flag.
+
+### `add_tag`
+
+Append a tag bone at the end (parents stay before children), updates all per-bone arrays
+(names + string list, parentList, tagAngles, tagPositions, partClassification, baseMat, boneInfo,
+counts). New tags have no skinned vertices.
+
+| parameter | type | meaning |
+|---|---|---|
+| `tag` | string | new tag name (`tag_reflex`, ...) |
+| `parent` | string | parent bone (default `j_gun` / `tag_weapon`) |
+| `copy_from` | string | copy the local transform of an existing tag |
+| `pos` / `rot` | numbers | local transform when `copy_from` is omitted |
+
+### `revert_tags`
+
+Revert one tag to the loaded/saved state, or all tags when `tag` is omitted.
+
+`{"tag":"tag_reflex"}` → `{reverted:"tag_reflex", dirty:false}`.
+
+### `save_model`
+
+Save the edited model **in place**: copies the original to `<name>.xmb.bak` (only if no `.bak`
+exists), writes `<model>.tags.json` next to it, re-reads the file and validates it.
+
+Returns `{saved, backup, tags_json, validation, dirty}`.
+
 ## Example session
 
 ```json
@@ -176,6 +216,15 @@ attachment list and every state + anim override with its mapped state.
 The fit report answers `tag_reflex` found `false` with nearest `tag_red_dot`, `tag_eotech`;
 the screenshot content contains the PNG (red attachment at the weapon origin) and a text block
 with the saved path.
+
+Tag editing (unsaved until `save_model`):
+
+```json
+{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"add_tag","arguments":{"tag":"tag_reflex","parent":"j_gun","copy_from":"tag_red_dot"}}}
+{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"move_tag","arguments":{"tag":"tag_reflex","pos":[3.243,0.0,6.092],"rot":[0,0,0,1]}}}
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"revert_tags","arguments":{"tag":"tag_reflex"}}}
+{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"save_model","arguments":{}}}
+```
 
 ## Smoke test
 

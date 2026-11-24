@@ -55,10 +55,14 @@ Open in game: **no arms, gun looks oversized/too close**, 11 missing images (sco
 
 ### Still unexplained / next checks
 
-- **"No arms" in game is not reproduced** with `viewhands_tf141`. In game HMW replaces the hands per faction
-  (`custom_teams.gsc` → `setviewmodel`, e.g. opfor `viewhands_h1_arab_desert_mp_camo`, spetsnaz
-  `globalViewhands_mw2_airborne`). Next: render the crossbow in the workbench with each faction's hands (Hands
-  dropdown / `-hands`) and see which hands break with the AW anims.
+- **"No arms" in game is not reproduced** in the workbench, with `viewhands_tf141` or any of the 7 faction hands
+  that exist in the dumps (see the check below). The content (anims, bone names, rig) is fine, so the cause is most
+  likely at runtime in game. Next checks, in game (MWX MCP `gsc_eval`, `screenshot`):
+  1. which hands model the player really has while holding the crossbow (`self getviewmodel()`), and whether it is
+     one of the 5 hands models not in our dumps (`viewhands_african_militia`, `_pmc`, `_henchmen`, `_delta`, `_sas`);
+  2. whether the hands are there with another weapon in the same match and disappear only on switching to the
+     crossbow (points at the weapon def, e.g. `handModel = viewhands_tf141` referenced with `xmodel,,` but not loaded,
+     or a hide flag), or are missing from spawn.
 - In-game reference screenshots of the crossbow (hip, ADS) to compare with the workbench.
 
 ### Faction hands check (M4b, 24 Nov 2026)

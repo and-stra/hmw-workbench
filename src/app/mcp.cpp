@@ -45,6 +45,33 @@ json Vec4(const DirectX::XMFLOAT4& value) {
 	return json::array({value.x, value.y, value.z, value.w});
 }
 
+bool ReadVec3(const json& args, const char* key, DirectX::XMFLOAT3& out) {
+	if (!args.contains(key) || !args[key].is_array() || args[key].size() != 3) {
+		return false;
+	}
+	for (int i = 0; i < 3; ++i) {
+		if (!args[key][i].is_number()) {
+			return false;
+		}
+	}
+	out = {args[key][0].get<float>(), args[key][1].get<float>(), args[key][2].get<float>()};
+	return true;
+}
+
+bool ReadVec4(const json& args, const char* key, DirectX::XMFLOAT4& out) {
+	if (!args.contains(key) || !args[key].is_array() || args[key].size() != 4) {
+		return false;
+	}
+	for (int i = 0; i < 4; ++i) {
+		if (!args[key][i].is_number()) {
+			return false;
+		}
+	}
+	out = {args[key][0].get<float>(), args[key][1].get<float>(), args[key][2].get<float>(),
+	       args[key][3].get<float>()};
+	return true;
+}
+
 std::string ToLower(std::string text) {
 	std::transform(text.begin(), text.end(), text.begin(),
 	               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -204,7 +231,8 @@ private:
 		    {"crosshair", boolean("Draw a crosshair at the screen centre.")},
 		    {"marktags", boolean("Label every weapon tag.")},
 		    {"caption", str("Caption drawn at the top left.")},
-		    {"sheet", integer("Contact sheet: N cells of the current animation instead of one frame.")}};
+		    {"sheet", integer("Contact sheet: N cells of the current animation instead of one frame.")},
+		    {"ads_align", boolean("Auto-align tag_ads to a mounted reticle in ADS (default true).")}};
 
 		return json::array({
 		    {{"name", "list_assets"},
@@ -284,6 +312,35 @@ private:
 		       {"properties", {{"asset", str("Asset name.")},
 		                       {"kind", str("weapon, model or anim (optional; detected otherwise).")}}},
 		       {"required", {"asset"}}}}},
+		    {{"name", "move_tag"},
+		     {"description", "Move/rotate a tag (local to its parent bone) on the loaded weapon/model."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"tag", str("Tag bone name.")},
+		                       {"pos", {{"type", "array"}, {"items", {{"type", "number"}}}, {"minItems", 3}, {"maxItems", 3}}},
+		                       {"rot", {{"type", "array"}, {"items", {{"type", "number"}}}, {"minItems", 4}, {"maxItems", 4}}},
+		                       {"world", boolean("Interpret pos/rot as viewmodel-space world instead of local.")}}},
+		       {"required", {"tag", "pos"}}}}},
+		    {{"name", "add_tag"},
+		     {"description",
+		      "Append a tag bone at the end of the model. copy_from copies the local transform of an existing tag."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"tag", str("New tag name, e.g. tag_reflex.")},
+		                       {"parent", str("Parent bone (default j_gun/tag_weapon).")},
+		                       {"copy_from", str("Existing tag to copy the local transform from.")},
+		                       {"pos", {{"type", "array"}, {"items", {{"type", "number"}}}}},
+		                       {"rot", {{"type", "array"}, {"items", {{"type", "number"}}}}}}},
+		       {"required", {"tag"}}}}},
+		    {{"name", "revert_tags"},
+		     {"description", "Revert one tag to the loaded/saved state, or all tags when tag is omitted."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"tag", str("Tag name (optional; omit to revert all).")}}}}}},
+		    {{"name", "save_model"},
+		     {"description",
+		      "Save the edited model in place (creates <name>.xmb.bak once, writes <model>.tags.json), re-read and validate it."},
+		     {"inputSchema", {{"type", "object"}, {"properties", json::object()}}}},
 		});
 	}
 
@@ -323,6 +380,18 @@ private:
 		}
 		if (name == "info") {
 			return Info(args);
+		}
+		if (name == "move_tag") {
+			return MoveTag(args);
+		}
+		if (name == "add_tag") {
+			return AddTag(args);
+		}
+		if (name == "revert_tags") {
+			return RevertTags(args);
+		}
+		if (name == "save_model") {
+			return SaveModel(args);
 		}
 		return json{{"error", "unknown tool: " + name}};
 	}
@@ -512,6 +581,9 @@ private:
 		if (args.contains("ads") && args["ads"].is_boolean()) {
 			workbench_.SetAds(args["ads"].get<bool>());
 		}
+		if (args.contains("ads_align") && args["ads_align"].is_boolean()) {
+			workbench_.SetAdsAutoAlign(args["ads_align"].get<bool>());
+		}
 
 		std::filesystem::path output;
 		const std::string requestedPath = args.value("path", "");
@@ -590,6 +662,10 @@ private:
 		}
 		const std::string needle = ToLower(args.value("name", ""));
 		const scene::SkeletonPose& pose = workbench_.Pose();
+		std::map<std::string, bool> added;
+		for (const auto& info : workbench_.EditableTags()) {
+			added[info.name] = info.added;
+		}
 		json tags = json::array();
 		for (const scene::PoseBone& bone : pose.bones) {
 			if (bone.name.rfind("tag_", 0) != 0) {
@@ -598,9 +674,11 @@ private:
 			if (!needle.empty() && ToLower(bone.name).find(needle) == std::string::npos) {
 				continue;
 			}
+			const auto addedIt = added.find(bone.name);
 			tags.emplace_back(json{{"name", bone.name},
 			                       {"local_pos", Vec3(bone.localPos)},
-			                       {"world_pos", Vec3(bone.worldPos)}});
+			                       {"world_pos", Vec3(bone.worldPos)},
+			                       {"added", addedIt != added.end() && addedIt->second}});
 		}
 		return json{{"count", tags.size()}, {"tags", tags}};
 	}
@@ -768,6 +846,101 @@ private:
 			return json{{"error", output.empty() ? "info failed: " + name : output}};
 		}
 		return json{{"asset", name}, {"text", output}};
+	}
+
+	json MoveTag(const json& args) {
+		const std::string tag = args.value("tag", "");
+		if (tag.empty()) {
+			return json{{"error", "tag is required"}};
+		}
+		DirectX::XMFLOAT3 pos;
+		if (!ReadVec3(args, "pos", pos)) {
+			return json{{"error", "pos [x,y,z] is required"}};
+		}
+		DirectX::XMFLOAT4 rot{0.0f, 0.0f, 0.0f, 1.0f};
+		if (args.contains("rot") && !ReadVec4(args, "rot", rot)) {
+			return json{{"error", "rot must be [x,y,z,w]"}};
+		}
+		std::string error;
+		const bool world = args.value("world", false);
+		const bool ok = world ? workbench_.MoveTagWorld(tag, pos, rot, error)
+		                      : workbench_.MoveTagLocal(tag, pos, rot, error);
+		if (!ok) {
+			return json{{"error", error}};
+		}
+		json result{{"tag", tag}, {"dirty", workbench_.HasTagChanges()}};
+		for (const auto& info : workbench_.EditableTags()) {
+			if (info.name == tag) {
+				result["local_pos"] = Vec3(info.localPos);
+				result["local_rot"] = Vec4(info.localQuat);
+				result["world_pos"] = Vec3(info.worldPos);
+				result["parent"] = info.parent;
+				break;
+			}
+		}
+		return result;
+	}
+
+	json AddTag(const json& args) {
+		const std::string tag = args.value("tag", "");
+		if (tag.empty()) {
+			return json{{"error", "tag is required"}};
+		}
+		const std::string parent = args.value("parent", "");
+		const std::string copyFrom = args.value("copy_from", "");
+		DirectX::XMFLOAT3 pos{0.0f, 0.0f, 0.0f};
+		DirectX::XMFLOAT4 rot{0.0f, 0.0f, 0.0f, 1.0f};
+		if (args.contains("pos") && !ReadVec3(args, "pos", pos)) {
+			return json{{"error", "pos must be [x,y,z]"}};
+		}
+		if (args.contains("rot") && !ReadVec4(args, "rot", rot)) {
+			return json{{"error", "rot must be [x,y,z,w]"}};
+		}
+		std::string error;
+		if (!workbench_.AddTag(tag, parent, copyFrom, pos, rot, error)) {
+			return json{{"error", error}};
+		}
+		json result{{"tag", tag}, {"dirty", workbench_.HasTagChanges()}};
+		for (const auto& info : workbench_.EditableTags()) {
+			if (info.name == tag) {
+				result["parent"] = info.parent;
+				result["local_pos"] = Vec3(info.localPos);
+				result["local_rot"] = Vec4(info.localQuat);
+				result["world_pos"] = Vec3(info.worldPos);
+				result["added"] = info.added;
+				break;
+			}
+		}
+		return result;
+	}
+
+	json RevertTags(const json& args) {
+		const std::string tag = args.value("tag", "");
+		std::string error;
+		if (tag.empty()) {
+			workbench_.RevertAllTags();
+			return json{{"reverted", "all"}, {"dirty", workbench_.HasTagChanges()}};
+		}
+		if (!workbench_.RevertTag(tag, error)) {
+			return json{{"error", error}};
+		}
+		return json{{"reverted", tag}, {"dirty", workbench_.HasTagChanges()}};
+	}
+
+	json SaveModel(const json&) {
+		if (!workbench_.HasEditableModel()) {
+			return json{{"error", "no editable model loaded"}};
+		}
+		commands::ModelSaveResult saved;
+		std::string error;
+		if (!workbench_.SaveEditedModel(saved, error)) {
+			return json{{"error", error}};
+		}
+		return json{{"saved", saved.path},
+		            {"backup", saved.backup},
+		            {"tags_json", saved.tagsJson},
+		            {"validation", saved.validation},
+		            {"dirty", workbench_.HasTagChanges()}};
 	}
 
 	void Handle(const json& message) {
