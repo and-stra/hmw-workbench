@@ -709,8 +709,8 @@ private play.
    `Replacing invalid camo`.
 2. **CAC limitation (expected, not the port).** Christmas Wrap (`camo085`) is rejected by HMW's `isvalidcamo` for
    every weapon (the H2 M4 control too). Do not report it as a crossbow bug.
-3. **Christmas wrap via console** (bypasses the class check): `give iw5_exocrossbow_mp_camo084`, then
-   `switchtoweapon iw5_exocrossbow_mp_camo084` (or `give` while that weapon is already held).
+3. **Christmas wrap via console** (bypasses the class check): `give iw5_exocrossbow_mp_camo084`, then switch to the
+   weapon with the normal weapon-switch key (or `give` it again while it is already held).
 4. **With optics** (attachments before the camo, HMW's own order):
    `give iw5_exocrossbow_mp_reflex_camo042`, `give iw5_exocrossbow_mp_acog_camo045`; ADS: reticle centred, camo on
    the body, optic housing/glass not camo.
@@ -739,5 +739,5 @@ missing images (red/checkered in ADS), unrelated to camos.
 ### 12.8 Commits
 
 - `cod-hmw-aw` `aw-weapons`: **`87a878f9`** ("aw weapons: append the camo suffix in buildweaponname (W1.1)").
-- `hmw-workbench`: this commit (guide §4 + error rows, `aw.md` camo section, `aw-weapons-port.md` §12,
+- `hmw-workbench` `main`: **`2b1af69`** (guide §4 + error rows, `aw.md` camo section, `aw-weapons-port.md` §12,
   `review\aw-weapons\W1.1\`). Not pushed.
