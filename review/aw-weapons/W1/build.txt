@@ -1,0 +1,23 @@
+﻿W1 build log (25 Nov 2026)
+
+zone hmw_aw_weapons
+  command: GAME\x64zt.exe (H1), interactive: buildzone hmw_aw_weapons
+  source : GAME\zonetool\hmw_aw_weapons (copy of zonetool\mod), GAME\zone_source\hmw_aw_weapons.csv
+  output : hmw_aw_weapons.ff 19,877,776 B + hmw_aw_weapons.pak 9,236,400 B
+  result : Successfully compiled fastfile "hmw_aw_weapons" (8,484 ms)
+  FATAL/ERROR lines: 0 ; WARNING lines: 11 (all missing crossbow/emblem images, see report 11.6)
+
+mod (Sticks and Stones, reference-only)
+  source : GAME\zone_source\mod.csv = "weapon,,iw5_exocrossbow_mp"
+  output : mod.ff 177 B, 0 FATAL/ERROR
+  backup : GAME\mods\sticksandstones\mod.ff.bak-20261125-104819-w1
+
+test client
+  repo   : C:\Games\cod-hwm\cod-hmw-aw, branch aw-weapons
+  commits: 60012370 (feature), 6da28dfe (test-only -datadir/-logdir)
+  build  : premake5 vs2022 + msbuild build\hmw-mod.sln (Release x64), 0 errors in our files
+  install: GAME\hmw-aw.exe, GAME\hmw-aw\{maps,scripts,ui_scripts,zone\hmw_aw_weapons.ff/.pak}
+
+workbench (auto-align off, 1920x1016)
+  crossbow + reflex: reticle (960.0, 508.0) = 0.0 px
+  crossbow + acog  : reticle (960.0, 508.0) = 0.0 px

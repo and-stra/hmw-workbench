@@ -131,9 +131,55 @@ How a weapon becomes selectable in HMW's MW2-style CAC (all verified in the HMW 
   (`filesystem.cpp:68`), so `GAME\mwx\zone\<name>.ff` is a valid MWX-owned zone location, and `build-mwx.bat`
   mirrors `data\mwx` → `GAME\mwx` with `/MIR` (a zone must be committed in `data\mwx\zone\` or the next normal
   build deletes it).
-- **Trap:** the `mp/customweapons.csv` row needs three columns (ref, class, **type** = `Primary`/`Secondary`).
-  `stock_weapons.cpp` currently writes only ref + class, and the CAC loop `pcall` aborts at a row with an empty
-  type — check that a new row actually appears before chasing other causes.
+- **Trap (fixed in W1):** the `mp/customweapons.csv` row needs three columns (ref, class, **type** =
+  `Primary`/`Secondary`). `stock_weapons.cpp` used to write only ref + class, and the CAC loop `pcall` aborts at a
+  row with an empty type — appended weapons never reached the menu. It now derives the type from the statstable
+  class (`customweapons_type()`); check the console line `stock weapons: ... added N ...` when a row does not show.
+- **Statstable attachment columns:** the engine's attachment-array for a weapon is `tablelookup(statsTable, 4,
+  ref, 11+n)` for n = 0..29 (`_utility::getweaponattachmentarrayfromstats`), so **columns 11..40 are the attachments**
+  (first empty ends the array). `isvalidattachment` checks that array; the CAC *menu* is filtered by the attachkit
+  table instead (see below). Put the attachment refs in 11, 12, … .
+- **HMW's `buildweaponname` does not return for `iw5_*` refs.** `custom_weapons.gsc::buildweaponname` builds
+  `<ref>_mp_<attachment>` in its `if (!issubstr(var_0, "h1_") && !issubstr(var_0, "h2_"))` branch and then falls
+  off the end of the function (no `return` anywhere on that path), so any `iw5_*` class weapon gets an undefined
+  name (`applyloadout` then calls `_giveweapon(undefined)`). A port must replace the function: run `replacefunc` in
+  a script's `init()` (the loader runs every `main()` at `scr_load_structs` and every `init()` at `scr_load_level`,
+  `scripting.cpp`, so init wins) and build `iw5_` names directly; delegate other refs with
+  `scripts\mp_patches\custom_weapons::buildweaponname(...)` (cross-script patch paths work, e.g. `dz.gsc` calls
+  `scripts\mp_patches\common::is_not_h1_map()`).
+- **Attachment menu for a secondary:** `Cac.GetValidAttachKits` (utils.lua) filters the attachkit table by
+  `Cac.KitWeaponTypes[Cac.H2MGetWeaponTypeFromWeaponWithoutCategory(ref)]` (`ast/smg/lmg/sht/snp/pst/prj/mel`) and
+  then asks the engine (`DoesWeaponSupportAttachment`) per kit. A new class (`prj` for launchers) only gets the
+  kits whose `weapon classes` column contains that token; HMW's launchers have no attachments at all. For a
+  secondary that must take optics, either extend the attachkit row for the class or wrap
+  `Cac.GetValidAttachKits` in an MWX `ui_scripts` module (loaded after every HMW zone `__init__.lua`, so the `Cac`
+  functions exist). The secondary attachment/camo menus are hidden for HMW's own melee/launcher refs only
+  (`MeleeOrLauncherInUseCheck` hardcodes at4/h2_rpg/javelin/h2_m79/stinger and the five melee refs).
+
+
+## 8. Zone loading and a second test client
+
+- **HMW/MWX zones are an explicit list, not a glob.** `patches.cpp::ui_init_stub()` has a `std::vector<std::string>`
+  of the `hmw_*` content zones (each loaded only if `fastfiles::exists()`), then the loaded mod's zone last. Adding
+  a ported-content zone means one entry in that list, after the HMW zones (so it can use HMW hands/attachments/
+  anims) and before `mod` (so a mod can reference it). `fastfiles.cpp` also loads the fixed engine zones via
+  `try_load_zone("hmw_pre_gfx"/"hmw_files"/...)`; no code scans for `hmw_*` by prefix, so there is no second load
+  path.
+- **A built zone has two files.** `buildzone <name>` writes `GAME\zone\<name>.ff` **and** `<name>.pak` when the
+  zone has streamed images. Install both next to each other (the engine looks for the pak of the loaded zone); a
+  missing pak shows as missing/red/checkered streamed textures, not as a load error (the old Sticks and Stones
+  install had this: `mod.ff` 19.8 MB, `mod.pak` left in `GAME\zone`).
+- **A `,,` reference in a zone** (`weapon,,x`) resolves the asset from another *loaded* zone at runtime. If that
+  zone is not loaded, the load fails with `Could not load default asset 'void' for asset type 'weapon'`. Good for
+  one owner per asset (e.g. crossbow only in `hmw_aw_weapons`), but every client that loads the referencing zone
+  must load the owner zone too.
+- **Second client next to the shared one** (no interference with another agent's `GAME\mwx`/`mwx.exe`): a test
+  branch can add `-datadir <dir>` / `-logdir <dir>` (see `filesystem::get_data_dir()` in the `aw-weapons` branch)
+  so the client loads `GAME\<dir>\ui_scripts`, `GAME\<dir>\scripts\mp`, `GAME\<dir>\zone` and writes its logs to
+  `GAME\<dir>-logs`; combine with `-debugport <port>` (exists in `debug_server.cpp`) so two debug/MCP servers never
+  collide. Build the exe manually (`premake5` + `msbuild`, skip the script's install step) and copy it to
+  `GAME\<name>.exe`. The install step in `build-mwx.bat` overwrites `GAME\mwx.exe` and mirrors `data\mwx` with
+  `/MIR`, so it must not be used while another client owns those paths.
 
 ## How to document (rule for every agent)
 
@@ -156,4 +202,7 @@ Keep entries short and current: correct or delete outdated statements instead of
 | AW ADS anims for optics never play | empty `attachments` list / S1 anim tree numbers | converter `--attachment-map` + animTreeType conversion |
 | `Asset type "localizedstrings" does not exist` (x64-zt) | the AW/S1 asset type is `localize` | `dumpzone h1 <zone> localize`; weapon strings are in `eng_patch_common` (not `eng_common_mp`) |
 | hmw-workbench: `cannot load model <aw model>: xmodel has no LOD0 surface set` | only the `common_mp` xmodel was dumped; AW surfaces live in the weapon tr zones | `dumpzone h1 mp_vm_<weapon>_tr` + `mp_wm_<weapon>_tr`; the files land in the dump root's `xmodel`/`xsurface`, add that root to `workbench.json` |
-| ported weapon missing from Create-a-Class (or replaced by the default gun) | no `mp/customweapons.csv`/`mp/statstable.csv` row, or not in `isvalidprimary`/`isvalidsecondary` | add the `stock_weapons_data.hpp` row (only added when `<ref>_mp` exists) + GSC whitelist via `replacefunc` (guide §7) |
+| ported weapon missing from Create-a-Class (or replaced by the default gun) | no `mp/customweapons.csv`/`mp/statstable.csv` row, or not in `isvalidprimary`/`isvalidsecondary` | add the `stock_weapons_data.hpp` row (only added when `<ref>_mp` exists) + GSC whitelist via `replacefunc` (guide §7); a row with an empty customweapons **type** column aborts the CAC loop |
+| `iw5_*` class weapon spawns nothing / `_giveweapon(undefined)` script error | HMW's `buildweaponname` has no `return` for non-`h1_/h2_` refs | replace `_class::buildweaponname` in an `init()` and build `<ref>_mp[_<attachment>]` for `iw5_*`, delegate the rest to `scripts\mp_patches\custom_weapons::buildweaponname` (guide §7) |
+| streamed textures of a ported zone are red/checkered although the build had no error | `<zone>.pak` was not installed next to `<zone>.ff` | copy both files (guide §8) |
+| `Could not load default asset 'void' for asset type 'weapon'` when loading a mod | the mod zone uses `weapon,,<name>` but no loaded zone provides the asset | load the owner zone (`hmw_aw_weapons`) before the mod, or keep a copy in the mod |

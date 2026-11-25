@@ -42,7 +42,7 @@ are present).
 | M1 Garand | M1 Garand | `iw5_dlcgun23_mp` | patch_common_mp (DLC) | 0 rifle | `vm_m1garand_base` | `npc_m1garand_base` | 85 | 21 |
 | MP40 | MP40 | `iw5_dlcgun18_mp` | patch_common_mp (DLC) | 3 SMG | `vm_ger_mp40_dlc_base` | `npc_ger_mp40_dlc_base` | 87 | 18 |
 | Sten | Sten | `iw5_dlcgun28_mp` | patch_common_mp (DLC) | 3 SMG | `vm_sten_dlc_base` | `npc_sten_dlc_base` | 90 | 18 |
-| Winchester lever-action rifle | Lever Action | `iw5_dlcgun33_mp` | patch_common_mp (DLC) | 0 rifle | `vm_winchester_loot_base` | `npc_winchester_loot_base` | 85 | 20 |
+| Browning BLR | Lever Action | `iw5_dlcgun33_mp` | patch_common_mp (DLC) | 0 rifle | `vm_winchester_loot_base` | `npc_winchester_loot_base` | 85 | 20 |
 | Blunderbuss | Blunderbuss | `iw5_dlcgun4_mp` | patch_common_mp (DLC) | 4 shotgun | `vm_blunderbuss_base_loot` | `npc_blunderbuss_base_loot` | 83 | 10 |
 | LeMat 1861 | M1 Irons | `iw5_dlcgun3_mp` | patch_common_mp (DLC) | 5 pistol | `vm_m1_irons_base_loot` | `npc_m1_irons_base_loot` | 85 | 15 |
 
@@ -90,13 +90,15 @@ Renders (untextured — AW images are the known gap, so identification is from g
   SCAR-style upper with round lightening holes in the handguard and a straighter, solid stock.
   Because the render has no textures, this is a geometry decision — Claude/user should confirm from
   the PNGs before W2.
-- **Lever Action = Winchester lever-action rifle** (model/zone names `vm_winchester_loot_base`,
-  `mp_vm_leveraction_tr`). Render: `review\aw-weapons\W0\leveraction_side.png` / `leveraction_34.png`
-  (untextured) — exposed hammer, round lever loop, tubular magazine, barrel band with sling ring,
-  straight wrist: Winchester 1886/1892/1894 family. **1892 vs 1894 cannot be told apart from this
-  render** (the receiver/bolt detail that separates them is not visible without textures). Proposal:
-  display name **"Lever Action"** for W2, decide the exact model in W5 with a textured render; use
-  "Winchester Model 1894" only if confirmed.
+- **Lever Action = Browning BLR** (correction by the user after W0: IMFDB identifies AW's Lever
+  Action as the Browning BLR, not a Winchester). Model/zone names are `vm_winchester_loot_base` /
+  `mp_vm_leveraction_tr` (AW's internal name is "winchester" — the asset name is not the real gun).
+  The W0 render (`review\aw-weapons\W0\leveraction_side.png`) shows a lever rifle with an exposed
+  hammer, round lever loop, tubular-looking forend and straight wrist — the BLR is a box-magazine
+  lever rifle, so the "tubular magazine" read of the untextured render was wrong. Display name:
+  **"Browning BLR"**. A textured render in W5 can confirm the barrel/receiver details.
+- **AW assets that also exist in Ghosts (IW6)**: CZ 805 (HBRa3), CBJ-MS (MP11), LSAT (Pytaek) and
+  UTS-15 (Tac-19) — Ghosts is a fallback source if an AW asset turns out broken. Not needed for W1.
 - The other 12 are unambiguous from model/zone names (`vm_m1garand`, `vm_ger_mp40_dlc`,
   `vm_sten_dlc`, `vm_blunderbuss`, `vm_m1_irons` = LeMat-type revolver with its second barrel
   (`_damage_`/`_range_` model parts)).
@@ -126,7 +128,7 @@ i.e. every weapon HMW can offer, MWR DLC loot guns included):
 | M1 Garand | M14/M21 (M14 family) | different rifle → port |
 | MP40 | MP44/StG44 (`h1_mp44`) | different gun → port |
 | Sten | – | port |
-| Lever Action (Winchester rifle) | Model 1887 (`h2_model1887`, lever-action *shotgun*) | different gun → port |
+| Lever Action (Browning BLR) | Model 1887 (`h2_model1887`, lever-action *shotgun*) | different gun → port |
 | Blunderbuss | – | port |
 | M1 Irons (LeMat) | Anaconda, MP412 (revolvers) | different revolver → port |
 
@@ -157,7 +159,7 @@ New dumps created in W0 (all new files/folders, nothing overwritten):
 
 Budget for W1–W3 (estimate, targeted dumps only): 18 weapons × (models ≈ 10 MB + anims ≈ 10 MB +
 materials/techsets ≈ 2 MB) ≈ 0.4 GB; images (the open gap) ≈ 0.5–1 GB; sounds ≈ 0.1–0.3 GB; built
-`mwx_aw_weapons.ff` ≈ 0.1–0.4 GB; client build ≈ 0.2 GB. **≈ 2 GB total**, so ~28.8 GB stay free.
+`hmw_aw_weapons.ff` ≈ 0.1–0.4 GB; client build ≈ 0.2 GB. **≈ 2 GB total**, so ~28.8 GB stay free.
 Do **not** run the full `common_mp` (8.9 GB) or `patch_common_mp` (7.2 GB) dumps; use targeted asset
 types and delete the per-weapon tr-zone dumps after the zone is built. Rule from the plan: keep
 ≥ 20 GB free.
@@ -180,7 +182,7 @@ Limits:
   not a new class of load. Verify in W1 in a LAN match (second client sees the gun, kill feed, and
   can pick it up) and, if a DEBUG build is available, with `poolUsage 39` / `poolUsages`
   (`fastfiles.cpp:1441-1471`, DEBUG-only).
-- Server/client must both have the zone (LAN, no download): friends need `mwx_aw_weapons.ff`.
+- Server/client must both have the zone (LAN, no download): friends need `hmw_aw_weapons.ff`.
 
 ## 3. Create-a-Class: how a new weapon appears (read-only findings)
 
@@ -247,29 +249,29 @@ Consequences for our list:
   `Cac.GetWeaponTypeFromWeaponWithoutCategory` (utils.lua:169-178) + a statstable class name; not
   worth it for two weapons.
 
-## 4. Zone `mwx_aw_weapons.ff`: build, install, load, ship
+## 4. Zone `hmw_aw_weapons.ff`: build, install, load, ship
 
-- **Build source:** new `GAME\zone_source\mwx_aw_weapons.csv` (new file only; never touch existing
-  CSVs) + `GAME\zonetool\mwx_aw_weapons\` (assets of the same layout as `GAME\zonetool\mod`:
+- **Build source:** new `GAME\zone_source\hmw_aw_weapons.csv` (new file only; never touch existing
+  CSVs) + `GAME\zonetool\hmw_aw_weapons\` (assets of the same layout as `GAME\zonetool\mod`:
   `weapons\`, `xmodel\`, `xsurface\`, `xanim\`, `materials\`, …; a copy/extension of the crossbow
   dump with the new tags). Build with H1 x64-zt (`GAME\x64zt.exe`, working dir `GAME`):
-  `buildzone mwx_aw_weapons` → `GAME\zone\mwx_aw_weapons.ff`.
-- **Install (proposal):** `GAME\mwx\zone\mwx_aw_weapons.ff`. `GAME\mwx` is an MWX-owned file-system
+  `buildzone hmw_aw_weapons` → `GAME\zone\hmw_aw_weapons.ff`.
+- **Install (proposal):** `GAME\mwx\zone\hmw_aw_weapons.ff`. `GAME\mwx` is an MWX-owned file-system
   path (`filesystem.cpp:68`, highest priority) and the zone lookup goes through the engine's
   `Sys_CreateFile(SF_ZONE, "<name>.ff")`, so `<path>\zone\<name>.ff` is found. This keeps the zone
   out of `GAME\zone` (game files) and `GAME\hmw-mod\zone` (HMW content, repacked by
   `mwx.exe -repack`) and out of the mod folders.
   Alternative if the path order ever bites: `GAME\hmw-mod\zone\` (same place as `hmw_ar1`), but that
   folder is HMW's and is rewritten by repack/packaging.
-- **Load:** add `"mwx_aw_weapons"` to the `zones` vector in `patches.cpp::ui_init_stub()`, **after**
+- **Load:** add `"hmw_aw_weapons"` to the `zones` vector in `patches.cpp::ui_init_stub()`, **after**
   the `hmw_*` zones and **before** `zones.emplace_back("mod")` (so a mod can reference the crossbow
   and MWX can override HMW assets). `try_load_all_zones()` skips it if the file is missing, so a
   client without the zone still starts.
 - **Ship to friends:** `build-mwx.bat` mirrors `data\mwx` → `GAME\mwx` (robocopy `/MIR`), so the
-  canonical repo location is **`cod-mwx\data\mwx\zone\mwx_aw_weapons.ff`** (≈ 0.1–0.4 GB). Note
+  canonical repo location is **`cod-mwx\data\mwx\zone\hmw_aw_weapons.ff`** (≈ 0.1–0.4 GB). Note
   `/MIR` deletes files in `GAME\mwx` that are not in the repo — the zone must be committed in
   `data\mwx\zone\` or it disappears on the next normal build. Optional `mwx.exe -repack
-  mwx_aw_weapons` (LZ4) for load time; `-repack` currently targets `hmw-mod\zone`, so a separate
+  hmw_aw_weapons` (LZ4) for load time; `-repack` currently targets `hmw-mod\zone`, so a separate
   call/param is needed if we want it — **not required for W1** (measure `load_times.log` first).
 
 ## 5. ADS alignment: the answer
@@ -350,10 +352,10 @@ asks (one new tag, 0 px). No `reflexmwr`/`mars`/`variant`.
 
 Facts: `GAME\zone_source\mod.csv` (internal zone name `mod`) builds the crossbow weapon + models +
 fx/sounds into `mods\sticksandstones\mod.ff`; `mods.md` documents the mod. MWX loads zone `mod` last
-(`patches.cpp`). If `mwx_aw_weapons.ff` also contains the same asset name, the same asset exists in
+(`patches.cpp`). If `hmw_aw_weapons.ff` also contains the same asset name, the same asset exists in
 two loaded zones — order-dependent and unsafe (H1 does not guarantee which wins).
 
-**Proposal (one owner):** the crossbow moves to `mwx_aw_weapons.ff`; `mod.ff` stops shipping its
+**Proposal (one owner):** the crossbow moves to `hmw_aw_weapons.ff`; `mod.ff` stops shipping its
 own copy and only references it:
 
 ```text
@@ -361,89 +363,240 @@ own copy and only references it:
 weapon,,iw5_exocrossbow_mp
 ```
 
-and the model/fx/sound lines are dropped (they come from `mwx_aw_weapons`). Because MWX always loads
-`mwx_aw_weapons` before `mod`, Sticks and Stones keeps working. The mod is rebuilt once in W1, in
+and the model/fx/sound lines are dropped (they come from `hmw_aw_weapons`). Because MWX always loads
+`hmw_aw_weapons` before `mod`, Sticks and Stones keeps working. The mod is rebuilt once in W1, in
 the approved time slot, and tested (sas gametype on a map, crossbow given, kill feed, bankrupt
 logic). `mod.json`'s `WEAPON_EXPLOSIVE_EXO_CROSSBOW` string override becomes redundant but harmless.
 Fallback if a reference-only weapon in `mod.ff` does not resolve: keep the crossbow in `mod.ff` for
-the mod and ship a **second, separate** crossbow asset in `mwx_aw_weapons` under a different internal
+the mod and ship a **second, separate** crossbow asset in `hmw_aw_weapons` under a different internal
 name (e.g. `iw5_exocrossbow_mp` vs `iw5_exocrossbow_cac_mp`) — ugly (two definitions, two CAC rows)
 and only if the reference fails. Test it in W1.
 
-## 8. Proposed isolation setup for W1 (needs user approval)
+## 8. Isolation setup for W1 (approved 25 Nov 2026: **local clone**, not a worktree)
 
 The other agent works in `C:\Games\cod-hwm\cod-mwx` and owns `mwx.exe`, `GAME\mwx`,
-`GAME\players2`, the MCP server and the game. W1 needs code (`patches.cpp`, `stock_weapons_data.hpp`,
-a GSC whitelist patch), a zone, and in-game tests. Proposal:
+`GAME\players2`, the MCP server and the game. W1 used:
 
-1. **Worktree/branch:** `git -C C:\Games\cod-hwm\cod-mwx worktree add C:\Games\cod-hwm\cod-mwx-aw
-   -b aw-weapons mwx` once, in a quiet moment. This writes only `.git\worktrees\*` metadata in
-   cod-mwx; it does **not** touch the cod-mwx working tree, index, HEAD or any branch, and no
-   checkout happens there. (If the user prefers zero writes even to `.git`, clone instead:
-   `git clone C:\Games\cod-hwm\cod-mwx C:\Games\cod-hwm\cod-mwx-aw` + `git checkout -b aw-weapons`.)
-   All W1 commits go to `aw-weapons`; never merge/rebase into `mwx` ourselves (Claude merges later).
-2. **Exe name:** `mwx-aw.exe`. Build in the worktree, but **do not** run the script's install step
-   into `GAME\mwx.exe` / `GAME\mwx`: `build-mwx.bat` renames and overwrites `GAME\mwx.exe` and
-   robocopies `data\mwx` → `GAME\mwx` with `/MIR` (deletes the other agent's extra files). Instead
-   run the build steps (`premake5 vs2022` + `msbuild build\hmw-mod.sln`) or add a `-noinstall` flag
-   in our branch, then copy
-   `build\bin\x64\Release\mwx.exe` → `GAME\mwx-aw.exe` and `data\mwx` → `GAME\mwx-aw`.
-3. **Data copy:** the branch changes `filesystem::register_path(L"mwx")` → `L"mwx-aw"` (one line)
-   and `load_timing`'s log dir to `mwx-logs-aw`; `GAME\mwx-aw\` is ours (mirror of `data\mwx`,
-   including `zone\mwx_aw_weapons.ff`). `GAME\mwx`, `GAME\mwx.exe` and their data stay untouched.
-   Optionally run our client with `-debugport 27079` so the debug API/MCP never collides with the
-   other instance (27099/27098); `mcp.cpp` can target a port, so no code change is needed for that.
-4. **When to test in game:** only in a time slot the user confirms the game, the dedicated server
-   and the MCP server are free (typically when the modes agent is not testing). Never start/stop
-   their processes, never overwrite `mwx.exe`, never write `GAME\mwx`, `GAME\players2`,
-   `GAME\hmw-mod` or existing zone/zone_source files. New `zone_source\mwx_aw_weapons.csv` and
-   `zone_source\mod.csv` (the mod rebuild) are the only additions/changes — `mod.csv` is our own
-   mod, changed once, with a `.bak` first.
-5. **Test artifacts:** screenshots/logs to `mwx-debug\aw-weapons\W1\` (new folder); zone source
-   stays `GAME\zonetool\mwx_aw_weapons`; `mwx_aw_weapons.ff` copies to `GAME\mwx-aw\zone\` (test)
-   and `cod-mwx\data\mwx\zone\` (for the normal build later).
-6. `players2`: our first run of `mwx-aw.exe` will write the same profile/config the game uses. Accept
-   it (it is the same client) or copy `GAME\players2` to `refs\backup\players2-<date>` before the
-   first test and tell the user if it changed. Do not restore without the user's OK.
-7. **Merge:** after W1 passes, the branch is merged by Claude into `mwx`; the normal build then puts
-   `mwx.exe` + `GAME\mwx\zone\mwx_aw_weapons.ff` in place for everyone.
+1. **Clone/branch:** `git clone C:\Games\cod-hwm\cod-mwx C:\Games\cod-hwm\cod-hmw-aw` (local clone, hardlinked
+   objects) then `git checkout -b aw-weapons origin/mwx`. Nothing in `cod-mwx` is written (no worktree metadata, no
+   checkout, no build). All W1 commits go to `aw-weapons`; Claude merges it later.
+2. **Exe name:** `GAME\hmw-aw.exe`. Build in the clone with `premake5 vs2022` + `msbuild build\hmw-mod.sln`
+   (**not** the build script: its install step overwrites `GAME\mwx.exe` and mirrors `data\mwx` ? `GAME\mwx` with
+   `/MIR`), then copy `build\bin\x64\Release\mwx.exe` ? `GAME\hmw-aw.exe`.
+3. **Data copy:** `data\mwx` ? `GAME\hmw-aw`, zone ? `GAME\hmw-aw\zone`. The client is started with
+   `-datadir hmw-aw -logdir hmw-aw-logs -debugport 27079` (test-only commit); `GAME\mwx`, `GAME\mwx.exe` and
+   `GAME\players2` stay untouched. The zone list loads `hmw_aw_weapons` from `GAME\hmw-aw\zone` (data path).
+4. **When to test:** only in a time slot the user confirms the game/dedicated server/MCP are free. Never start or
+   stop their processes. New `zone_source\hmw_aw_weapons.csv` and the `zone_source\mod.csv` change (our own mod,
+   `.bak` first) are the only zone_source edits.
+5. **Test artifacts:** screenshots/logs to `mwx-debug\aw-weapons\W1\` (new folder); zone source in
+   `GAME\zonetool\hmw_aw_weapons`; the built .ff/.pak to the test data dir and later to
+   `cod-mwx\data\mwx\zone\` for the normal build.
+6. `players2`: the first run of `hmw-aw.exe` writes the same profile the game uses; the user tests, so this is
+   their call (a copy of `GAME\players2` before the first test is optional).
+7. **Merge:** after W1 passes, Claude merges `aw-weapons` into `mwx`; the normal build then installs `mwx.exe` +
+   `GAME\mwx\zone\hmw_aw_weapons.ff`.
 
-## 9. Decisions needed from the user
+## 9. Decisions (answered by the user on 25 Nov 2026)
 
-1. **Crossbow optics:** `reflex` + `acog` only (recommended, already in the json), or also `holo`
-   (needs one new `tag_holo` and a re-check of the 0 px measurement)? `mars`/`reflexmwr`/`variant`
-   are rejected by the measurements. Thermal is untested (the crossbow has `tag_thermal_scope`).
-2. **Crossbow menu category:** secondary **Launchers** (`weapon_projectile`, recommended: it is a
-   secondary in HMW's structure and the ammo-limited behaviour fits), or a new "Special" tab (Lua
-   work), or primary Sniper (bad: HMW's sniper 2D-scope logic).
-3. **Combat knife menu category:** secondary **Melee** (`weapon_melee`, next to hatchet/karambit/…;
-   recommended — HMW melee weapons are secondaries, `loadoutMelee` is a deathstreak slot). Note the
-   knife model is AW's `vm_mp_tactical_knife`, not the `wpn_h1_melee_combat_knife_vm` every HMW gun
-   already uses for its melee attack, so it will look like a second knife.
-4. **Sticks and Stones:** approve moving the crossbow into `mwx_aw_weapons.ff` and turning
-   `mod.ff` into a reference-only zone (recommended), including the one-time rebuild of `mod.ff` in
-   the W1 time slot.
-5. **Primary shotguns:** UTS-19 + Blunderbuss as secondary Shotguns (zero UI work, recommended for
-   W2/W3) or add a primary "Shotguns" tab (needs an MWX `ui_scripts` shadow of HMW's
-   `loadout_editor.lua`, unproven).
-6. **HBRa3 name:** confirm CZ 805 BREN from `review\aw-weapons\W0\hbra3_*.png` (geometry-only render)
-   or leave the display name "HBRa3" until a textured render exists (W2).
-7. **Isolation setup** in §8: worktree vs clone, `mwx-aw.exe` + `GAME\mwx-aw` (recommended), and the
-   test time slot.
-8. **In-game M4 screenshots** (red dot + ACOG in ADS): only as a final cross-check; the rule is
-   answered without them. `references\m4\m4-ads.png` is the iron-sight ADS, not an optic.
+1. Crossbow optics: **`reflex` + `acog` only**. 2. Crossbow: **secondary -> Launchers**. 3. Combat knife:
+   **secondary Melee**, W4. 4. Sticks and Stones: **crossbow moves into `hmw_aw_weapons.ff`; `mod.ff` references it**
+   (rebuilt in W1). 5. UTS-19/Blunderbuss: **secondary Shotguns** (later milestones). 6. HBRa3 = **CZ 805 BREN**.
+   7. Isolation: **local clone** (`cod-hmw-aw`), test client `hmw-aw.exe` + `GAME\hmw-aw`. 8. No in-game M4 optic
+   screenshots needed; the <= 3 px ADS test with auto-align OFF stands. Also corrected: the Lever Action is a
+   **Browning BLR** (not a Winchester).
 
-## 10. W1 starting checklist (not started)
+## 10. W1 starting checklist (done in W1 - see §11)
 
-- Crossbow zone: copy `GAME\zonetool\mod` → `GAME\zonetool\mwx_aw_weapons` (weapon json with the
+- Crossbow zone: copy `GAME\zonetool\mod` → `GAME\zonetool\hmw_aw_weapons` (weapon json with the
   fitted tags + `attachments = ["acog","reflex"]`, models, anims, sounds, fx), new
-  `zone_source\mwx_aw_weapons.csv`, `buildzone mwx_aw_weapons`.
+  `zone_source\hmw_aw_weapons.csv`, `buildzone hmw_aw_weapons`.
 - `stock_weapons_data.hpp` row for the crossbow (`iw5_exocrossbow`, class `weapon_projectile`,
   `WEAPON_EXPLOSIVE_EXO_CROSSBOW` → "Crossbow"); `customweapons.csv` row comes from the same patch —
   **add the missing type column** (`"Secondary"`) in `stock_weapons.cpp` (see §3).
 - GSC: extend `isvalidsecondary` with `iw5_exocrossbow` (and, if the user picks it, melee with the
   knife later) via `replacefunc` in `data\mwx\scripts\mp\`.
-- `patches.cpp`: load `mwx_aw_weapons` after `hmw_*`, before the mod zone.
+- `patches.cpp`: load `hmw_aw_weapons` after `hmw_*`, before the mod zone.
 - `mod.ff`: reference-only crossbow (decision 4).
 - Test matrix from the plan (CAC snapshot, no optic/reflex/acog, spawn/fire/reload/ADS/kill feed,
   bot match, restart), `load_times.log` before/after.
+
+
+## 11. W1 - the crossbow natively in Create-a-Class (25 Nov 2026)
+
+Status: **done, built and installed; in-game verification is the user's step** (this agent must not launch the game).
+Commits:
+- client: `cod-hmw-aw` branch `aw-weapons` - `60012370` (feature) and `6da28dfe` (test-only flags). No push.
+- docs/review: this hmw-workbench commit (see `git log -1 --oneline`).
+Zone built: `hmw_aw_weapons.ff` 19,877,776 B + `hmw_aw_weapons.pak` 9,236,400 B, **0 FATAL / 0 ERROR**, 11 image
+warnings (the known missing crossbow scope/glass textures, see 11.6).
+
+### 11.1 Decisions taken (user, 25 Nov 2026)
+
+1. Crossbow optics: `reflex` + `acog` only (no `holo`). 2. Crossbow: secondary -> Launchers.
+3. Combat knife: secondary Melee in W4. 4. Sticks and Stones: crossbow moves into `hmw_aw_weapons.ff`, `mod.ff`
+referencing it. 5. UTS-15/Blunderbuss: secondary Shotguns later. 6. HBRa3 = CZ 805 BREN.
+7. Isolation: **local clone** (not a worktree). 8. No M4 optic screenshots needed; the <= 3 px ADS test stands.
+Naming: the new fastfile is **`hmw_aw_weapons.ff`**; the test client is `hmw-aw.exe` + `GAME\hmw-aw`; the repo is
+`cod-hmw-aw`. Existing paths (`cod-mwx`, `GAME\mwx`, `mwx.exe`) keep their names until the user renames them.
+
+### 11.2 Isolation actually used
+
+- `git clone C:\Games\cod-hwm\cod-mwx C:\Games\cod-hwm\cod-hmw-aw` (local clone; the shared objects are
+  hardlinked, no copy of the working tree), then `git checkout -b aw-weapons origin/mwx` (5cdcf64b). Nothing in
+  `cod-mwx` was written: no branch, no checkout, no build, no edit.
+- The clone had the `deps/imgui` submodule empty; it was initialised from the parent's module repo
+  (`git -c protocol.file.allow=always submodule update --init deps/imgui`, URL temporarily pointed at
+  `cod-mwx\.git\modules\deps\imgui`). The other submodules are vendored files in this repo. **imgui is not part of
+  the Release build** (no reference in premake5.lua).
+- Build without the install step: `tools\premake5 vs2022` + `msbuild build\hmw-mod.sln /p:Configuration=Release
+  /p:Platform=x64` (build script *not* used, it would copy into `GAME\mwx.exe` and mirror `/MIR` into `GAME\mwx`).
+  Output `build\bin\x64\Release\mwx.exe` copied manually to `GAME\hmw-aw.exe`; `data\mwx` mirrored to
+  `GAME\hmw-aw`; the zone copied to `GAME\hmw-aw\zone`.
+- Test client start line:
+  `GAME\hmw-aw.exe -datadir hmw-aw -logdir hmw-aw-logs -debugport 27079`
+  (flags from the test-only commit; the debug port keeps it away from the other instance's 27099/27098).
+- `GAME\mwx.exe`, `GAME\mwx`, `GAME\players2` untouched by us; the game was not started.
+
+### 11.3 Zone
+
+- Source: `GAME\zonetool\hmw_aw_weapons` (copy of the fixed `GAME\zonetool\mod` crossbow source: weapon json with
+  `attachments = ["acog","reflex"]`, the fitted view/world model tags, 64 xanims, sounds, fx) and
+  `GAME\zone_source\hmw_aw_weapons.csv` (new file; same content as the old mod.csv).
+- Build: `GAME\x64zt.exe` (H1), `buildzone hmw_aw_weapons`, 8.5 s. Writes `GAME\zone\hmw_aw_weapons.ff` + `.pak`
+  (the pak carries the streamed images; **the .pak must be installed next to the .ff** - the old Sticks and Stones
+  install was missing `mod.pak`, which is why its streamed crossbow textures never loaded).
+- Install: `GAME\hmw-aw\zone\hmw_aw_weapons.ff` + `hmw_aw_weapons.pak`. The build outputs were then removed from
+  `GAME\zone` (they are not game files; rebuild = build then copy again).
+- Load: `patches.cpp::ui_init_stub()` explicit zone vector, entry `"hmw_aw_weapons"` after `hmw_dlc_killstreaks`
+  and before `zones.emplace_back("mod")`. The client has **no glob/prefix zone scan** - `fastfiles.cpp` also loads
+  the fixed engine zones (`hmw_pre_gfx`, `hmw_files`, `hmw_post_gfx`, `hmw_common`), so the explicit list is the
+  only place that can load it and it is loaded exactly once per `ui_init`, same as the other `hmw_*` zones.
+- Shipping location when this merges: `cod-mwx\data\mwx\zone\hmw_aw_weapons.ff` (+ `.pak`), mirrored to
+  `GAME\mwx\zone` by `build-mwx.bat`. **Caveat:** that mirror is `robocopy /MIR`, so a zone that exists only in
+  `GAME\mwx` is deleted by the next build; it must be committed in `data\mwx\zone\` (or the packaging step must
+  copy it). Not committed in W1 (build artifact), decide in W5.
+
+### 11.4 Client changes (`cod-hmw-aw`, branch `aw-weapons`)
+
+Commit `60012370` (feature):
+- `src\client\component\patches.cpp`: `hmw_aw_weapons` in the zone list (see 11.3).
+- `src\client\component\stock_weapons_data.hpp`: one 68-value row for `iw5_exocrossbow`
+  (`weapon_projectile`, `WEAPON_EXPLOSIVE_EXO_CROSSBOW`, image `hud_icon_exocrossbow`, desc key
+  `WEAPON_EXPLOSIVE_EXO_CROSSBOW_DESC`, attachments `reflex`,`acog` in columns 11/12, launcher-like display stats,
+  GUID `-1` = no inventory item, class type derived from the class). `row_count` 43 -> 44.
+- `src\client\component\stock_weapons.cpp`:
+  - **type column fix:** `mp/customweapons.csv` rows now fill column 2 (`Primary`/`Secondary`, derived from the
+    statstable class). Before this, the table got only `ref` + `class`; `create_a_class\__init__.lua` reads
+    `[0]=ref, [1]=class, [2]=type` and its `pcall` loop aborts at the first row with an empty type, so appended
+    rows did not reach the CAC. (The 43 MWR stock rows had the same problem; they now get their type too.)
+  - a small component that sets the localized strings: `WEAPON_EXPLOSIVE_EXO_CROSSBOW` = "Crossbow",
+    `WEAPON_EXPLOSIVE_EXO_CROSSBOW_DESC` = "Bolt-action crossbow. Fires explosive bolts that stick and detonate."
+    (from AW's English string; HMW has no strings for AW assets).
+- `data\mwx\scripts\mp\aw_weapons.gsc` (new, loaded from the data dir as a script module):
+  - `init()` runs after every script's `main()` (the loader runs all `main()`s at `scr_load_structs`, all `init()`s
+    at `scr_load_level` - `scripting.cpp`), so it wins over HMW's replacements.
+  - `replacefunc(_class::isvalidsecondary, ::aw_isvalidsecondary)` - accepts `iw5_exocrossbow`, delegates
+    everything else to `scripts\mp_patches\custom_weapons::isvalidsecondary`.
+  - `replacefunc(_class::buildweaponname, ::aw_buildweaponname)` - **fixes an HMW bug:** HMW's
+    `custom_weapons.gsc::buildweaponname` has no `return` in its non-`h1_/h2_` branch, so **any `iw5_*` weapon
+    (with or without an attachment) got an undefined weapon name** from the class path. Our wrapper builds
+    `<ref>_mp[_<attachment>]` for `iw5_*` (attachment only if it is in the weapon's statstable attachment list)
+    and delegates everything else to HMW's function. Camo suffixes are deliberately not added (no AW `_camoNN`
+    variants exist), so a selected camo is dropped instead of producing an unknown weapon.
+- `data\mwx\ui_scripts\aw_weapons\__init__.lua` (new LUI module, loaded after all HMW zone ui_scripts):
+  - appends `reflex`/`acog` to `Cac.GetValidAttachKits` for `iw5_exocrossbow` only (HMW filters the attachkit
+    table by weapon-class token and a projectile `prj` row has no optics; HMW's own launchers have no attachments
+    so nothing else changes). This is the safety net: if HMW's attachkit table does list optics for `prj`, the
+    wrapper adds nothing (duplicate check).
+  - makes sure the crossbow appears in the Secondary/`weapon_projectile` list even if HMW's item-lock filter
+    would hide it (AW items have no HMW unlock/GUID entry).
+
+Commit `6da28dfe` (test-only, droppable on merge):
+- `filesystem.hpp/cpp`: `default_data_dir`/`default_log_dir` constants (one place for the `mwx` -> `hmw` rename) and
+  `get_data_dir()`/`get_log_dir()` reading `-datadir`/`-logdir`.
+- `filesystem.cpp` registers `get_data_dir()` instead of the literal `mwx`; `ui_scripting.cpp` loads the LUI
+  modules from it; `gsc\script_loading.cpp` loads disk GSC only from it; `load_timing.cpp`, `debug_server.cpp` and
+  the statstable dump use `get_log_dir()`.
+- Note for the rename: with the test-only commit dropped, the hardcodes are the old ones again (`"mwx"` in
+  `filesystem.cpp`, `ui_scripting.cpp`, `script_loading.cpp`, `mwx-logs` in `load_timing.cpp`, `debug_server.cpp`,
+  `stock_weapons.cpp`). With it kept, the rename is the two constants in `filesystem.hpp` (or `-datadir`).
+
+### 11.5 Sticks and Stones (`mod.ff`)
+
+- `zone_source\mod.csv` backed up as `mod.csv.bak-20261125-104624`; new content is one reference line:
+  `weapon,,iw5_exocrossbow_mp`.
+- `buildzone mod` -> `mod.ff` **177 bytes**, 0 errors. Installed to `GAME\mods\sticksandstones\mod.ff`; the previous
+  zone is kept as `mod.ff.bak-20261125-104819-w1` (the older `mod.ff.bak-20261125-070627` is untouched).
+- **Risk, by design:** the mod zone now requires a client that loads `hmw_aw_weapons` (MWX does, before `mod`). A
+  client without it (e.g. the other agent's build before this branch merges, or the official `hmw-mod.exe`) fails
+  to load zone `mod` with `Could not load default asset 'void' for asset type 'weapon'`. Restore is one copy from
+  the `.bak` above. The stale `GAME\zone\mod.pak` (old streamed images) is unused and left in place.
+- `mod.json`'s `WEAPON_EXPLOSIVE_EXO_CROSSBOW` string is still set; it matches our localized override.
+
+### 11.6 Missing crossbow images (still open)
+
+The build warns about exactly these 11 images (all in AW `common_mp`, none in any H1-format dump):
+`crossbow_scope_base_col`, `crossbow_scope_base_nml`, `~crossbow_scope_base_spc-rgb&~d8544476`,
+`~crossbow_scope_base_occ-l`, `crossbow_glass_col`, `crossbow_glass_nml`,
+`~crossbow_glass_spc-rgb&cross~a7515f30`, `crossbow_target_ems`, `wep_shared_gray_swatch_col`,
+`weapon_red_cross_background`, `emblem_temp_col` (the player-emblem surface).
+Their materials are also not in the zone (`mtl_crossbow_scope_base`, `ms/mtl_crossbow_scope_base`,
+`mtl_crossbow_target`, `mtl_crossbow_glass_base`, `mtl_iron_sights_color`); they exist in
+`AW\dump\common_mp\materials` but were not copied because the images are missing anyway. Fixing them needs an AW
+image dump in H1 format: `dumpasset image <name>` writes S1 images, and `dumpzone h1 common_mp image` dumps the
+whole zone (too big). Options for W4: targeted image extraction/conversion, or `dumpzone h1 common_mp image` into a
+temporary folder (expect several GB; keep >= 20 GB free) and keep only these names. The HUD/kill icon is fine:
+`hud_icon_exocrossbow` -> image `special_crossbow` is in the zone and has pixel data.
+
+### 11.7 Workbench check (auto-align OFF, 1920x1016, `-posedump`)
+
+`review\aw-weapons\W1\crossbow_reflex_ads.png/.txt`, `crossbow_acog_ads.png/.txt`:
+- reflex: effective anim `vm_crossbow_reddot_ads_up`, reticle screen **(960.0, 508.0)** = **0.0 px**.
+- acog: effective anim `vm_crossbow_acog_ads_up`, reticle screen **(960.0, 508.0)** = **0.0 px**.
+Both within the 3 px acceptance test. The ring is hidden by the HMW attachments' `hideTags = tag_sight_front_on`
+(the bone was renamed in W0/M5).
+
+### 11.8 In-game test checklist (user)
+
+Start the test client (from the game folder):
+```
+hmw-aw.exe -datadir hmw-aw -logdir hmw-aw-logs -debugport 27079
+```
+Optional console (after spawning): `unlockall 1`, `set mwx_gsc_print 1`.
+
+1. **CAC list:** Play -> Private Match -> Create a Class -> Secondary -> **Launchers**: the list must show
+   **Crossbow** (icon = crossbow HUD icon, description "Bolt-action crossbow..."). If it is missing, check
+   `hmw-aw-logs\load_times.log` for `hmw_aw_weapons` and the console line `stock weapons: mp/customweapons.csv:
+   added N ...`.
+2. **Attachments:** with the crossbow equipped in CAC, open **Secondary -> Attachment**: "None", "Red Dot Sight"
+   (`reflex`) and "ACOG Scope" (`acog`) must be selectable. If the two optics are missing, the
+   `Cac.GetValidAttachKits` wrapper did not install (report it; fallback = patch the attachkit table for `prj`).
+3. **Spawn:** start the match; the class must apply without a script error, with **TF141 viewhands/arms** on the
+   crossbow (not AW exo arms). Fire, reload (1 in the clip, 6 bolts), sprint, melee.
+4. **ADS no optic:** the built-in ring is visible, the sight roughly centred (known open issue: 125-178 px low in
+   the workbench; check in game).
+5. **ADS reflex:** white dot on the crosshair, the built-in ring hidden, optic sits on the top rail.
+6. **ADS acog:** ACOG reticle centred, ring hidden.
+7. **Kill feed:** a kill shows **Crossbow** (not `iw5_exocrossbow_mp`); the kill icon is the crossbow icon.
+8. **Swap weapons:** switch to the secondary/primary and back; no arms glitch, no missing asset errors in the
+   console.
+9. **Restart the game, reopen CAC:** the class with the crossbow and its optic is still there.
+10. **Camo (expected limitation):** Secondary -> Camo offers camos; choosing one gives the uncamoed crossbow (no
+    AW `_camoNN` variants yet). This is intended for W1.
+11. **Sticks and Stones:** MODS -> Sticks and Stones -> start (sas gametype). The crossbow must be given and work
+    (the mod zone only references it now); throwing-knife kills must still bankrupt.
+12. Optional quick check in a match console:
+    `give iw5_exocrossbow_mp`, `give iw5_exocrossbow_mp_reflex`, `give iw5_exocrossbow_mp_acog`.
+
+### 11.9 Open issues / risks
+
+- CAC listing and the two optics are the only unverified parts (no in-game run here). Both have a defined
+  fallback in 11.4; the item-lock filter was the reason for the list wrapper.
+- The crossbow's GUID is `-1` (no HMW inventory item). Unranked/private play does not check unlocks
+  (`level.rankedmatch` only); if the CAC hides it, the list wrapper should still add it.
+- `mod.ff` now needs `hmw_aw_weapons` (11.5). The other agent's current client/build cannot play Sticks and
+  Stones until this branch is merged; the old zone is in `mod.ff.bak-20261125-104819-w1`.
+- 11 missing images (11.6) - the scope/glass look red/checkered in ADS; materials+images to port in W4.
+- The `hmw_aw_weapons` zone (20 MB) + pak (9 MB) are not committed to the repo yet (packaging decision in W5).
+- Disk after W1: **28.4 GB** free (build objects, dumps and the test install included).

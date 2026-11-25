@@ -45,9 +45,12 @@ build output). Continue on the new machine.
 - **Dumps added**: `AW\dump\common_mp\weapons` (413), `AW\dump\eng_patch_common\localizedstrings` (2,127),
   `AW\dump\weapon_models` (HBRa3 + Lever Action). `AW\dump\eng_common_mp` etc. only have ESPORTS strings.
 - **Identity checks**: HBRa3 renders as a **CZ 805 BREN** (rectangular handguard slots, full-length top rail,
-  CZ folding stock) — `review\aw-weapons\W0\hbra3_*.png`; the Lever Action is a **Winchester** lever rifle
-  (`vm_winchester_loot_base`, zone `mp_vm_leveraction_tr`), exact model still open. The Ameli is the **CETME
-  Ameli**, not an "MG82".
+  CZ folding stock) — `review\aw-weapons\W0\hbra3_*.png`; the Lever Action is a **Browning BLR** (IMFDB,
+  corrected by the user — the asset/model names say "winchester" and the untextured W0 render was read as a
+  Winchester). The Ameli is the **CETME Ameli**, not an "MG82".
+- **Ghosts fallback**: CZ 805 (HBRa3), CBJ-MS (MP11), LSAT (Pytaek) and UTS-15 (Tac-19) also exist in
+  Call of Duty: Ghosts (IW6) — a fallback source if an AW asset turns out broken. Ghosts is **not installed
+  on this machine** (only AW and HMW are); x64-zt has an IW6→H1 converter, so it would need the IW6 files.
 - **Duplicates confirmed** from the dumps: `dlcgun6`=StG44, `dlcgun13`=M1911, `dlcgun43`=AK-47,
   `dlcgun8`=M16, `dlcgun7`=Dragunov/SVO, `sac3`=Vector, `m182spr`=Mk14 EBR. No new duplicates among the 18
   planned weapons (HMW's "Lynx CQ300" AR only collides in name with the GM6 Lynx).
@@ -150,6 +153,39 @@ hands+gun pose.
    `reflex` and `acog` attachments hide `tag_sight_front_on`, so renaming the crossbow bone `tag_sight_on` →
    `tag_sight_front_on` hides the ring exactly when an HMW optic is mounted (no anim or weapon field uses
    `tag_sight_on`). Renamed in `vm_crossbow_base` and `npc_crossbow_base`.
+
+### W1: crossbow zone and Create-a-Class (25 Nov 2026)
+
+- **Zone `hmw_aw_weapons`**: source `GAME\zonetool\hmw_aw_weapons` (copy of the fixed `zonetool\mod` crossbow:
+  weapon json with `attachments = ["acog","reflex"]`, fitted view/world tags, 64 xanims, sounds, fx), new
+  `GAME\zone_source\hmw_aw_weapons.csv`, `buildzone hmw_aw_weapons` (H1 x64-zt, 8.5 s):
+  `hmw_aw_weapons.ff` **19,877,776 B** + `hmw_aw_weapons.pak` **9,236,400 B**, 0 FATAL/ERROR, 11 image warnings.
+  The `.pak` carries the streamed images and **must be installed next to the `.ff`** (the old Sticks and Stones
+  install had `mod.ff` but no `mod.pak`, which is why its streamed crossbow textures never loaded).
+- **Asset ownership**: the crossbow, its models, anims, sounds and fx now exist only in `hmw_aw_weapons.ff`.
+  `GAME\zone_source\mod.csv` was reduced to `weapon,,iw5_exocrossbow_mp` (a `,,` reference) and `mod.ff` rebuilt to
+  **177 B**. A client that loads `mod` must load `hmw_aw_weapons` first (MWX does); otherwise zone `mod` fails with
+  `Could not load default asset 'void' for asset type 'weapon'`.
+- **HUD/kill icon**: `hud_icon_exocrossbow` (material) + image `special_crossbow` are in the zone and have pixel
+  data; the CAC image column and kill feed use that material.
+- **Missing images (11, still open)**: `crossbow_scope_base_col`, `crossbow_scope_base_nml`,
+  `~crossbow_scope_base_spc-rgb&~d8544476`, `~crossbow_scope_base_occ-l`, `crossbow_glass_col`,
+  `crossbow_glass_nml`, `~crossbow_glass_spc-rgb&cross~a7515f30`, `crossbow_target_ems`,
+  `wep_shared_gray_swatch_col`, `weapon_red_cross_background`, `emblem_temp_col`. Their materials
+  (`mtl_crossbow_scope_base`, `ms/mtl_crossbow_scope_base`, `mtl_crossbow_target`, `mtl_crossbow_glass_base`,
+  `mtl_iron_sights_color`) are in `AW\dump\common_mp\materials` but not in the zone (the images are missing
+  anyway). `dumpasset image` writes S1 images; a targeted AW image extraction/conversion is still the gap.
+- **CAC**: statstable row class `weapon_projectile` (secondary -> Launchers), name key
+  `WEAPON_EXPLOSIVE_EXO_CROSSBOW` -> "Crossbow" (localized override), image `hud_icon_exocrossbow`, attachments
+  `reflex`/`acog` in statstable columns 11/12, GUID `-1` (no HMW inventory item). `customweapons.csv` gets
+  `ref, weapon_projectile, Secondary`.
+- **Engine/script gaps found**: HMW's `buildweaponname` has no `return` for `iw5_*` refs (the class path gave an
+  undefined weapon name; fixed by the `aw_weapons.gsc` replacement, see guide section 7); and the CAC attachment
+  menu filters attachkits by class token, so a `prj` weapon gets no optics unless the kit row allows `prj` or an
+  MWX `ui_scripts` wrapper adds them (done in `data\mwx\ui_scripts\aw_weapons`). AW camo suffixes (`_camoNN`) do
+  not exist for the crossbow, so a selected camo is dropped (uncamoed weapon) instead of an unknown weapon.
+- **Workbench**: crossbow + `reflex` and + `acog` = **0.0 px** at the end of ADS with auto-align off
+  (`review\aw-weapons\W1\crossbow_{reflex,acog}_ads.*`).
 
 **HMW attachment models:** attachments are defined per weapon class, the models are mostly shared. HMW's MW2-style
 weapons (`h2_*`, e.g. the M4A1) use one generic set: `reflex` (`attach_h2_reflex_vm` on `tag_reflex`), `acog`
