@@ -168,13 +168,14 @@ hands+gun pose.
   `Could not load default asset 'void' for asset type 'weapon'`.
 - **HUD/kill icon**: `hud_icon_exocrossbow` (material) + image `special_crossbow` are in the zone and have pixel
   data; the CAC image column and kill feed use that material.
-- **Missing images (11, still open)**: `crossbow_scope_base_col`, `crossbow_scope_base_nml`,
+- **Missing images (11, fixed in W1.2)**: `crossbow_scope_base_col`, `crossbow_scope_base_nml`,
   `~crossbow_scope_base_spc-rgb&~d8544476`, `~crossbow_scope_base_occ-l`, `crossbow_glass_col`,
   `crossbow_glass_nml`, `~crossbow_glass_spc-rgb&cross~a7515f30`, `crossbow_target_ems`,
   `wep_shared_gray_swatch_col`, `weapon_red_cross_background`, `emblem_temp_col`. Their materials
   (`mtl_crossbow_scope_base`, `ms/mtl_crossbow_scope_base`, `mtl_crossbow_target`, `mtl_crossbow_glass_base`,
-  `mtl_iron_sights_color`) are in `AW\dump\common_mp\materials` but not in the zone (the images are missing
-  anyway). `dumpasset image` writes S1 images; a targeted AW image extraction/conversion is still the gap.
+  `mtl_iron_sights_color`) are in `AW\dump\common_mp\materials`; the images were extracted with
+  `dumpzone h1 common_mp image` (plus `patch_code_post_gfx_mp` for `emblem_temp_col`) and copied into
+  `zonetool\hmw_aw_weapons`. W1.2 build: 0 image warnings. See `aw-weapons-port.md` §13.2 and guide §6.
 - **CAC**: statstable row class `weapon_projectile` (secondary -> Launchers), name key
   `WEAPON_EXPLOSIVE_EXO_CROSSBOW` -> "Crossbow" (localized override), image `hud_icon_exocrossbow`, attachments
   `reflex`/`acog` in statstable columns 11/12, GUID `-1` (no HMW inventory item). `customweapons.csv` gets
@@ -193,8 +194,8 @@ weapons (`h2_*`, e.g. the M4A1) use one generic set: `reflex` (`attach_h2_reflex
 `attach_h1_scope_acog_vm` (30 `acogmwr<weapon>` definitions) and `attach_h1_optic_reflex_vm` (22 `reflexmwr<weapon>`);
 the per-weapon definitions only differ in anim suffixes and stats. A few models are weapon-specific (AUG/F2000 scopes,
 M203/GP25 launchers, M1014 foregrip).
-4. Open: fix ADS alignment without optic (built-in sight 125–178 px low in the workbench; check in game first) – check what AW does for the no-optic case first.
-5. Open: dump the 11 missing images (AW `common_mp`) in H1 format.
+4. Done W1.2: ADS alignment without optic. The built-in scope was 135.9 px low because AW's base `vm_crossbow_ads_up` `tag_ads` Z minimum is 0; **+0.72** on the Z minimum centres it (507.3 vs 508) and leaves `reflex`/`acog` at 0 px. See `aw-weapons-port.md` §13.1 / guide §2.
+5. Done W1.2: the 11 missing images are in the zone (`dumpzone h1 common_mp image` + `patch_code_post_gfx_mp` for `emblem_temp_col`; 0 image warnings). See `aw-weapons-port.md` §13.2 / guide §6.
 
 ## Crossbow optics: workbench + zone state (25 Nov 2026)
 

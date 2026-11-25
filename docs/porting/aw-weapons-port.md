@@ -741,3 +741,73 @@ missing images (red/checkered in ADS), unrelated to camos.
 - `cod-hmw-aw` `aw-weapons`: **`87a878f9`** ("aw weapons: append the camo suffix in buildweaponname (W1.1)").
 - `hmw-workbench` `main`: **`2b1af69`** (guide §4 + error rows, `aw.md` camo section, `aw-weapons-port.md` §12,
   `review\aw-weapons\W1.1\`). Not pushed.
+
+## 13. W1.2 - Crossbow finish (25 Nov 2026)
+
+Status: **done in the workbench and in the built zone; in-game confirmation is the user's step.** The
+zone now builds with **0 FATAL / 0 ERROR / 0 image warnings**; the built-in sight is centred in ADS.
+
+### 13.1 Built-in sight alignment (fixed)
+
+Measured with hmw-workbench at 1920x1016, ADS, auto-align OFF:
+- before: 	ag_scope screen y **643.9** (135.9 px below the centre 508); 	ag_sight_front_on
+  633.1 (125.1 px), 	ag_red_dot 685.9 (177.9 px) - the 125-178 px range from the plan.
+- cause: the crossbow is an AW weapon on HMW hands. The base AW ADS anim m_crossbow_ads_up
+  keys only 	ag_ads; its Z minimum is 0.0, which put the AW scope below the HMW camera. The
+  optic overrides (m_crossbow_reddot_ads_up, m_crossbow_acog_ads_up) are separate and were
+  already 0.0 px.
+- fix: add **+0.72** to the Z minimum of the normal-translation block in m_crossbow_ads_up and
+  m_crossbow_ads_down (the dataInts min/size block read by xanim.cpp; the compressed key
+  bytes stay untouched, so every key shifts by +0.72). After: 	ag_scope **(960.0, 507.3)** =
+  **0.7 px**; 	ag_sight_front_on 539.6, 	ag_red_dot 556.9 (these are the iron-sight / mount
+  tags, not the scope picture). eflex and cog remain **0.0 px**.
+- The two xab files are changed in GAME\zonetool\hmw_aw_weapons\xanim\ (backups
+  .bak-w1.2) and in GAME\zonetool\mod\xanim\ (the workbench source; same backups).
+- Tool: mwx-debug\aw-weapons\W1.2\xanim_shift.py <in.xab> <out.xab> <delta_z> - parses the H1
+  xab stream, finds the 6-float translation min/size block and adds delta to min.z. Reusable for
+  every AW weapon whose built-in sight sits low on HMW hands.
+
+### 13.2 Scope/glass/target textures (fixed)
+
+The 11 missing images from W1 §11.6 are now in the zone. The extraction path that works:
+- dumpasset image <name> writes only the **streamed image header** (.s1Image, 130-260 B) for a
+  streamed AW image, and the pixels live in the big imagefileN.pak stream files. The
+  -dump_streamed_image flag writes the header + .pixels for dumpasset only when the stream
+  file index is set; for a single asset it is not, so the .pixels are absent.
+- dumpzone h1 common_mp image (**S1 tool, h1 target**) converts and writes the H1
+  images\<name>.h1Image **and** streamed_images\<name>.h1Image +
+  streamed_images\<name>_streamN.pixels (the converter's dump_streamed_image always writes the
+  pixels). The full zone is large (~7.5 GB of streamed pixels before we stopped); the crossbow
+  images are near the end of the asset order. We kept only the 12 needed files and deleted the
+  rest. The disk stayed >= 20 GB (it reached 20.97 GB before the cleanup).
+- emblem_temp_col is in patch_code_post_gfx_mp, not common_mp: dumpzone h1
+  patch_code_post_gfx_mp image (7.5 MB) writes it.
+- The 12 files were copied into GAME\zonetool\hmw_aw_weapons\images /
+  streamed_images, and the images were added to GAME\zone_source\hmw_aw_weapons.csv
+  (image,<name> lines, backup .bak-w1.2). The H1 build then finds the materials in
+  GAME\zonetool_paths\common_mp_materials and packs the images.
+
+Build (GAME\x64zt.exe, uildzone hmw_aw_weapons, 3.8 s):
+- hmw_aw_weapons.ff **19,879,343 B**, hmw_aw_weapons.pak **15,708,188 B**,
+  **0 FATAL / 0 ERROR / 0 image warnings** (the previous 11 warnings are gone).
+- Installed to GAME\hmw-aw\zone (W1.1 files kept as .bak-w1.1). GAME\zone build outputs
+  removed after the copy. GAME\mwx*, GAME\mods, GAME\players2 untouched.
+- The workbench preview source zonetool\mod also got the 12 images + the +0.72 anim, so
+  eview\aw-weapons\W1.2\ shows the fixed scope. A small checkered rectangle remains in the
+  workbench preview under the scope (the mtl_iron_sights_color/emblem surface); the zone build
+  has no missing image for it. Check it in game with the W1.2 checklist.
+
+### 13.3 Workbench evidence (mwx-debug\aw-weapons\W1.2\)
+
+- crossbow_ads_noscope.png - before (scope checkered, 136 px low).
+- ds_shift072.png - after the +0.72 shift: scope centred, still checkered (pre-texture).
+- crossbow_ads_fixed_final.png - after textures + shift: scope centred and textured.
+- ds_reflex_fixed.txt / ds_acog_fixed.txt - reticles still (960, 508) = 0.0 px.
+
+### 13.4 Open
+
+- In-game screenshot of the no-optic ADS with the new zone (the client hmw-aw.exe has no
+  screenshot RPC in the aw-weapons branch; use the game's screenshot console command or the
+  W1.2 checklist). The workbench measurement uses the same 	ag_ads anim the game plays.
+- The workbench-only checkered rectangle (13.2); verify in game.
+- The final hmw_aw_weapons.ff is still a test artifact (not committed); packaging is W5.

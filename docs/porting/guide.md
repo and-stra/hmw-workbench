@@ -70,6 +70,17 @@ Converters to H1 exist in x64-zt for S1 (AW), IW6 (Ghosts), IW7, T7, H2. None fo
   **Rule:** a port must ship an ADS_UP/DOWN anim named `<weapon>_<optic>_ads_up/down` that keys `tag_ads`, or list
   explicit `animOverrides` per attachment (crossbow). Auto-align OFF is the mode that matches the game.
 
+- **Built-in sight too low (no optic).** When a source weapon has a built-in sight and no HMW optic override, the
+  game plays the base `ADS_UP` anim. If that anim was authored for the source game's hands rig, the sight can sit
+  low on HMW hands. Measure it with `-posedump -ads` (the scope/built-in sight tag, not the iron-sight tags, is the
+  aim point). Fix it by shifting the anim's `tag_ads` translation, not the model or the weapon json: the H1 xab
+  stores a normal-translation channel as a 6-float `min/size` block in `dataInts`
+  (`value = size * byte + min`); add the delta to `min.z` and leave the compressed key bytes alone. The AW
+  crossbow needed **+0.72** (`tag_scope` 643.9 -> 507.3 at 1920x1016); the optic anims are separate and stayed
+  0 px. Tool: `mwx-debug\aw-weapons\W1.2\xanim_shift.py` (parses the tagged xab stream and patches the min/size
+  block). Only do this after checking that the source game did not intentionally use a different sight tag; keep
+  the measured before/after pose dumps in the review folder.
+
 ## 4. Camos
 
 Camos are a **standard port step** (first done for the AW crossbow, W1.1, 25 Nov 2026). The HMW side is in
@@ -197,7 +208,15 @@ camo spec and the env LUT; the source `_col`/`_nml`/`_spc`/`_occ` stay in `c`/`d
 - **AW models in hmw-workbench:** add the AW dump folders to `workbench.json` (W0 did: `AW\dump\common_mp`,
   `AW\dump\patch_common_mp`, `AW\dump\weapon_models`). AW materials render untextured/black because the AW image
   paks are not dumped; silhouettes are still usable for real-gun identification.
-
+- **Streamed source images (S1 → H1):** `dumpasset image <name>` writes only the `.s1Image` **header** for a
+  streamed image; the pixels stay in the game's `imagefileN.pak` and the per-asset stream index is not set, so
+  `-dump_streamed_image` does not produce `.pixels` for a single `dumpasset`. Use
+  `dumpzone h1 <zone> image`: the converter writes `images\<name>.h1Image` and
+  `streamed_images\<name>.h1Image` + `streamed_images\<name>_streamN.pixels` (pixels always). The full S1
+  `common_mp` image dump is several GB; stop it once the needed names exist (a folder/name watcher, not the
+  whole-zone wait) and delete the rest. Images can live in a different zone from the material: check the zone
+  CSV line number and dump that zone too (the AW crossbow's `emblem_temp_col` is in `patch_code_post_gfx_mp`).
+  Copy the `.h1Image`/`.pixels` into the target zone source and list the names as `image,<name>` in its CSV.
 
 ## 7. Create-a-Class (MWX/HMW)
 
