@@ -182,8 +182,8 @@ hands+gun pose.
 - **Engine/script gaps found**: HMW's `buildweaponname` has no `return` for `iw5_*` refs (the class path gave an
   undefined weapon name; fixed by the `aw_weapons.gsc` replacement, see guide section 7); and the CAC attachment
   menu filters attachkits by class token, so a `prj` weapon gets no optics unless the kit row allows `prj` or an
-  MWX `ui_scripts` wrapper adds them (done in `data\mwx\ui_scripts\aw_weapons`). AW camo suffixes (`_camoNN`) do
-  not exist for the crossbow, so a selected camo is dropped (uncamoed weapon) instead of an unknown weapon.
+  MWX `ui_scripts` wrapper adds them (done in `data\mwx\ui_scripts\aw_weapons`). Camos: W1 dropped the camo suffix
+  on purpose; **W1.1** fixed it (`buildweaponnamecamo`, see "In-game test (camos) - W1.1 state" below).
 - **Workbench**: crossbow + `reflex` and + `acog` = **0.0 px** at the end of ADS with auto-align off
   (`review\aw-weapons\W1\crossbow_{reflex,acog}_ads.*`).
 
@@ -267,102 +267,96 @@ Use `"acog"` for the ACOG (`iw5_exocrossbow_mp_acog`) and `"none"` for no optic.
    combination; use the no-optic name and the class/attachment path, or build the variant
    (report it rather than adding a fake asset).
 
-## In-game test (camos)
+## In-game test (camos) - W1.1 state (25 Nov 2026)
 
-The camo is a weapon-name suffix, not a weapon field. HMW's class code resolves the class
-camo name through `mp/camoTable.csv`, converts it to a number and calls
-`maps\mp\gametypes\_class::buildweaponnamecamo`, which appends `_camoNN` to the weapon name:
+This section was rewritten in W1.1. The W0 text claimed a 2-digit `_camo42` suffix and `_camo` weapon variants;
+both are wrong (see below).
 
-- `refs\dumps\hmw_files\scripts\mp_patches\custom_weapons.gsc:756` (primary) and `:764`
-  (secondary): `tablelookup( "mp/camoTable.csv", 1, final_loadout.primarycamo, 0 )`.
-- `refs\dumps\hmw_files\scripts\mp_patches\custom_weapons.gsc:758` and `:766`:
-  `buildweaponname(..., loadoutPrimaryCamo, ...)`.
-- The `iw5_`/`h1_`/`h2_` variants call `buildweaponnamecamo` at
-  `refs\dumps\hmw_files\scripts\mp_patches\custom_weapons.gsc:1030,1038` (H2) and
-  `:1136,1149` (iw5/h1).
-- `refs\iw5-scripts\maps\mp\gametypes\_class.gsc:1491-1503`: if the camo index is `> 0`,
-  append `_camo0<index>` for `< 10`, otherwise `_camo<index>`.
+**The camo is a weapon-name suffix, not a weapon field.**
 
-The three test camos are in `refs\h1_dump\h1_dump\mp\camotable.csv`:
+- Class camo name -> index: `tablelookup("mp/camoTable.csv", 1, <name>, 0)`. Column 0 = index, column 1 = name
+  (`camo0NN`), column 8 = design material (`camo_h1_<name>`).
+- `_class::buildweaponnamecamo(name, index)` appends **three digits**: `_camo00N` for 1..9, `_camo0NN` for 10..99,
+  `_camoNNN` for 100+. Evidence: a real HMW kill log line (`hmw-mod\logs\games_mp.log`):
+  `h2_scar_mp_silencerar_xmag_camo004` (blue tiger = index 4). Index 42 -> `_camo042`, not `_camo42`.
+- There are **no** `_camo*` weapon assets in any HMW weapon dump; the engine strips the suffix back to the base
+  weapon and applies the `camoTable` design to the view model's camo-ready material. `h2_m4` and the crossbow both
+  work that way.
+- Our `aw_weapons.gsc` now calls `buildweaponnamecamo()` (client commit `87a878f9`), so a class camo reaches the
+  crossbow instead of being dropped.
 
-| camo | camoTable row | index in column 0 | weapon suffix |
-|---|---|---|---|
-| `camo_h1_red_wash` | `42,camo043,...` (line 43) | 42 | `_camo42` |
-| `camo_h1_blue_jade` | `45,camo046,...` (line 46) | 45 | `_camo45` |
-| `camo_h1_christmas_wrap` | `84,camo085,...` (line 85) | 84 | `_camo84` |
+**CAC limits are HMW's own, not the port's.** `custom_weapons.gsc::isvalidcamo` (HMW's `replacefunc` target) allows
+only `none`, `camo016`..`camo062`, `gold`, `golddiamond` and `toxicwaste` (camo055). Everything above `camo062` -
+including `camo085` Christmas wrap - is replaced by the default camo in `applyloadout`, for **every** weapon (the H2
+M4 control too). So use red_wash and blue_jade in CAC; Christmas wrap only via console `give`.
 
-Controls and commands (H2 M4 control, then the crossbow):
+Indices and suffixes:
 
-```text
-give h2_m4_mp_camo42
-give h2_m4_mp_camo45
-give h2_m4_mp_camo84
+| camo | camoTable row | index (col 0) | class name (col 1) | weapon suffix |
+|---|---|---|---|---|
+| `camo_h1_red_wash` | 42 (`42,camo043,...`) | 42 | `camo043` | `_camo042` |
+| `camo_h1_blue_jade` | 45 (`45,camo046,...`) | 45 | `camo046` | `_camo045` |
+| `camo_h1_christmas_wrap` | 84 (`84,camo085,...`) | 84 | `camo085` (blocked by `isvalidcamo`) | `_camo084` |
 
-give iw5_exocrossbow_mp_camo42
-give iw5_exocrossbow_mp_camo45
-give iw5_exocrossbow_mp_camo84
-```
-
-The Sticks and Stones gametype gives `getdvar("sas_weapon")` (the same path as the optic test
-above), so the same names can be set before the map loads:
+Give commands (attachments come before the camo, as in HMW's own names):
 
 ```text
-set sas_weapon iw5_exocrossbow_mp_camo42
-set sas_weapon iw5_exocrossbow_mp_camo45
-set sas_weapon iw5_exocrossbow_mp_camo84
+give h2_m4_mp_camo042
+give h2_m4_mp_camo045
+give h2_m4_mp_camo084
+
+give iw5_exocrossbow_mp_camo042
+give iw5_exocrossbow_mp_camo045
+give iw5_exocrossbow_mp_camo084
+give iw5_exocrossbow_mp_reflex_camo042
+give iw5_exocrossbow_mp_acog_camo045
 ```
 
-GSC equivalent (this is the class path, including the `buildweaponnamecamo` step):
+Sticks and Stones gives `getdvar("sas_weapon")`, so the same names work before the map loads:
+
+```text
+set sas_weapon iw5_exocrossbow_mp_camo042
+```
+
+GSC equivalent (the class path, including the `buildweaponnamecamo` step):
 
 ```gsc
 // 42 = camo_h1_red_wash, 45 = camo_h1_blue_jade, 84 = camo_h1_christmas_wrap
 weapon = maps\mp\gametypes\_class::buildweaponname("h2_m4", "none", "none", 42, []);
-maps\mp\_utility::_giveweapon(weapon);          // h2_m4_mp_camo42
+maps\mp\_utility::_giveweapon(weapon);          // h2_m4_mp_camo042
 self switchtoweapon(weapon);
 
 weapon = maps\mp\gametypes\_class::buildweaponname("iw5_exocrossbow", "none", "none", 42, []);
-maps\mp\_utility::_giveweapon(weapon);          // iw5_exocrossbow_mp_camo42
+maps\mp\_utility::_giveweapon(weapon);          // iw5_exocrossbow_mp_camo042
 self switchtoweapon(weapon);
 ```
 
-Before testing, clear the optic so the camo is the only variable: `set sas_weapon` to the base
-`iw5_exocrossbow_mp` / `h2_m4_mp`, or use `"none"` attachments in the GSC call. Then switch to the
-weapon, ADS and check the receiver/stock; for the crossbow also check the rails and limbs (the
-`crossbow_mask_02` mask leaves them untouched).
+What to look at: body/receiver/stock get the camo; the crossbow rails, limbs, string and the optic must stay
+un-camoed (that is the `crossbow_mask_02` mask); the scope glass stays clean. The H2 M4 with the same camo is the
+control.
 
-### Will the crossbow take them?
+### Will the crossbow take them? (answer: yes - the material was already ready)
 
-The crossbow material is camo-ready. `GAME\zonetool\mod\materials\m\mtl_crossbow_base.json`
-has the same slots as the H2 M4 `_camo` material: `dc1 = camo_transparent_col` (camo design slot),
-`c = crossbow_col` (base colour), `m = crossbow_mask_02` (mask), `dna1 = camo_nml` (camo normal),
-`3426233914 = ~camo_spcmaps_01_spc-rgb&camo~b29a8732` (camo specular) and the
-`~envbrdflut_ggx_16-rg` environment LUT. So nothing in the material prevents a camo.
+W1.1 compared the ported material `zonetool\hmw_aw_weapons\materials\m\mtl_crossbow_base.json` with HMW's template
+`mtl_h2_m4a1_receiver_camo` slot by slot: the same 9 slots (`dc1 = camo_transparent_col`, `ds1 = crossbow spc`,
+`dn1 = crossbow_nml`, `dna1 = camo_nml`, `om0 = crossbow occ`, `c = crossbow_col`, `m = crossbow_mask_02`,
+camo spec `~camo_spcmaps_01_spc-rgb&camo~b29a8732`, env LUT `~envbrdflut_ggx_16-rg`), same `decalParams1 (2,2)` and
+`envMapParms`. All camo images are in `hmw_aw_weapons.ff`/`.pak` (the build log parses them).
 
-What can stop it is the name/variant path, not the material:
-
-1. **No crossbow camo variants in the mod zone.** `buildweaponnamecamo` produces
-   `iw5_exocrossbow_mp_camo42/45/84`, but `GAME\zonetool\mod\weapons\` only contains the base
-   crossbow (and the H1 loot crossbows), and `GAME\zone` has no `mp_vm_exocrossbow_*_tr.ff`
-   camo transient zones. If the engine's `isvalidweapon` rejects the suffixed name, `give` says
-   "unknown weapon" and the class path falls back to the base weapon with no camo.
-2. **`isvalidcamo` whitelist.** HMW replaces `_class::isvalidcamo` in
-   `custom_weapons.gsc:835-889`; the switch only lists `camo016..camo062` plus a few names.
-   `camo043` and `camo046` pass; `camo085` (Christmas) does **not**, so on the class/loadout path
-   it is replaced and prints `Replacing invalid camo: camo085`. Live `give` with the suffix
-   bypasses that class check, but still needs the asset from point 1.
-3. **Unlock/class lookup.** `iscamounlocked` reads `mp/weaponRankTable.csv` by weapon class; a
-   missing crossbow class entry can reject the camo in ranked/public-lobby checks even if the
-   asset exists.
-4. The engine builtins `overrideviewmodelmaterial` / `setviewmodelmaterialscriptparam`
-   (`refs\hmw_decomp\strings.tsv:7253,7258,7259`) are the material-override path the game uses
-   for view models; no shipped HMW script calls them directly, so they are not a console command.
-   If the suffix path fails, a GSC experiment can call the builtin through MWX `gsc_eval` with the
-   `camo_h1_*` material, but this is not a supported/tested path yet.
-
-So the expected result is: the H2 M4 control shows all three camos; the crossbow shows red_wash
-(`camo42`) and blue_jade (`camo45`) if the engine can resolve its camo variants, and Christmas
-(`camo84`) is additionally blocked by the class whitelist. If no suffix variant resolves, the
-crossbow remains un-camoed; that is the missing `_camo` asset, not `mtl_crossbow_base`.
+Differences and what was done:
+- `gameFlags` was 84 (AW kept bit 0x4); every one of the 369 HMW materials with this layout is **80**. Changed to 80
+  (material backup `mtl_crossbow_base.json.bak-w1.1`).
+- Technique stays AW's `m_l_sm_lmpb_dc1dn1ds1dg1dna1_r0c0n0sd0sr0om0_nfwpf_ctq_s1` instead of HMW's
+  `..._r0c0n0sd0om0_nfwpf`: same technique family, the lit techniques bind `dc1` + `m` identically; `sr0` (SSR) and
+  the `_ctq_s1` cloak pass (`cloak_detail3`, `cloakShaderP`, `reflectionRa`) are AW-only and unused in HMW. The
+  techset exists in the zone.
+- AW's selector `camoViewModelMaterialOverride` / `camoWorldModelMaterialOverride` (= `mtl_crossbow_base`) is not a
+  field of H1's `WeaponDef`, so it is dropped by the port and HMW finds the material itself. Both crossbow models
+  use `mtl_crossbow_base` (`npc_crossbow_base` + `vm_crossbow_base`), so both are camo-ready.
+- `me/mtl_crossbow_base_trans` has the camo layout too but no model references it; it was left alone (HMW does not
+  camo its own transparent/lens parts).
+- AW's own skins (`mtl_crossbow_loot_*_skn_01`, `weapon_crossbow_gold`) are not ported, so the crossbow has no
+  native variants - HMW camos come from `camo_h1_*` only.
 
 ## AW maps
 

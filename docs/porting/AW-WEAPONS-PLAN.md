@@ -143,17 +143,28 @@ shield (separate project), Goliath/mech/turret weapons, exo grenades/launchers, 
   game and the class is still there. Screenshots into `mwx-debug\aw-weapons\W1\`.
 - `load_times.log` before/after (zone load cost). Commit. STOP.
 
+### W1.1 – Camos on the crossbow — **DONE 25 Nov 2026, see `aw-weapons-port.md` §12**
+- HMW camos on the AW crossbow and a reusable recipe: material check (9 slots), `gameFlags` 80, `_camoNNN` in the
+  name builder (`_class::buildweaponnamecamo`), workbench previews next to `h2_m4`, in-game checklist.
+- Becomes a standard step in every later weapon milestone (W2+); recipe in `guide.md` §4. In-game test by the user.
+
 ### W2 – Pilot: M1 Garand, SIG MPX (KF5), combat knife
 - Full pipeline per weapon: dump (new folders only) → convert (`s1_weapon_to_h1.py`, patch applied) → hmw-workbench
   check (anims on MWR hands incl. faction hands, fit report, add/tune HMW attachment tags on view + world model,
   ADS checks, hide built-in sights) → add to `hmw_aw_weapons` → statstable/CAC/names/icons → in-game test.
+- **Camos are a standard step for every weapon from W2 on** (recipe in `guide.md` §4, first done for the crossbow
+  in W1.1): convert the material named by AW's `camoViewModelMaterialOverride`/`camoWorldModelMaterialOverride` to
+  the HMW camo layout (9 slots, source mask in `m`, `gameFlags 80`, `decalParams1 (2,2)`), keep the AW technique when
+  its lit passes bind `dc1`+`m`, append `_camoNNN` with `_class::buildweaponnamecamo`, preview in the workbench next
+  to `h2_m4` (red_wash, blue_jade, christmas_wrap), and list the camera/camo checks in the in-game checklist.
 - Combat knife: in the melee list next to the hatchet; check its anims, melee range/damage against HMW's melee
-  weapons.
+  weapons. Camo tab: `MeleeInUseCheck` hardcodes HMW's five melee refs, so a new melee ref keeps its camo tab; do
+  not add it to that list.
 - Attachment matrix rows for the three weapons. Commit. STOP.
 
 ### W3 – All remaining weapons, in batches
-- Batches of 4–5 (modern first, then classic), same process as W2, one commit per batch, matrix rows per weapon.
-  A weapon that fails gets "BLOCKED: reason" in the report and the batch continues.
+- Batches of 4–5 (modern first, then classic), same process as W2 (including the camo step), one commit per batch,
+  matrix rows per weapon. A weapon that fails gets "BLOCKED: reason" in the report and the batch continues.
 - After the last batch: STOP with the full status table.
 
 ### W4 – Attachment pass

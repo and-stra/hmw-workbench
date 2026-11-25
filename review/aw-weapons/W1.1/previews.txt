@@ -1,0 +1,26 @@
+W1.1 workbench previews (25 Nov 2026)
+
+All images: hmw-workbench.exe (M3 headless), asset roots from build\bin\Release\workbench.json
+(zonetool\mod == the crossbow source that zonetool\hmw_aw_weapons was copied from; the W1.1
+material change is gameFlags only and does not affect the workbench).
+
+Model-only orbit, same camera for both guns (yaw 200 pitch 10 dist 24, 1280x720):
+  hmw-workbench.exe -screenshot review\aw-weapons\W1.1\crossbow_<camo>.png -model vm_crossbow_base ^
+                    -view orbit -yaw 200 -pitch 10 -dist 24 -camo camo_h1_<camo> -width 1280 -height 720
+  hmw-workbench.exe -screenshot review\aw-weapons\W1.1\h2_m4_<camo>.png -model wpn_h2_m4a1_vm ^
+                    -view orbit -yaw 200 -pitch 10 -dist 24 -camo camo_h1_<camo> -width 1280 -height 720
+  camos: red_wash (index 42), blue_jade (45), christmas_wrap (84)
+
+Baseline and first person:
+  hmw-workbench.exe -screenshot review\aw-weapons\W1.1\crossbow_nocamo.png -model vm_crossbow_base ^
+                    -view orbit -yaw 200 -pitch 10 -dist 24 -width 1280 -height 720
+  hmw-workbench.exe -screenshot review\aw-weapons\W1.1\crossbow_christmas_wrap_fp_reflex.png ^
+                    -weapon iw5_exocrossbow_mp -view firstperson -anim vm_crossbow_idle -time 0 ^
+                    -attach reflex -camo camo_h1_christmas_wrap -width 1600 -height 900
+
+Mask coverage (crossbow_mask_02): body, stock, grip and the sight housing are camo; the limbs,
+rails, string, the optic and the glass stay base. H2 M4 with the same camo is the control
+(stock, grip, handguard camo; foregrip/ammo/gas block not).
+
+Warnings: "camo specular / camo emissive: no texture slot" come from the *camo design* materials
+(red_wash has no spec/emissive map), not from the crossbow material; they appear for h2_m4 too.

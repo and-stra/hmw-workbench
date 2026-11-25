@@ -582,8 +582,9 @@ Optional console (after spawning): `unlockall 1`, `set mwx_gsc_print 1`.
 8. **Swap weapons:** switch to the secondary/primary and back; no arms glitch, no missing asset errors in the
    console.
 9. **Restart the game, reopen CAC:** the class with the crossbow and its optic is still there.
-10. **Camo (expected limitation):** Secondary -> Camo offers camos; choosing one gives the uncamoed crossbow (no
-    AW `_camoNN` variants yet). This is intended for W1.
+10. **Camo:** the Secondary -> Camo tab shows HMW camos. Red wash (`camo043`) and blue jade (`camo046`) must
+    apply to the crossbow body only (mask-limited); Christmas wrap (`camo085`) is rejected by HMW's own
+    `isvalidcamo` (applies to every weapon, see §12.6). W1 dropped the suffix on purpose, W1.1 adds it.
 11. **Sticks and Stones:** MODS -> Sticks and Stones -> start (sas gametype). The crossbow must be given and work
     (the mod zone only references it now); throwing-knife kills must still bankrupt.
 12. Optional quick check in a match console:
@@ -600,3 +601,143 @@ Optional console (after spawning): `unlockall 1`, `set mwx_gsc_print 1`.
 - 11 missing images (11.6) - the scope/glass look red/checkered in ADS; materials+images to port in W4.
 - The `hmw_aw_weapons` zone (20 MB) + pak (9 MB) are not committed to the repo yet (packaging decision in W5).
 - Disk after W1: **28.4 GB** free (build objects, dumps and the test install included).
+
+## 12. W1.1 - Camos on the crossbow (25 Nov 2026)
+
+### 12.1 Goal and result
+
+Goal: HMW camos on the AW crossbow (view model at least, world model if HMW does it for its own guns) and a
+reusable recipe for every later AW weapon. Result:
+
+- the material was **already camo-ready** (W0/M5 kept AW's layout); the only material defect was `gameFlags` 84 vs
+  the 80 every HMW camo material uses, now fixed;
+- the actual blocker was the **client name builder**: W1's `aw_buildweaponname` dropped the camo suffix, so the class
+  never reached the engine with a camo. It now delegates to `_class::buildweaponnamecamo`;
+- workbench: all three test camos show on the crossbow body and only where `crossbow_mask_02` allows it
+  (`review\aw-weapons\W1.1\`), next to the H2 M4 control;
+- in-game verification is the user's step (§12.6).
+
+### 12.2 What blocked camos (findings)
+
+1. **The name suffix (the blocker).** HMW gives the engine `<ref>_mp[_<attachment>]_camoNNN` plus the camo index
+   (`_class.gsc` -> `_giveweapon(name, index)`). The suffix is **3 digits** (`buildweaponnamecamo`:
+   `_camo00N` 1..9, `_camo0NN` 10..99, `_camoNNN` 100+), proven by a real HMW kill-log line
+   `h2_scar_mp_silencerar_xmag_camo004`. No `_camo*` weapon asset exists in any HMW weapon dump, so the engine
+   resolves the suffix to the base weapon itself. W1's replacement built `<ref>_mp[_<attachment>]` only.
+2. **The material was already camo-ready.** `zonetool\hmw_aw_weapons\materials\m\mtl_crossbow_base.json` has the
+   same 9 slots as `mtl_h2_m4a1_receiver_camo` (table in guide §4.2): `dc1=camo_transparent_col`,
+   `ds1=~crossbow_spc-rgb&crossbow_cos-l-67`, `dn1=crossbow_nml`, `dna1=camo_nml`, `om0=~crossbow_occ-l`,
+   `c=crossbow_col`, `m=crossbow_mask_02`, camo spec `~camo_spcmaps_01_spc-rgb&camo~b29a8732`, env LUT
+   `~envbrdflut_ggx_16-rg`; `decalParams1 (2,2,0,0)`, `envMapParms (0.04,1,5,1)`. The mask is AW's own, so the
+   camo coverage is AW's intent.
+3. **All camo images are really in the zone.** The build log parses `camo_transparent_col`, `camo_nml`,
+   `crossbow_mask_02`, `~camo_spcmaps_01_spc-rgb&camo~b29a8732`, `~envbrdflut_ggx_16-rg`, `cloak_detail3`,
+   `crossbow_col`, `crossbow_nml`, `~crossbow_spc-rgb&crossbow_cos-l-67`, `~crossbow_occ-l`. The 11 warnings are the
+   same missing scope/glass/emblem images as W1 (§11.6), none of them camo.
+4. **One material defect: `gameFlags`.** The ported material had 84; **all 369** HMW materials with the camo layout
+   have 80 (checked `hmw_patch_common_mp` + `hmw_ar1` dumps). Bit 0x4 (AW's) appears in those dumps only on
+   `nodraw_notsolid`, `mtl_ret_h1_reddot` and `mtl_wpn_h1_sni_tac330_ret` (no-draw/reticle materials), never on a
+   weapon body material. Set to **80**.
+5. **Technique kept.** AW's `m_l_sm_lmpb_dc1dn1ds1dg1dna1_r0c0n0sd0sr0om0_nfwpf_ctq_s1` vs HMW's
+   `..._r0c0n0sd0om0_nfwpf`: same family, the lit techniques bind `dc1` + `m` identically; `sr0` (SSR) and the
+   `_ctq_s1` cloak pass (`cloak_detail3`, `cloakShaderP` x2, `reflectionRa`) are AW-only and unused in HMW (the
+   `TECHNIQUE_*_CTQ` entries exist in the H1 techset). No reason to change it; the techset is in the zone.
+6. **AW's selector does not exist in H1.** AW weapon json: `camoViewModelMaterialOverride`/`camoWorldModelMaterialOverride`
+   = `mtl_crossbow_base`. H1's `WeaponDef` (`cod-mwx\src\client\game\database.hpp`) has no camo or material-override
+   field, so the port drops them and HMW derives support from the material layout. `vm_crossbow_base` and
+   `npc_crossbow_base` both use `mtl_crossbow_base`, so both are camo-ready (HMW cams the view model; the world model
+   follows if it cams world models).
+7. **CAC gating is fine for the crossbow.** `LauncherInUseCheck`/`MeleeInUseCheck` hardcode the five launchers and
+   five melee refs; `iw5_exocrossbow` is not among them, so Secondary -> Camo is visible. The camo list is not
+   filtered per weapon. **But** HMW's own `isvalidcamo` (in `custom_weapons.gsc`) only allows `none`,
+   `camo016`..`camo062`, `gold`, `golddiamond`, `toxicwaste`; camos above 062 (e.g. `camo085` Christmas wrap) are
+   replaced by the default in `applyloadout` for **every** weapon, H2 M4 included.
+8. **AW vs HMW difference (summary).** AW: per-weapon `camo*MaterialOverride` selects the material, and AW's design
+   materials (`camo_digital_01_col`, technique `l_sm_lmpb_dc1_heat_...`) put the design in `dc1` with
+   `camo_reference_col` in `c` - structurally the same as HMW's `camo_h1_*`, so the *design* side is compatible.
+   HMW: no weapon field, the engine finds camo-ready materials and the class name must carry `_camoNNN`. AW loot
+   skins (`mtl_crossbow_loot_*_skn_01`, `weapon_crossbow_gold`) stay AW-only; the crossbow has no native variants.
+
+### 12.3 Changes
+
+Zone source (`GAME\zonetool\hmw_aw_weapons`, not the repo):
+- `materials\m\mtl_crossbow_base.json`: `gameFlags` **84 -> 80** (backup `mtl_crossbow_base.json.bak-w1.1`). Nothing
+  else changed; `me\mtl_crossbow_base_trans.json` (camo layout, no model uses it) and the `npc` model were left
+  alone - HMW does not camo its own transparent/lens parts.
+
+Build (`GAME\x64zt.exe`, interactive `buildzone hmw_aw_weapons`, 3-4 s after the 85 s start-up):
+- `hmw_aw_weapons.ff` **19,877,687 B** (SHA-256 `06C84F0BD205704BC9952936C2F1389CD1FF3BB251633F3836A240341C43FC2A`)
+  + `hmw_aw_weapons.pak` **9,236,400 B** (`8A6521BDB8B3F0240B9754CE5009CBC9C090464D2D10C927FC537083D7E608A0`),
+  **0 FATAL / 0 ERROR**, 11 image warnings (the same 11 as W1).
+- **Not byte-reproducible:** two builds from the identical source produced 19,877,687 B and 19,877,740 B (different
+  hashes). W1 had 19,877,776 B. Compare the asset logs, not the bytes.
+- Install: `GAME\hmw-aw\zone` only (ff+pak); the build outputs in `GAME\zone` were deleted again. W1's files are kept
+  as `hmw_aw_weapons.ff.bak-w1` / `.pak.bak-w1` in the test zone. `GAME\mwx*`, `GAME\zone`, `GAME\mods`,
+  `GAME\players2` untouched.
+
+Client (`cod-hmw-aw`, branch `aw-weapons`, commit **`87a878f9`**):
+- `data\mwx\scripts\mp\aw_weapons.gsc`: `aw_buildweaponname` now appends
+  `maps\mp\gametypes\_class::buildweaponnamecamo(name, camo)` when `isdefined(camo) && camo > 0`, after the
+  attachment; header comment updated.
+- Copied to `GAME\hmw-aw\scripts\mp\aw_weapons.gsc`. No exe rebuild: HMW compiles disk GSC at start-up, the exe is
+  unchanged (`GAME\hmw-aw.exe` 8,043,008 B from W1).
+
+### 12.4 Workbench (auto-align default, 1280x720 orbit; commands in `review\aw-weapons\W1.1\previews.txt`)
+
+- `crossbow_red_wash.png`, `crossbow_blue_jade.png`, `crossbow_christmas_wrap.png` next to
+  `h2_m4_red_wash.png`, `h2_m4_blue_jade.png`, `h2_m4_christmas_wrap.png` - same camera, so mask and strength are
+  comparable. `crossbow_nocamo.png` is the baseline, `crossbow_christmas_wrap_fp_reflex.png` shows the optic and
+  hands in first person.
+- Coverage matches the mask: body/stock/grip/sight housing camo; limbs, rails, string, optic and glass base. The
+  workbench's two warnings (`camo specular/emissive: no texture slot`) come from the camo *design* material
+  (red_wash has no spec/emissive map) and appear for `h2_m4` too.
+
+### 12.5 Disk
+
+Before W1.1: 28.36 GB free. After: **28.39 GB** free (the rebuild reused the zone source; +29 MB kept backups in
+`GAME\hmw-aw\zone`, +2.6 MB previews). No new large copies were made.
+
+### 12.6 In-game test checklist (user)
+
+Start (as in W1): `hmw-aw.exe -datadir hmw-aw -logdir hmw-aw-logs -debugport 27079`. `unlockall 1` is not needed for
+private play.
+
+1. **CAC camo path (primary test).** Private Match -> Create a Class -> Secondary -> Launchers -> Crossbow ->
+   **Camo**. Pick **Red Wash** (`camo043`) or **Blue Jade** (`camo046`), back out, spawn. Expected: the body/stock is
+   camo; rails, limbs, string and the optic are not; no script error in the console. If nothing changes, check that
+   the loaded class script is the new one (`GAME\hmw-aw\scripts\mp\aw_weapons.gsc`, 2,685 B) and the console for
+   `Replacing invalid camo`.
+2. **CAC limitation (expected, not the port).** Christmas Wrap (`camo085`) is rejected by HMW's `isvalidcamo` for
+   every weapon (the H2 M4 control too). Do not report it as a crossbow bug.
+3. **Christmas wrap via console** (bypasses the class check): `give iw5_exocrossbow_mp_camo084`, then
+   `switchtoweapon iw5_exocrossbow_mp_camo084` (or `give` while that weapon is already held).
+4. **With optics** (attachments before the camo, HMW's own order):
+   `give iw5_exocrossbow_mp_reflex_camo042`, `give iw5_exocrossbow_mp_acog_camo045`; ADS: reticle centred, camo on
+   the body, optic housing/glass not camo.
+5. **Control:** the same `give h2_m4_mp_camo042` and `h2_m4_mp_camo084` on HMW's M4. It must show the camo on
+   stock/grip/handguard; that proves the engine and the camo index, and shows what "correct" coverage looks like.
+6. **World model** (only if HMW cams it): drop the crossbow (or look at a bot with it) - `npc_crossbow_base` uses the
+   same material, so it should show the camo too.
+7. **Persistence:** restart, reopen CAC - the camo is still selected on the class and applies on spawn.
+8. **Sticks and Stones:** unchanged from W1 (§11.8 point 11); the mod still needs the `hmw_aw_weapons` zone.
+
+Expected/known: the crossbow has no AW camo variants, so `camo_h1_*` designs only; the scope/glass still use the 11
+missing images (red/checkered in ADS), unrelated to camos.
+
+### 12.7 Open issues
+
+- In-game verification of the suffix path and of the material coverage is pending (no game run here). If a camo is
+  selected but the crossbow stays un-camoed although the name in the console shows `_camoNNN`, the next hypothesis is
+  that HMW keys on the **material name** (`*_camo`); the fallback is then to add a `mtl_crossbow_base_camo` copy and
+  repoint the model surfaces (xmb material name), documented in guide §4.3 but not needed unless the test fails.
+- The AW cloak techset (`_ctq_s1`) is kept; switch to HMW's exact `..._nfwpf` template only if the test shows a
+  lighting difference.
+- The 11 missing images (§11.6) are still W4 work; they also affect the optic/glass in ADS.
+- `mod.ff` (Sticks and Stones) still requires a client that loads `hmw_aw_weapons` (§11.5).
+- `hmw_aw_weapons.ff`/`.pak` are still test-only (not committed); packaging is W5.
+
+### 12.8 Commits
+
+- `cod-hmw-aw` `aw-weapons`: **`87a878f9`** ("aw weapons: append the camo suffix in buildweaponname (W1.1)").
+- `hmw-workbench`: this commit (guide §4 + error rows, `aw.md` camo section, `aw-weapons-port.md` §12,
+  `review\aw-weapons\W1.1\`). Not pushed.

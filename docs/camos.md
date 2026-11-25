@@ -70,7 +70,9 @@ camo texture set:
   mtl_crossbow_base.json` has `camo_transparent_col` in `dc1`, `crossbow_col` in the `c` slot
   and `crossbow_mask_02` in the `m` slot (plus `camo_nml`, `~camo_spcmaps_01...` and the
   environment LUT). So the AW crossbow can take HMW camo textures through the same mask, even
-  though it has no `_camo` model variant.
+  though it has no `_camo` model variant. (W1.1: confirmed in the workbench for the ported
+  material; in-game test pending. The port needed `gameFlags` 80 and the `_camoNNN` name suffix,
+  recipe in `docs\porting\guide.md` §4.)
 - **Camo design material.** Every previewable camo is a material
   `refs\dumps\hmw_patch_common_mp\materials\camo_h1_<name>.json` with the same technique family
   and its design in `dc1`. Example `camo_h1_aftermath_epic.json`:
@@ -171,6 +173,8 @@ The three reviewed camos are visually distinct and use different masks/designs:
 - `camo_h1_red_wash` - dark red wash with grunge (subtle; closest to a "worn" finish).
 
 Compare them on the H2 M4 (`h2_m4_mp`) and the crossbow (`iw5_exocrossbow_mp`) in game; the
-workbench images are in `review\finish\camos\` (before/after sheets and the native variants).
-The exact `give`/`set sas_weapon`/GSC commands and the camoTable indices are in
-`docs\porting\aw.md`, section "In-game test (camos)".
+workbench images are in `review\finish\camos\` (before/after sheets and the native variants);
+the W1.1 crossbow previews are in `review\aw-weapons\W1.1\`. The exact `give`/`set sas_weapon`/GSC
+commands and the camoTable indices are in `docs\porting\aw.md`, section "In-game test (camos)";
+the weapon-name suffix is **3 digits** (`_camo042` for index 42), and HMW's `isvalidcamo` only
+accepts camos up to `camo062` from CAC (`camo085` Christmas wrap needs `give`).

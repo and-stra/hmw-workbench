@@ -72,9 +72,104 @@ Converters to H1 exist in x64-zt for S1 (AW), IW6 (Ghosts), IW7, T7, H2. None fo
 
 ## 4. Camos
 
-- HMW applies camos by script (`overrideviewmodelmaterial`, camo tables), not via a weapon field. A weapon takes
-  camos if its material has the camo layout: `camo_transparent_col` in `dc1`, base colour in `c`, a camo mask in
-  `m` (+ `camo_nml`, camo spec, env LUT). Details: `hmw-workbench\docs\camos.md`.
+Camos are a **standard port step** (first done for the AW crossbow, W1.1, 25 Nov 2026). The HMW side is in
+`hmw-workbench\docs\camos.md`; this is the porting recipe.
+
+### 4.1 How HMW applies a camo
+
+- The class stores a camo **name** (`.../weaponSetups/<n>/camo/<name>`). `_class.gsc` turns it into an index with
+  `tablelookup("mp/camoTable.csv", 1, <name>, 0)` and gives the weapon with `_giveweapon(<full weapon name>, <index>)`
+  (`maps\mp\_utility.gsc`). `mp/camoTable.csv` column 0 = index, column 1 = name, column 8 = design material
+  (`camo_h1_<name>`).
+- The **weapon name** must carry the camo suffix, the same suffix every HMW weapon gets:
+  `<ref>_mp[_<attachment>]_camoNNN`. `maps\mp\gametypes\_class::buildweaponnamecamo` writes **three** digits:
+  `_camo00N` for 1..9, `_camo0NN` for 10..99, `_camoNNN` for 100+ (index 42 -> `_camo042`, not `_camo42`). Real
+  example from a HMW kill log (`hmw-mod\logs\games_mp.log`):
+  `h2_scar_mp_silencerar_xmag_camo004` - attachments first, camo last.
+- The engine strips the suffix back to the base weapon (there is **no** `_camo*` weapon asset in any HMW zone or
+  weapon dump - do not create one) and applies the `camo_h1_*` design to the **camo-ready materials of the view
+  model** (world model too when it uses such materials).
+- Nothing in a weapon json selects the camo material: H1's `WeaponDef`
+  (`cod-mwx\src\client\game\database.hpp`) has **no** camo or material-override field, so AW's
+  `camoViewModelMaterialOverride`/`camoWorldModelMaterialOverride` are dropped by the port. Support comes from the
+  material layout plus the name suffix.
+
+### 4.2 Is a source material camo-ready? (the 9 slots)
+
+Compare with `GAME\dump\workbench_hmw_ar1\materials\m\mtl_h2_m4a1_receiver_camo.json` (technique
+`m_l_sm_lmpb_dc1dn1ds1dg1dna1_r0c0n0sd0om0_nfwpf`, `gameFlags 80`, `sortKey 2`, `materialType 1`,
+`surfaceTypeBits 4096`, `decalParams1 (2,2,0,0)`, `envMapParms (0.04,1,5,1)`):
+
+| typeHash | slot | camo-ready image | source part |
+|---|---|---|---|
+| 659983135 | `dc1` camo design (placeholder) | `camo_transparent_col` | - (H1-only) |
+| 887934131 | `ds1` specular | real specular | source `_spc` |
+| 1507003663 | `dn1` normal | real normal | source `_nml` |
+| 1518176625 | `dna1` second normal | `camo_nml` | - (H1-only) |
+| 1610742065 | `om0` occlusion | real occlusion | source `_occ` |
+| 2695565377 | `c` base colour | real colour | source `_col` |
+| 3135443286 | `m` camo mask | the source's camo mask | - (source camo mask, if it has one) |
+| 3426233914 | camo specular | `~camo_spcmaps_01_spc-rgb&camo~b29a8732` | - (H1-only) |
+| 3447584578 | env LUT | `~envbrdflut_ggx_16-rg` (R16G16) | - (H1-only) |
+
+All 369 HMW materials with this layout have `gameFlags 80`; set a ported material to 80 too (the AW crossbow had
+84). A material is camo-ready when it has `camo_transparent_col` in `dc1`, a mask in `m`, `camo_nml` in `dna1`, the
+camo spec and the env LUT; the source `_col`/`_nml`/`_spc`/`_occ` stay in `c`/`dn1`/`ds1`/`om0`.
+
+### 4.3 Fixing a material that is not camo-ready
+
+1. Find out which material the source game cams: AW/S1 store it in the weapon json
+   (`camoViewModelMaterialOverride`, `camoWorldModelMaterialOverride`); other games use their own field. That is the
+   material to convert (usually the model's main body material) - not the glass, string, lens or transparent parts
+   unless HMW's own guns camo those too.
+2. Copy the source material and fill the 9 slots from 4.2: keep the source images in `c`/`dn1`/`ds1`/`om0`, put
+   `camo_transparent_col`, `camo_nml`, the camo spec and the env LUT in `dc1`/`dna1`/camo spec/env, and put the
+   source's **camo mask** in `m`. The mask is the whole design: white = camo, black = base.
+3. Set `gameFlags 80`, `decalParams1 (2,2,0,0)`, `envMapParms (0.04,1,5,1)`.
+4. Keep the source technique if it maps onto H1's `TECHNIQUE_LIT*` and binds `dc1` + `m` (the AW `_ctq_s1`/`sr0`
+   crossbow techset did; `_ctq`/`cloak_detail3`/`cloakShaderP` are AW's cloak renderer, unused in HMW). Otherwise
+   use HMW's `m_l_sm_lmpb_dc1dn1ds1dg1dna1_r0c0n0sd0om0_nfwpf`.
+5. If the source has no mask, pick one from a comparable HMW weapon and paint it (white on the camo areas); do not
+   guess the UVs - render the mask in the workbench (`-camo` with the base material's mask) and check coverage.
+6. Check the build log: every camo image must be parsed (`[gfx_image::parse] camo_transparent_col`, the mask, the
+   camo spec, the env LUT). A missing image is only a warning but means no camo (or a black mask).
+
+### 4.4 Enabling the suffix (client script)
+
+- HMW's own weapons go through `h2_buildweaponname` -> `_class::buildweaponnamecamo`. A port that replaces
+  `_class::buildweaponname` (needed for `iw5_*` refs, see section 7) must append the suffix itself, after the
+  attachments and before returning:
+  ```gsc
+  if (isdefined(camo) && camo > 0)
+      name = maps\mp\gametypes\_class::buildweaponnamecamo(name, camo);
+  ```
+  (no `_camo*` asset is needed; the engine resolves the base weapon from the name).
+- The CAC camo tab is hidden for HMW's hardcoded launcher/melee refs (`MeleeOrLauncherInUseCheck` in
+  `loadout_editor.lua`: at4, h2_rpg, javelin, h2_m79, stinger and the five melee refs). A ported secondary in
+  `weapon_projectile`/`weapon_melee` must not be in those lists, or the tab disappears. The camo **list** is not
+  filtered per weapon, but HMW's `isvalidcamo` (`custom_weapons.gsc`, a `replacefunc`) only allows `none`,
+  `camo016`..`camo062`, `gold`, `golddiamond` and `toxicwaste`; anything above `camo062` is replaced by the default
+  camo in `applyloadout` for **every** weapon. Test the rest with `give`.
+- Test data: after editing a client script only `GAME\<datadir>\scripts\mp\<script>.gsc` has to be updated (HMW
+  compiles disk GSC at startup); the exe does not change.
+
+### 4.5 Verify in the workbench
+
+- `hmw-workbench.exe -screenshot <png> -model <viewmodel> -view orbit -yaw 200 -pitch 10 -dist 24 -camo camo_h1_x`
+  on the ported model and on `wpn_h2_m4a1_vm` with the same camera; both must show their mask-limited camo.
+- Check the mask: no camo on glass, string, lens, limbs or rails that the source game did not camo.
+- Also render one first-person/ADS shot with an optic (`-weapon ... -view firstperson -ads -attach reflex -camo ...`).
+- Log lines to expect: `camo: camo_h1_x (texture <design>, strength 1.00, uv scale x1.00)` and possibly warnings
+  about the *design* material (e.g. `camo specular: no texture slot` for camos without a spec map) - those are
+  properties of the camo, not of the port.
+
+### 4.6 Verify in game
+
+- CAC: the weapon's camo tab shows the HMW camos, pick one, spawn, look at the view model (and a dropped/bot copy
+  for the world model if the game cams it).
+- Console: `give <ref>_mp_camo0NN` (e.g. `iw5_exocrossbow_mp_camo042`), with attachments
+  `give <ref>_mp_<attachment>_camo0NN`. HMW's own gun with the same camo is the control.
+- A missing suffix in the name = no camo; a wrong suffix width = unknown weapon / nothing spawns.
 
 ## 5. Player models
 
@@ -203,6 +298,10 @@ Keep entries short and current: correct or delete outdated statements instead of
 | `Asset type "localizedstrings" does not exist` (x64-zt) | the AW/S1 asset type is `localize` | `dumpzone h1 <zone> localize`; weapon strings are in `eng_patch_common` (not `eng_common_mp`) |
 | hmw-workbench: `cannot load model <aw model>: xmodel has no LOD0 surface set` | only the `common_mp` xmodel was dumped; AW surfaces live in the weapon tr zones | `dumpzone h1 mp_vm_<weapon>_tr` + `mp_wm_<weapon>_tr`; the files land in the dump root's `xmodel`/`xsurface`, add that root to `workbench.json` |
 | ported weapon missing from Create-a-Class (or replaced by the default gun) | no `mp/customweapons.csv`/`mp/statstable.csv` row, or not in `isvalidprimary`/`isvalidsecondary` | add the `stock_weapons_data.hpp` row (only added when `<ref>_mp` exists) + GSC whitelist via `replacefunc` (guide §7); a row with an empty customweapons **type** column aborts the CAC loop |
-| `iw5_*` class weapon spawns nothing / `_giveweapon(undefined)` script error | HMW's `buildweaponname` has no `return` for non-`h1_/h2_` refs | replace `_class::buildweaponname` in an `init()` and build `<ref>_mp[_<attachment>]` for `iw5_*`, delegate the rest to `scripts\mp_patches\custom_weapons::buildweaponname` (guide §7) |
+| `iw5_*` class weapon spawns nothing / `_giveweapon(undefined)` script error | HMW's `buildweaponname` has no `return` for non-`h1_/h2_` refs | replace `_class::buildweaponname` in an `init()` and build `<ref>_mp[_<attachment>][_camoNNN]` for `iw5_*`, delegate the rest to `scripts\mp_patches\custom_weapons::buildweaponname` (guide §7) |
+| camo picked in CAC but the gun shows no camo | the port's `buildweaponname` drops the `_camoNNN` suffix, or the material is not camo-ready | append `_class::buildweaponnamecamo` after the attachments (guide §4.4) and check the 9 slots (§4.2) |
+| `give <ref>_mp_camo42` gives nothing / unknown weapon | the suffix is 3 digits | `_camo042` (index 42); `buildweaponnamecamo` writes `_camo00N`/`_camo0NN`/`_camoNNN` (guide §4.1) |
+| camo covers parts that should stay clean (glass, string, lens, rails) | no `m` mask slot, or the wrong mask image | put the source camo mask in `m` (typeHash 3135443286) and re-check coverage in the workbench (guide §4.3) |
+| camo tab missing in CAC for a ported secondary | the ref is one of the hardcoded launcher/melee refs in `LauncherInUseCheck`/`MeleeInUseCheck` | do not reuse those refs, or wrap the tab's `visibleFunc` in an MWX `ui_scripts` module (guide §4.4) |
 | streamed textures of a ported zone are red/checkered although the build had no error | `<zone>.pak` was not installed next to `<zone>.ff` | copy both files (guide §8) |
 | `Could not load default asset 'void' for asset type 'weapon'` when loading a mod | the mod zone uses `weapon,,<name>` but no loaded zone provides the asset | load the owner zone (`hmw_aw_weapons`) before the mod, or keep a copy in the mod |
