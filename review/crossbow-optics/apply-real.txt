@@ -1,0 +1,244 @@
+﻿crossbow optics apply to real models
+initialize -> hmw-workbench
+
+> load_weapon {"first_person":true,"hands":"viewhands_tf141","weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [],
+  "camo": null,
+  "first_person": true,
+  "gun_model": "vm_crossbow_base",
+  "hands": "viewhands_tf141",
+  "hands_source": "explicit",
+  "loaded_model": "vm_crossbow_base",
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": false
+}
+
+> rename_tag {"old":"tag_sight_on","new":"tag_sight_front_on"}
+< {
+  "dirty": true,
+  "new": "tag_sight_front_on",
+  "old": "tag_sight_on"
+}
+
+> fit_tag {"tag":"tag_reflex","attachment":"reflex"}
+< {
+  "anim": "vm_crossbow_reddot_ads_up",
+  "attachment": "reflex",
+  "iterations": 1,
+  "local_delta": [
+    0.0,
+    -6.399999983841553e-05,
+    0.13470840454101562
+  ],
+  "local_pos": [
+    3.2427539825439453,
+    -2.384185791015625e-07,
+    6.226661682128906
+  ],
+  "screen": [
+    960.0,
+    508.0
+  ],
+  "source_local": [
+    3.2427539825439453,
+    6.376158125931397e-05,
+    6.091953277587891
+  ],
+  "tag": "tag_reflex",
+  "world_pos": [
+    3.2427539825439453,
+    -2.384185791015625e-07,
+    6.226661682128906
+  ]
+}
+
+> fit_tag {"tag":"tag_acog","attachment":"acog"}
+< {
+  "anim": "vm_crossbow_acog_ads_up",
+  "attachment": "acog",
+  "iterations": 1,
+  "local_delta": [
+    0.0,
+    0.0,
+    -0.10988235473632812
+  ],
+  "local_pos": [
+    3.377739906311035,
+    -2.384185791015625e-07,
+    6.027324199676514
+  ],
+  "screen": [
+    960.0,
+    508.0
+  ],
+  "source_local": [
+    3.377739906311035,
+    -2.384185791015625e-07,
+    6.137206554412842
+  ],
+  "tag": "tag_acog",
+  "world_pos": [
+    3.377739906311035,
+    -2.384185791015625e-07,
+    6.027324199676514
+  ]
+}
+
+> save_model {}
+< {
+  "backup": "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\vm_crossbow_base.xmb.bak",
+  "dirty": false,
+  "saved": "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\vm_crossbow_base.xmb",
+  "tags_json": "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\vm_crossbow_base.tags.json",
+  "validation": "ok: 20 surfaces, 8 materials, 6 material json missing"
+}
+
+rename vm: {"dirty":true,"new":"tag_sight_front_on","old":"tag_sight_on"}
+fit reflex: {"anim":"vm_crossbow_reddot_ads_up","attachment":"reflex","iterations":1,"local_delta":[0.0,-6.3999999838415533E-05,0.13470840454101562],"local_pos":[3.2427539825439453,-2.384185791015625E-07,6.226661682128906],"screen":[960.0,508.0],"source_local":[3.2427539825439453,6.3761581259313971E-05,6.091953277587891],"tag":"tag_reflex","world_pos":[3.2427539825439453,-2.384185791015625E-07,6.226661682128906]}
+fit acog:   {"anim":"vm_crossbow_acog_ads_up","attachment":"acog","iterations":1,"local_delta":[0.0,0.0,-0.10988235473632812],"local_pos":[3.377739906311035,-2.384185791015625E-07,6.027324199676514],"screen":[960.0,508.0],"source_local":[3.377739906311035,-2.384185791015625E-07,6.137206554412842],"tag":"tag_acog","world_pos":[3.377739906311035,-2.384185791015625E-07,6.027324199676514]}
+save vm:    {"backup":"C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\vm_crossbow_base.xmb.bak","dirty":false,"saved":"C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\vm_crossbow_base.xmb","tags_json":"C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\vm_crossbow_base.tags.json","validation":"ok: 20 surfaces, 8 materials, 6 material json missing"}
+
+> load_model {"model":"npc_crossbow_base"}
+< {
+  "bones": 17,
+  "bounds_half": [
+    18.936601638793945,
+    10.983414649963379,
+    5.05624532699585
+  ],
+  "bounds_mid": [
+    -3.4901232719421387,
+    0.0,
+    -1.3863075971603394
+  ],
+  "camo": null,
+  "materials": 3,
+  "model": "npc_crossbow_base",
+  "surfaces": 4
+}
+
+> rename_tag {"old":"tag_sight_on","new":"tag_sight_front_on"}
+< {
+  "dirty": true,
+  "new": "tag_sight_front_on",
+  "old": "tag_sight_on"
+}
+
+> add_tag {"parent":"tag_weapon","copy_from":"tag_red_dot","tag":"tag_reflex"}
+< {
+  "added": true,
+  "dirty": true,
+  "local_pos": [
+    -7.771492004394531,
+    0.0,
+    2.30145001411438
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "tag_weapon",
+  "tag": "tag_reflex",
+  "world_pos": [
+    -7.771492004394531,
+    0.0,
+    2.30145001411438
+  ]
+}
+
+> move_tag {"tag":"tag_reflex","pos":[-7.771,0,2.791906]}
+< {
+  "dirty": true,
+  "local_pos": [
+    -7.770999908447266,
+    0.0,
+    2.7919061183929443
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "tag_weapon",
+  "tag": "tag_reflex",
+  "world_pos": [
+    -7.770999908447266,
+    0.0,
+    2.7919061183929443
+  ]
+}
+
+> add_tag {"parent":"tag_weapon","copy_from":"tag_acog_2","tag":"tag_acog"}
+< {
+  "added": true,
+  "dirty": true,
+  "local_pos": [
+    -7.197178363800049,
+    0.0,
+    2.3314688205718994
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "tag_weapon",
+  "tag": "tag_acog",
+  "world_pos": [
+    -7.197178363800049,
+    0.0,
+    2.3314688205718994
+  ]
+}
+
+> move_tag {"tag":"tag_acog","pos":[-7.197,0,2.330996]}
+< {
+  "dirty": true,
+  "local_pos": [
+    -7.197000026702881,
+    0.0,
+    2.330996036529541
+  ],
+  "local_rot": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "parent": "tag_weapon",
+  "tag": "tag_acog",
+  "world_pos": [
+    -7.197000026702881,
+    0.0,
+    2.330996036529541
+  ]
+}
+
+> save_model {}
+< {
+  "backup": "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\npc_crossbow_base.xmb.bak",
+  "dirty": false,
+  "saved": "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\npc_crossbow_base.xmb",
+  "tags_json": "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\npc_crossbow_base.tags.json",
+  "validation": "ok: 4 surfaces, 3 materials, 2 material json missing"
+}
+
+rename npc: {"dirty":true,"new":"tag_sight_front_on","old":"tag_sight_on"}
+add reflex: {"added":true,"dirty":true,"local_pos":[-7.771492004394531,0.0,2.30145001411438],"local_rot":[0.0,0.0,0.0,1.0],"parent":"tag_weapon","tag":"tag_reflex","world_pos":[-7.771492004394531,0.0,2.30145001411438]}
+move reflex:{"dirty":true,"local_pos":[-7.770999908447266,0.0,2.7919061183929443],"local_rot":[0.0,0.0,0.0,1.0],"parent":"tag_weapon","tag":"tag_reflex","world_pos":[-7.770999908447266,0.0,2.7919061183929443]}
+add acog:   {"added":true,"dirty":true,"local_pos":[-7.197178363800049,0.0,2.3314688205718994],"local_rot":[0.0,0.0,0.0,1.0],"parent":"tag_weapon","tag":"tag_acog","world_pos":[-7.197178363800049,0.0,2.3314688205718994]}
+move acog:  {"dirty":true,"local_pos":[-7.197000026702881,0.0,2.330996036529541],"local_rot":[0.0,0.0,0.0,1.0],"parent":"tag_weapon","tag":"tag_acog","world_pos":[-7.197000026702881,0.0,2.330996036529541]}
+save npc:   {"backup":"C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\npc_crossbow_base.xmb.bak","dirty":false,"saved":"C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\npc_crossbow_base.xmb","tags_json":"C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\xmodel\\npc_crossbow_base.tags.json","validation":"ok: 4 surfaces, 3 materials, 2 material json missing"}
+
+vm before 450A39772FAE022BF44F7858B083BC70B90A63FA88582CFAE5FF4AD5AD1B5A2D
+vm after  37167B92CCDD7FE2905B9DCC47DD8C09060EEDBFEDA93D9AE025F9EE2C67844D
+vm .bak  43A0CE70FC6E334FAD3BFD70C1B38E227FC2D0440DE1C7B98A7A38913ABF8203 (unchanged: True)
+npc before A7DC791ABF8A6EB1C9484A0F49D67D0B7665F8A67AF8498AD5DD7DEAE67BF457
+npc after  5564A3507657BB1520BD6940D80A6EAE0ABA306B1401B5E380E54D1D19F3676A
+npc .bak exists: True

@@ -1,0 +1,198 @@
+﻿crossbow optics tune on copy
+initialize -> hmw-workbench
+
+> load_weapon {"first_person":true,"hands":"viewhands_tf141","weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [],
+  "camo": null,
+  "first_person": true,
+  "gun_model": "vm_crossbow_base",
+  "hands": "viewhands_tf141",
+  "hands_source": "explicit",
+  "loaded_model": "vm_crossbow_base",
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": false
+}
+
+> rename_tag {"old":"tag_sight_on","new":"tag_sight_front_on"}
+< {
+  "dirty": true,
+  "new": "tag_sight_front_on",
+  "old": "tag_sight_on"
+}
+
+> fit_tag {"tag":"tag_reflex","attachment":"reflex"}
+< {
+  "anim": "vm_crossbow_reddot_ads_up",
+  "attachment": "reflex",
+  "iterations": 1,
+  "local_delta": [
+    0.0,
+    -6.399999983841553e-05,
+    0.13470840454101562
+  ],
+  "local_pos": [
+    3.2427539825439453,
+    -2.384185791015625e-07,
+    6.226661682128906
+  ],
+  "screen": [
+    960.0,
+    508.0
+  ],
+  "source_local": [
+    3.2427539825439453,
+    6.376158125931397e-05,
+    6.091953277587891
+  ],
+  "tag": "tag_reflex",
+  "world_pos": [
+    3.2427539825439453,
+    -2.384185791015625e-07,
+    6.226661682128906
+  ]
+}
+
+> fit_tag {"tag":"tag_acog","attachment":"acog"}
+< {
+  "anim": "vm_crossbow_acog_ads_up",
+  "attachment": "acog",
+  "iterations": 1,
+  "local_delta": [
+    0.0,
+    0.0,
+    -0.10988235473632812
+  ],
+  "local_pos": [
+    3.377739906311035,
+    -2.384185791015625e-07,
+    6.027324199676514
+  ],
+  "screen": [
+    960.0,
+    508.0
+  ],
+  "source_local": [
+    3.377739906311035,
+    -2.384185791015625e-07,
+    6.137206554412842
+  ],
+  "tag": "tag_acog",
+  "world_pos": [
+    3.377739906311035,
+    -2.384185791015625e-07,
+    6.027324199676514
+  ]
+}
+
+> save_model {}
+< {
+  "backup": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb.bak",
+  "dirty": false,
+  "saved": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+  "tags_json": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.tags.json",
+  "validation": "ok: 20 surfaces, 8 materials, 6 material json missing"
+}
+
+fit reflex: {"anim":"vm_crossbow_reddot_ads_up","attachment":"reflex","iterations":1,"local_delta":[0.0,-6.3999999838415533E-05,0.13470840454101562],"local_pos":[3.2427539825439453,-2.384185791015625E-07,6.226661682128906],"screen":[960.0,508.0],"source_local":[3.2427539825439453,6.3761581259313971E-05,6.091953277587891],"tag":"tag_reflex","world_pos":[3.2427539825439453,-2.384185791015625E-07,6.226661682128906]}
+fit acog:   {"anim":"vm_crossbow_acog_ads_up","attachment":"acog","iterations":1,"local_delta":[0.0,0.0,-0.10988235473632812],"local_pos":[3.377739906311035,-2.384185791015625E-07,6.027324199676514],"screen":[960.0,508.0],"source_local":[3.377739906311035,-2.384185791015625E-07,6.137206554412842],"tag":"tag_acog","world_pos":[3.377739906311035,-2.384185791015625E-07,6.027324199676514]}
+save:       {"backup":"C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb.bak","dirty":false,"saved":"C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb","tags_json":"C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.tags.json","validation":"ok: 20 surfaces, 8 materials, 6 material json missing"}
+
+> load_weapon {"first_person":true,"hands":"viewhands_tf141","attachments":["reflex"],"weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [
+    {
+      "found": true,
+      "name": "reflex",
+      "required_tag": "tag_reflex",
+      "view_model": "attach_h2_reflex_vm"
+    }
+  ],
+  "camo": null,
+  "first_person": true,
+  "gun_model": "vm_crossbow_base",
+  "hands": "viewhands_tf141",
+  "hands_source": "explicit",
+  "loaded_model": "vm_crossbow_base",
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": false
+}
+
+> set_anim {"ads":true,"name":"ADS_UP"}
+< {
+  "ads": true,
+  "anim": "vm_crossbow_reddot_ads_up",
+  "duration": 0.3333333432674408,
+  "fps": 30.0,
+  "frame": 0.0,
+  "frames": 10,
+  "looping": false,
+  "requested": "ADS_UP",
+  "time": 0.0
+}
+
+> posedump {}
+< {
+  "text": "weapon: iw5_exocrossbow_mp\r\ngun: vm_crossbow_base   hands: viewhands_tf141 (explicit)\r\nanim: vm_crossbow_reddot_ads_up  frames 10  30.000 fps  time 0.0000 s  frame 0.00\r\nads: yes   additive: no\r\neffective IDLE    anim: vm_crossbow_idle\r\neffective ADS_UP  anim: vm_crossbow_reddot_ads_up\r\ncamera eye (hands tag_view): (0.000 0.000 60.000)\r\ngun bind bounds: mid (7.760 0.000 2.314) half (18.997 10.983 5.056)\r\n\r\nposed bones (world = viewmodel space, screen px at 1920x1016):\r\n  name           idx   src    parent   local position                world position                screen\r\n  tag_view       3     hands  tag_origin (   0.000    0.000   60.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))\r\n  tag_camera     6     hands  tag_cambone (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))\r\n  tag_torso      7     hands  tag_ads  (  -4.632    0.000   -1.377) (  -8.721    0.000   59.389) ( 960.0  406.2)\r\n  tag_player     12    hands  tag_camera (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))\r\n  tag_weapon     13    hands  tag_torso (  15.160    0.000   -6.753) (   6.439    0.000   52.636) ( 960.0 2169.3)\r\n  tag_ads        4     hands  tag_view (  -4.089    0.000    0.766) (  -4.089    0.000   60.766) ( 960.0  780.1)\r\n  j_gun          68    gun    tag_weapon (   0.000    0.000    0.000) (   6.439    0.000   52.636) ( 960.0 2169.3)\r\n  j_wrist_le     24    hands  j_elbow_le (  11.571    0.000   -0.000) (   9.696    8.042   46.993) (-244.7 2456.6)\r\n  j_wrist_ri     25    hands  j_elbow_ri ( -11.571   -0.000   -0.000) (   9.696   -8.042   46.993) (2164.7 2456.6)\r\n\r\ngun posed bounds: min (-4.799 -10.983 49.894) max (33.195 10.983 60.006)  size (37.994 21.967 10.112)\r\ngun rear x -4.799 (camera eye x 0.000), forward x 33.195\r\n\r\nanim channels for the root/viewmodel bones (anim vm_crossbow_reddot_ads_up):\r\n  tag_view         anim: no channel\r\n  tag_camera       anim: no channel\r\n  tag_torso        anim: no channel\r\n  tag_player       anim: no channel\r\n  tag_weapon       anim: no channel\r\n  tag_ads          anim: rot+trans rot keys 9   trans keys 11   frames 0..10  trans frames 0..10\r\n  tag_ads          at 0.000s   quat ( 0.0000  0.0000  0.0000  1.0000) trans       (   0.000    0.000   -0.001)\r\n  tag_ads          first frame 0 quat ( 0.0000  0.0000  0.0000  1.0000)\r\n  tag_ads          last  frame 10 quat ( 0.0000  0.0000  0.0000  1.0000 ...[truncated]
+
+=== reflex ADS_UP ===
+effective ADS_UP  anim: vm_crossbow_reddot_ads_up
+  tag_reflex               (   9.681    0.000   58.863)  dist   9.748  screen ( 960.0  678.6)
+screen centre: (960 508)
+  reflex                   vm attach_h2_reflex_vm                  tag tag_reflex           found  world origin screen ( 960.0  678.6)
+    reticle reticle_h1_optic_reflex          aim (  11.092    0.000   60.000) screen ( 960.0  508.0)
+    reticle reticle_h1_reflex_transparent    aim (  11.092    0.000   60.000) screen ( 960.0  508.0)
+
+> screenshot {"path":"review/crossbow-optics/ads_end_reflex.png","view":"firstperson","crosshair":true,"height":1016,"width":1920}
+< saved to C:\Games\cod-hwm\hmw-workbench\build\edit_test\review/crossbow-optics/ads_end_reflex.png (1920x1016, 309723 bytes)
+
+> load_weapon {"first_person":true,"hands":"viewhands_tf141","attachments":["acog"],"weapon":"iw5_exocrossbow_mp"}
+< {
+  "attachments": [
+    {
+      "found": true,
+      "name": "acog",
+      "required_tag": "tag_acog",
+      "view_model": "attach_h2_acog_vm"
+    }
+  ],
+  "camo": null,
+  "first_person": true,
+  "gun_model": "vm_crossbow_base",
+  "hands": "viewhands_tf141",
+  "hands_source": "explicit",
+  "loaded_model": "vm_crossbow_base",
+  "warnings": [],
+  "weapon": "iw5_exocrossbow_mp",
+  "world_model": false
+}
+
+> set_anim {"ads":true,"name":"ADS_UP"}
+< {
+  "ads": true,
+  "anim": "vm_crossbow_acog_ads_up",
+  "duration": 0.3333333432674408,
+  "fps": 30.0,
+  "frame": 0.0,
+  "frames": 10,
+  "looping": false,
+  "requested": "ADS_UP",
+  "time": 0.0
+}
+
+> posedump {}
+< {
+  "text": "weapon: iw5_exocrossbow_mp\r\ngun: vm_crossbow_base   hands: viewhands_tf141 (explicit)\r\nanim: vm_crossbow_acog_ads_up  frames 10  30.000 fps  time 0.0000 s  frame 0.00\r\nads: yes   additive: no\r\neffective IDLE    anim: vm_crossbow_idle\r\neffective ADS_UP  anim: vm_crossbow_acog_ads_up\r\ncamera eye (hands tag_view): (0.000 0.000 60.000)\r\ngun bind bounds: mid (7.760 0.000 2.314) half (18.997 10.983 5.056)\r\n\r\nposed bones (world = viewmodel space, screen px at 1920x1016):\r\n  name           idx   src    parent   local position                world position                screen\r\n  tag_view       3     hands  tag_origin (   0.000    0.000   60.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))\r\n  tag_camera     6     hands  tag_cambone (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))\r\n  tag_torso      7     hands  tag_ads  (  -4.632    0.000   -1.377) (  -6.072    0.000   59.388) ( 960.0  361.6)\r\n  tag_player     12    hands  tag_camera (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))\r\n  tag_weapon     13    hands  tag_torso (  15.160    0.000   -6.753) (   9.088    0.000   52.635) ( 960.0 1685.1)\r\n  tag_ads        4     hands  tag_view (  -1.440    0.000    0.765) (  -1.440    0.000   60.765) ( 960.0 1279.5)\r\n  j_gun          68    gun    tag_weapon (   0.000    0.000    0.000) (   9.088    0.000   52.635) ( 960.0 1685.1)\r\n  j_wrist_le     24    hands  j_elbow_le (  11.571    0.000   -0.000) (  12.345    8.042   46.992) (  13.8 2038.5)\r\n  j_wrist_ri     25    hands  j_elbow_ri ( -11.571   -0.000   -0.000) (  12.345   -8.042   46.992) (1906.2 2038.5)\r\n\r\ngun posed bounds: min (-2.149 -10.983 49.893) max (35.845 10.983 60.005)  size (37.994 21.967 10.112)\r\ngun rear x -2.149 (camera eye x 0.000), forward x 35.845\r\n\r\nanim channels for the root/viewmodel bones (anim vm_crossbow_acog_ads_up):\r\n  tag_view         anim: no channel\r\n  tag_camera       anim: no channel\r\n  tag_torso        anim: no channel\r\n  tag_player       anim: no channel\r\n  tag_weapon       anim: no channel\r\n  tag_ads          anim: rot+trans rot keys 9   trans keys 11   frames 0..10  trans frames 0..10\r\n  tag_ads          at 0.000s   quat ( 0.0000  0.0000  0.0000  1.0000) trans       (   0.000    0.000   -0.001)\r\n  tag_ads          first frame 0 quat ( 0.0000  0.0000  0.0000  1.0000)\r\n  tag_ads          last  frame 10 quat ( 0.0000  0.0000  0.0000  1.0000)\r\n  ...[truncated]
+
+=== acog ADS_UP ===
+effective ADS_UP  anim: vm_crossbow_acog_ads_up
+  tag_acog_2               (  12.466    0.000   58.663)  dist  12.537  screen ( 960.0  663.8)
+  tag_acog                 (  12.466    0.000   58.663)  dist  12.537  screen ( 960.0  663.8)
+screen centre: (960 508)
+  acog                     vm attach_h2_acog_vm                    tag tag_acog             found  world origin screen ( 960.0  663.8)
+    reticle reticle_h1_acog_transparent      aim (  12.291    0.000   60.000) screen ( 960.0  508.0)
+
+> screenshot {"path":"review/crossbow-optics/ads_end_acog.png","view":"firstperson","crosshair":true,"height":1016,"width":1920}
+< saved to C:\Games\cod-hwm\hmw-workbench\build\edit_test\review/crossbow-optics/ads_end_acog.png (1920x1016, 287464 bytes)

@@ -1,0 +1,159 @@
+﻿rename_tag round-trip on a copy
+initialize -> hmw-workbench
+
+> load_model {"model":"vm_crossbow_base"}
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": null,
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> rename_tag {"old":"tag_silencer","new":"tag_silencer_rt"}
+< {
+  "dirty": true,
+  "new": "tag_silencer_rt",
+  "old": "tag_silencer"
+}
+
+> save_model {}
+< {
+  "backup": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb.bak",
+  "dirty": false,
+  "saved": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb",
+  "tags_json": "C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.tags.json",
+  "validation": "ok: 20 surfaces, 8 materials, 6 material json missing"
+}
+
+> load_model {"model":"vm_crossbow_base"}
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": null,
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> get_tags {}
+< {
+  "count": 20,
+  "tags": [
+    {
+      "added": false,
+      "local_pos": [
+        3.377739906311035,
+        0.0,
+        6.027328014373779
+      ],
+      "name": "tag_acog_2",
+      "world_pos": [
+        3.377739906311035,
+        0.0,
+        6.027328014373779
+      ]
+    },
+    {
+      "added": false,
+      "local_pos": [
+        4.709725856781006,
+        -9.999999974752427e-07,
+        4.404219150543213
+      ],
+      "name": "tag_clip",
+      "world_pos": [
+        4.709725856781006,
+        -9.999999974752427e-07,
+        4.404219150543213
+      ]
+    },
+    {
+      "added": false,
+      "local_pos": [
+        18.503437042236328,
+        0.5662999749183655,
+        2.6046879291534424
+      ],
+      "name": "tag_directhack",
+      "world_pos": [
+        18.503437042236328,
+        0.5662999749183655,
+        2.6046879291534424
+      ]
+    },
+    {
+      "added": false,
+      "local_pos": [
+        3.116421937942505,
+        0.0,
+        6.12346887588501
+      ],
+      "name": "tag_eotech",
+      "world_pos": [
+        3.116421937942505,
+        0.0,
+        6.12346887588501
+      ]
+    },
+    {
+      "added": false,
+      "local_pos": [
+        22.358552932739258,
+        0.0,
+        4.412825107574463
+      ],
+      "name": "tag_flash",
+      "world_pos": [
+        22.358552932739258,
+        0.0,
+        4.412825107574463
+      ]
+    },
+    {
+      "added": false,
+      "local_pos": [
+        19.21266746520996,
+        -0.8039699792861938,
+        2.6475510597229004
+      ],
+      "name": "tag_lasersight",
+      "world_pos": [
+        19.21266746520996,
+        -0.8039699792861938,
+        2.6475510597229004
+      ]
+    },
+    {
+      "added": false,
+      "local_pos": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "name": "tag_loot",
+      "world_p ...[truncated]
+
+rename: {"dirty":true,"new":"tag_silencer_rt","old":"tag_silencer"}
+save:   {"backup":"C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb.bak","dirty":false,"saved":"C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.xmb","tags_json":"C:\\Games\\cod-hwm\\hmw-workbench\\build\\edit_test\\m5root\\xmodel\\vm_crossbow_base.tags.json","validation":"ok: 20 surfaces, 8 materials, 6 material json missing"}
+reloaded: tag_silencer_rt=1 tag_silencer=0
+real model unchanged: True

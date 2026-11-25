@@ -148,9 +148,9 @@ hmw-workbench.exe -roundtrip review\roundtrip.txt
 (load weapons/models, attachments, anims, tags, camos, screenshots, fit report, validate). Tools:
 `list_assets`, `load_weapon`, `load_model`, `load_character`, `set_anim`, `screenshot`,
 `compare_screenshot`, `get_bones`, `get_tags`, `posedump`, `attachment_fit_report`,
-`compare_tags`, `compare_bones`, `validate`, `info`, `move_tag`, `add_tag`, `revert_tags`,
-`save_model`, `hot_reload`, `rename_map`. Every tool and parameter, client configuration and a
-smoke test are in [docs/mcp.md](docs/mcp.md).
+`compare_tags`, `compare_bones`, `validate`, `info`, `move_tag`, `add_tag`, `rename_tag`,
+`fit_tag`, `revert_tags`, `save_model`, `hot_reload`, `rename_map`. Every tool and parameter,
+client configuration and a smoke test are in [docs/mcp.md](docs/mcp.md).
 
 The window app watches the loaded weapon/model/character files and reloads them when a dump file
 changes (debounced, Inspector → *Hot reload*). `-compare`, `-compare-bones` and `-rename-map` are

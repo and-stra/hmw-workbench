@@ -1,0 +1,426 @@
+FAIL material m/mtl_wpn_h1_asl_m4a1_handguard_camo: material json not found
+FAIL material m/mtl_wpn_h1_asl_m4a1_grip_camo: material json not found
+FAIL material m/mtl_wpn_h1_asl_m4a1_vert_grip_base: material json not found
+FAIL material m/mtl_wpn_h1_asl_m4a1_sights_camo: material json not found
+FAIL material m/mtl_wpn_h1_asl_m4a1_stock_camo: material json not found
+FAIL material m/mtl_wpn_h1_asl_m4a1_receiver_base_camo: material json not found
+FAIL material m/mtl_wpn_h1_shared_round_556: material json not found
+FAIL material m/mtl_wpn_h1_asl_m4a1_gas_block: material json not found
+FAIL material m/mtl_wpn_h1_sticker_placeholder: material json not found
+FAIL material m/mtl_wpn_h1_sni_m21_bipod: material json not found
+FAIL material m/mtl_wpn_h1_lmg_m249_receiver_base: material json not found
+FAIL material m/mtl_wpn_h1_sni_m82a1_bipod: material json not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod0101: file not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod1100: file not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod2100: file not found
+FAIL xsurface npc_h1_bipod_rpd_mp_lod3100: file not found
+FAIL xsurface vm_h1_bipod_rpd_lodvm101: file not found
+FAIL material m/mtl_wpn_h1_smg_ak74u_receiver_base: material json not found
+FAIL xsurface npc_h1_foregrip_m1014_lod0101: file not found
+FAIL xsurface npc_h1_foregrip_m1014_lod1100: file not found
+FAIL xsurface npc_h1_foregrip_m1014_lod2100: file not found
+FAIL xsurface npc_h1_foregrip_m1014_lod3100: file not found
+FAIL xsurface vm_h1_foregrip_m1014_lodvm100: file not found
+FAIL material m/mtl_wpn_h1_smg_mini_uzi_stock_base: material json not found
+FAIL xsurface npc_h1_launcher_gp25_lod0101: file not found
+FAIL xsurface npc_h1_launcher_gp25_lod1100: file not found
+FAIL xsurface npc_h1_launcher_gp25_lod2100: file not found
+FAIL xsurface npc_h1_launcher_gp25_lod3100: file not found
+FAIL xsurface vm_h1_launcher_gp25_lodvm100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod0101: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod1100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod2100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod3100: file not found
+FAIL xsurface npc_h1_launcher_m203_m16_lod4100: file not found
+FAIL xsurface vm_h1_launcher_m203_m16_lodvm100: file not found
+FAIL material m/mtl_attach_h1_basic_rail_short: material json not found
+FAIL xsurface vm_launcher_m203_lodvm100: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod0101: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod1100: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod2100: file not found
+FAIL xsurface npc_h1_optics_reflex_variant_mp_lod3100: file not found
+FAIL xsurface vm_h1_optic_reflex_variant_ads_mp_lodvm100: file not found
+FAIL xsurface npc_h1_optics_holosight_lod0101: file not found
+FAIL xsurface npc_h1_optics_holosight_lod1100: file not found
+FAIL xsurface npc_h1_optics_holosight_lod2100: file not found
+FAIL xsurface npc_h1_optics_holosight_lod3100: file not found
+FAIL xsurface vm_h1_optics_holosight_lodvm100: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod0101: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod1100: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod2100: file not found
+FAIL xsurface npc_h1_scope_acog_mp_lod3100: file not found
+FAIL xsurface vm_h1_scope_acog_mp_lodvm100: file not found
+FAIL xsurface vm_h1_silencer_russian_lodvm100: file not found
+FAIL xsurface vm_h1_silencer_smg_lodvm100: file not found
+FAIL xsurface vm_h1_underbarrel_shotgun_lodvm100: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod0300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod1300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod2300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod3300: file not found
+FAIL xsurface usmc_desert_assault_body_mp_lod4300: file not found
+FAIL material m/mtl_viewmodel_arab_opfor_glove: material json not found
+FAIL material m/mtl_viewmodel_h1_usmc_ghillie: material json not found
+FAIL material m/mtl_viewmodel_h1_usmc_ghillie_netting: material json not found
+FAIL material m/mtl_viewmodel_h1_usmc_ghillie_alpha: material json not found
+FAIL xsurface viewmodel_heartbeat_iw5100: file not found
+FAIL xsurface viewmodel_zoom_scope100: file not found
+FAIL material m/mtl_crossbow_scope_base: material json not found
+FAIL material m/mtl_crossbow_target: material json not found
+FAIL material m/mtl_m990_glass: material json not found
+FAIL material ms/mtl_crossbow_scope_base: material json not found
+FAIL material m/mtl_player_emblem: material json not found
+FAIL material m/mtl_crossbow_glass_base: material json not found
+FAIL material m/mtl_iron_sights_color: material json not found
+FAIL material m/mtl_mors_lens: material json not found
+FAIL material m/mtl_wep_shared_lens: material json not found
+FAIL material m/mtl_mors_lens_inner: material json not found
+FAIL material m/mtl_crossbow_crosshair: material json not found
+DUPLICATE attachment acog: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\acog.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\acog.json (models)
+DUPLICATE attachment acogmwr: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwr.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwr.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwr.json (models)
+DUPLICATE attachment acogmwrak47: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrak47.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrak47.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrak47.json (models)
+DUPLICATE attachment acogmwrak74u: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrak74u.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrak74u.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrak74u.json (models)
+DUPLICATE attachment acogmwraprast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwraprast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwraprast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwraprast.json (models)
+DUPLICATE attachment acogmwraprsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwraprsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwraprsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwraprsmg.json (models)
+DUPLICATE attachment acogmwraugast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwraugast.json (models)
+DUPLICATE attachment acogmwraugsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwraugsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwraugsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwraugsmg.json (models)
+DUPLICATE attachment acogmwrbarrett: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrbarrett.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrbarrett.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrbarrett.json (models)
+DUPLICATE attachment acogmwrdmr25: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrdmr25.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrdmr25.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrdmr25.json (models)
+DUPLICATE attachment acogmwrdragunov: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrdragunov.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrdragunov.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrdragunov.json (models)
+DUPLICATE attachment acogmwrfeblmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrfeblmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrfeblmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrfeblmg.json (models)
+DUPLICATE attachment acogmwrfebsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrfebsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrfebsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrfebsmg.json (models)
+DUPLICATE attachment acogmwrg3: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrg3.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrg3.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrg3.json (models)
+DUPLICATE attachment acogmwrg36c: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrg36c.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrg36c.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrg36c.json (models)
+DUPLICATE attachment acogmwrjunlmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrjunlmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrjunlmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrjunlmg.json (models)
+DUPLICATE attachment acogmwrjunsnp: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrjunsnp.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrjunsnp.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrjunsnp.json (models)
+DUPLICATE attachment acogmwrm14: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrm14.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrm14.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrm14.json (models)
+DUPLICATE attachment acogmwrm16: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrm16.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrm16.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrm16.json (models)
+DUPLICATE attachment acogmwrm21: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrm21.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrm21.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrm21.json (models)
+DUPLICATE attachment acogmwrm4: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrm4.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrm4.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrm4.json (models)
+DUPLICATE attachment acogmwrm40a3: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrm40a3.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrm40a3.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrm40a3.json (models)
+DUPLICATE attachment acogmwrm60e4: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrm60e4.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrm60e4.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrm60e4.json (models)
+DUPLICATE attachment acogmwrmp5: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrmp5.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrmp5.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrmp5.json (models)
+DUPLICATE attachment acogmwrp90: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrp90.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrp90.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrp90.json (models)
+DUPLICATE attachment acogmwrremington700: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrremington700.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrremington700.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrremington700.json (models)
+DUPLICATE attachment acogmwrrpd: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrrpd.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrrpd.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrrpd.json (models)
+DUPLICATE attachment acogmwrsaw: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrsaw.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrsaw.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrsaw.json (models)
+DUPLICATE attachment acogmwrskorpion: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrskorpion.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrskorpion.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrskorpion.json (models)
+DUPLICATE attachment acogmwruzi: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwruzi.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwruzi.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwruzi.json (models)
+DUPLICATE attachment acogmwrxmlar: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\acogmwrxmlar.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\acogmwrxmlar.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\acogmwrxmlar.json (models)
+DUPLICATE attachment akimbomwrhidden: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\akimbomwrhidden.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\akimbomwrhidden.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\akimbomwrhidden.json (stub, no models)
+DUPLICATE attachment bloodmwr: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\bloodmwr.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\bloodmwr.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\bloodmwr.json (stub, no models)
+DUPLICATE attachment f2000scope: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\f2000scope.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\f2000scope.json (models)
+DUPLICATE attachment fmj: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\fmj.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\fmj.json (stub, no models)
+DUPLICATE attachment foregrip: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\foregrip.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\foregrip.json (stub, no models)
+DUPLICATE attachment gl: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\gl.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\gl.json (models)
+DUPLICATE attachment glak47: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\glak47.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\glak47.json (models)
+DUPLICATE attachment glmwraprast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\glmwraprast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\glmwraprast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\glmwraprast.json (models)
+DUPLICATE attachment glmwraugast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\glmwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\glmwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\glmwraugast.json (models)
+DUPLICATE attachment glmwrg36c: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\glmwrg36c.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\glmwrg36c.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\glmwrg36c.json (models)
+DUPLICATE attachment glmwrm14: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\glmwrm14.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\glmwrm14.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\glmwrm14.json (models)
+DUPLICATE attachment glmwrxmlar: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\glmwrxmlar.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\glmwrxmlar.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\glmwrxmlar.json (models)
+DUPLICATE attachment glpre: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\glpre.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\glpre.json (stub, no models)
+DUPLICATE attachment glpremwraugast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\glpremwraugast.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\glpremwraugast.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\glpremwraugast.json (stub, no models)
+DUPLICATE attachment gripmwrfeblmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\gripmwrfeblmg.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\gripmwrfeblmg.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\gripmwrfeblmg.json (stub, no models)
+DUPLICATE attachment gripmwrjunlmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\gripmwrjunlmg.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\gripmwrjunlmg.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\gripmwrjunlmg.json (stub, no models)
+DUPLICATE attachment gripmwrkam12: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\gripmwrkam12.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\gripmwrkam12.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\gripmwrkam12.json (stub, no models)
+DUPLICATE attachment holo: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\holo.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\holo.json (models)
+DUPLICATE attachment mars: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\mars.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\mars.json (models)
+DUPLICATE attachment reflex: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\reflex.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\reflex.json (models)
+DUPLICATE attachment reflexmwr: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwr.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwr.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwr.json (models)
+DUPLICATE attachment reflexmwrak47: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrak47.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrak47.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrak47.json (models)
+DUPLICATE attachment reflexmwrak74u: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrak74u.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrak74u.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrak74u.json (models)
+DUPLICATE attachment reflexmwraprsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwraprsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwraprsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwraprsmg.json (models)
+DUPLICATE attachment reflexmwraugast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwraugast.json (models)
+DUPLICATE attachment reflexmwraugsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwraugsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwraugsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwraugsmg.json (models)
+DUPLICATE attachment reflexmwrfeblmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrfeblmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrfeblmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrfeblmg.json (models)
+DUPLICATE attachment reflexmwrg3: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrg3.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrg3.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrg3.json (models)
+DUPLICATE attachment reflexmwrg36c: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrg36c.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrg36c.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrg36c.json (models)
+DUPLICATE attachment reflexmwrjunlmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrjunlmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrjunlmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrjunlmg.json (models)
+DUPLICATE attachment reflexmwrm1014: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrm1014.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrm1014.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrm1014.json (models)
+DUPLICATE attachment reflexmwrm14: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrm14.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrm14.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrm14.json (models)
+DUPLICATE attachment reflexmwrm16: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrm16.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrm16.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrm16.json (models)
+DUPLICATE attachment reflexmwrm4: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrm4.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrm4.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrm4.json (models)
+DUPLICATE attachment reflexmwrm60e4: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrm60e4.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrm60e4.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrm60e4.json (models)
+DUPLICATE attachment reflexmwrmp5: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrmp5.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrmp5.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrmp5.json (models)
+DUPLICATE attachment reflexmwrp90: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrp90.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrp90.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrp90.json (models)
+DUPLICATE attachment reflexmwrrpd: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrrpd.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrrpd.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrrpd.json (models)
+DUPLICATE attachment reflexmwrsaw: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrsaw.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrsaw.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrsaw.json (models)
+DUPLICATE attachment reflexmwrskorpion: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrskorpion.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrskorpion.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrskorpion.json (models)
+DUPLICATE attachment reflexmwruzi: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwruzi.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwruzi.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwruzi.json (models)
+DUPLICATE attachment reflexmwrwinchester1200: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\reflexmwrwinchester1200.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\reflexmwrwinchester1200.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\reflexmwrwinchester1200.json (models)
+DUPLICATE attachment sho: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\sho.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\sho.json (models)
+DUPLICATE attachment shopre: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\shopre.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\shopre.json (stub, no models)
+DUPLICATE attachment silencerar: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\silencerar.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\silencerar.json (models)
+DUPLICATE attachment silencermwraprast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\silencermwraprast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\silencermwraprast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\silencermwraprast.json (models)
+DUPLICATE attachment silencermwraprpst: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\silencermwraprpst.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\silencermwraprpst.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\silencermwraprpst.json (models)
+DUPLICATE attachment silencermwraprsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\silencermwraprsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\silencermwraprsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\silencermwraprsmg.json (models)
+DUPLICATE attachment silencermwraugast: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\silencermwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\silencermwraugast.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\silencermwraugast.json (models)
+DUPLICATE attachment silencermwraugsmg: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\silencermwraugsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\silencermwraugsmg.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\silencermwraugsmg.json (models)
+DUPLICATE attachment silencermwrxmlar: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\silencermwrxmlar.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\silencermwrxmlar.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\silencermwrxmlar.json (models)
+DUPLICATE attachment tacknifemwrdeserteagle: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\tacknifemwrdeserteagle.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\tacknifemwrdeserteagle.json (stub, no models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\tacknifemwrdeserteagle.json (stub, no models)
+DUPLICATE attachment thermal: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\thermal.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\thermal.json (models)
+DUPLICATE attachment thermalmwr: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\thermalmwr.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\thermalmwr.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\thermalmwr.json (models)
+DUPLICATE attachment thermalmwrm60e4: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\thermalmwrm60e4.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\thermalmwrm60e4.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\thermalmwrm60e4.json (models)
+DUPLICATE attachment thermalmwrrpd: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\thermalmwrrpd.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\thermalmwrrpd.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\thermalmwrrpd.json (models)
+DUPLICATE attachment thermalmwrsaw: 3 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_patch_common_mp\attachments\thermalmwrsaw.json (models)
+  C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp\attachments\thermalmwrsaw.json (models)
+  C:\Games\cod-hwm\refs\dumps\patch_common_mp\attachments\thermalmwrsaw.json (models)
+DUPLICATE attachment xmag: 2 definitions (using the first with models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_ar1\attachments\xmag.json (stub, no models)
+  C:\Games\cod-hwm\Call of Duty Horizon Modern Warfare\Call of Duty Modern Warfare Remastered\dump\workbench_hmw_attachments\attachments\xmag.json (stub, no models)
+
+summary:
+  xmodels:   ok 523, failed 0
+  xsurfaces: ok 298, failed 47
+  materials: ok 189, failed 30
+  missing surface files: 47, missing materials: 30
+  models with missing surface data: 135
+  attachments: 104 names, 89 duplicate definitions
