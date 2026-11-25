@@ -69,6 +69,28 @@ MaterialData LoadMaterial(const std::filesystem::path& path) {
 		}
 	}
 
+	if (json.contains("constantTable") && json["constantTable"].is_array()) {
+		for (const auto& constant : json["constantTable"]) {
+			if (!constant.is_object()) {
+				continue;
+			}
+			const std::string name = constant.value("name", "");
+			if (name != "decalParams1" && name != "envMapParms") {
+				continue;
+			}
+			const auto& literal = constant["literal"];
+			if (!literal.is_array() || literal.size() < 4) {
+				continue;
+			}
+			if (name == "decalParams1") {
+				material.decalScaleU = literal[0].get<float>();
+				material.decalScaleV = literal[1].get<float>();
+			} else {
+				material.envMapScale = literal[0].get<float>();
+			}
+		}
+	}
+
 	return material;
 }
 

@@ -249,7 +249,7 @@ private:
 		       {"properties", {{"weapon", str("Weapon json name, e.g. iw5_exocrossbow_mp.")},
 		                       {"hands", str("Viewhands override (optional).")},
 		                       {"attachments", {{"type", "array"}, {"items", {{"type", "string"}}}}},
-		                       {"camo", str("Camo material or name (camo_h1_<name>), e.g. camo_h1_goldfish.")},
+		                       {"camo", str("Camo material or name (camo_h1_<name>), or native:<H2 material stem> (e.g. native:mtl_h2_m4a1_receiver_fire).")},
 		                       {"world", boolean("Load the worldModel (no hands, orbit) instead of the viewmodel.")},
 		                       {"first_person", boolean("First-person view (default true; world forces orbit).")}}},
 		       {"required", {"weapon"}}}}},
@@ -258,7 +258,7 @@ private:
 		     {"inputSchema",
 		      {{"type", "object"},
 		       {"properties", {{"model", str("Xmodel name.")},
-		                       {"camo", str("Camo material or name (camo_h1_<name>).")}}},
+		                       {"camo", str("Camo material or name (camo_h1_<name>), or native:<H2 material stem>.")}}},
 		       {"required", {"model"}}}}},
 		    {{"name", "load_character"},
 		     {"description",
@@ -583,7 +583,9 @@ private:
 			} else {
 				camo = json{{"name", workbench_.CamoName()},
 				            {"texture", workbench_.CamoTexture()},
-				            {"strength", workbench_.CamoStrength()}};
+				            {"native", workbench_.CamoName().rfind("native:", 0) == 0},
+				            {"strength", workbench_.CamoStrength()},
+				            {"warnings", workbench_.CamoWarnings()}};
 			}
 		}
 		return json{{"weapon", viewmodel->weapon.name},
@@ -620,7 +622,9 @@ private:
 			} else {
 				camo = json{{"name", workbench_.CamoName()},
 				            {"texture", workbench_.CamoTexture()},
-				            {"strength", workbench_.CamoStrength()}};
+				            {"native", workbench_.CamoName().rfind("native:", 0) == 0},
+				            {"strength", workbench_.CamoStrength()},
+				            {"warnings", workbench_.CamoWarnings()}};
 			}
 		}
 		return json{{"model", asset->name},

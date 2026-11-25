@@ -528,7 +528,8 @@ void Application::DrawModelInspector() {
 
 void Application::DrawCamoSection() {
 	const std::vector<std::string>& names = workbench_.CamoNames();
-	ImGui::TextDisabled("%zu weapon camo materials (camo_h1_*) in the asset roots", names.size());
+	ImGui::TextDisabled("%zu camo materials (camo_h1_* + native H2 variants) in the asset roots",
+	                    names.size());
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##camo_search", "Filter camos...", camoSearch_, sizeof(camoSearch_));
 	const std::string needle = ToLower(camoSearch_);
@@ -570,8 +571,12 @@ void Application::DrawCamoSection() {
 			workbench_.SetCamoStrength(strength);
 		}
 		float scale = workbench_.CamoScale();
-		if (ImGui::SliderFloat("UV scale", &scale, 0.25f, 4.0f, "%.2f")) {
+		if (ImGui::SliderFloat("UV scale x", &scale, 0.25f, 4.0f, "%.2f")) {
 			workbench_.SetCamoScale(scale);
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Multiplier on the material's decalParams1 scale (2,2 in the H2 M4\n"
+			                  "and crossbow camo-ready materials).");
 		}
 	}
 }

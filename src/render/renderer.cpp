@@ -1,4 +1,4 @@
-#include "render/renderer.h"
+﻿#include "render/renderer.h"
 
 #include <algorithm>
 #include <cmath>
@@ -57,7 +57,12 @@ cbuffer ModelConstants : register(b0)
     float4 gLightDirection;
     float4 gParams;
     float4 gTint;
-    float4 gCamoParams; // x strength (0 = off), y uv scale
+};
+
+cbuffer CamoConstants : register(b2)
+{
+    // x strength (0 = off), y/z decalParams1 UV scale, w envMapParms scale
+    float4 gSurfaceCamo;
 };
 
 #define MAX_BONES 256
@@ -71,6 +76,10 @@ Texture2D gNormalMap : register(t1);
 Texture2D gSpecMap : register(t2);
 Texture2D gCamo : register(t3);
 Texture2D gCamoMask : register(t4);
+Texture2D gCamoNormal : register(t5);
+Texture2D gCamoSpec : register(t6);
+Texture2D gCamoEnv : register(t7);
+Texture2D gCamoEmissive : register(t8);
 SamplerState gLinear : register(s0);
 
 struct VSInput
@@ -147,18 +156,26 @@ PSInput VSMain(VSInput input)
 float4 PSMain(PSInput input) : SV_TARGET
 {
     float3 albedo = gAlbedo.Sample(gLinear, input.uv).rgb;
+    float2 normalXY = gNormalMap.Sample(gLinear, input.uv).xy * 2.0f - 1.0f;
+    float specularMask = gSpecMap.Sample(gLinear, input.uv).r;
+    float camoMask = 0.0f;
 
-    // Camo: the camo design replaces the base colour where the material mask is white.
-    // gCamoParams.x is 0 when no camo is selected, so the output is then unchanged.
-    if (gCamoParams.x > 0.0f)
+    // Full camo technique: the design colour, its normal and specular replace the base
+    // maps where the material mask is white. The design is sampled with the material's
+    // decalParams1 scale. gSurfaceCamo.x is 0 when no camo is selected, so the output is
+    // then unchanged.
+    if (gSurfaceCamo.x > 0.0f)
     {
-        const float2 camoUv = input.uv * gCamoParams.y;
+        const float2 camoUv = input.uv * gSurfaceCamo.yz;
+        camoMask = saturate(gCamoMask.Sample(gLinear, input.uv).r * gSurfaceCamo.x);
         const float3 camoColor = gCamo.Sample(gLinear, camoUv).rgb;
-        const float mask = saturate(gCamoMask.Sample(gLinear, input.uv).r);
-        albedo = lerp(albedo, camoColor, saturate(mask * gCamoParams.x));
+        const float2 camoNormalXY = gCamoNormal.Sample(gLinear, camoUv).xy * 2.0f - 1.0f;
+        const float camoSpecularMask = gCamoSpec.Sample(gLinear, camoUv).r;
+        albedo = lerp(albedo, camoColor, camoMask);
+        normalXY = lerp(normalXY, camoNormalXY, camoMask);
+        specularMask = lerp(specularMask, camoSpecularMask, camoMask);
     }
 
-    float2 normalXY = gNormalMap.Sample(gLinear, input.uv).xy * 2.0f - 1.0f;
     float normalZ = sqrt(saturate(1.0f - dot(normalXY, normalXY)));
     float3 n = normalize(input.tangent * normalXY.x + input.bitangent * normalXY.y + input.normal * normalZ);
 
@@ -167,11 +184,26 @@ float4 PSMain(PSInput input) : SV_TARGET
     float3 halfVector = normalize(lightDirection + viewDirection);
 
     float ndl = saturate(dot(n, lightDirection));
-    float specularMask = gSpecMap.Sample(gLinear, input.uv).r;
     float specular = pow(saturate(dot(n, halfVector)), gParams.x) * (0.06f + specularMask * 0.94f);
 
+    // Environment term: the material's env LUT (BRDF) scaled by envMapParms.x. There is no
+    // cubemap in the material dumps, so use a neutral sky gradient as the environment colour.
+    float3 environment = float3(0.0f, 0.0f, 0.0f);
+    float3 emissive = float3(0.0f, 0.0f, 0.0f);
+    if (gSurfaceCamo.x > 0.0f)
+    {
+        const float NdotV = saturate(dot(n, viewDirection));
+        const float3 envBrdf = gCamoEnv.Sample(gLinear, float2(NdotV, 0.5f)).rgb;
+        const float3 envColor = lerp(float3(0.22f, 0.26f, 0.34f), float3(0.05f, 0.06f, 0.08f),
+                                     saturate(n.z * 0.5f + 0.5f));
+        environment = envColor * envBrdf.x * gSurfaceCamo.w * 4.0f * camoMask;
+        // H2 native variants (fire/doomsday) put the animated design in the emissive map.
+        emissive = gCamoEmissive.Sample(gLinear, input.uv * gSurfaceCamo.yz).rgb * camoMask * 2.0f;
+    }
+
     // Linear lighting, then exposure and gamma encoding into the UNORM scene target.
-    float3 linearColor = albedo * (0.65f + 1.15f * ndl) + specular * float3(0.9f, 0.93f, 0.98f);
+    float3 linearColor = albedo * (0.65f + 1.15f * ndl) + specular * float3(0.9f, 0.93f, 0.98f) +
+                         environment + emissive;
     linearColor *= gParams.y;
     linearColor = pow(saturate(linearColor), 1.0f / 2.2f);
     return float4(linearColor * gTint.rgb, 1.0f);
@@ -190,11 +222,15 @@ struct alignas(16) ModelConstants {
 	DirectX::XMFLOAT4 lightDirection;
 	DirectX::XMFLOAT4 params;
 	DirectX::XMFLOAT4 tint;
-	DirectX::XMFLOAT4 camoParams;
+};
+
+struct alignas(16) CamoConstants {
+	DirectX::XMFLOAT4 surfaceCamo;
 };
 
 static_assert(sizeof(assets::SurfaceVertex) == 72);
-static_assert(sizeof(ModelConstants) == 208);
+static_assert(sizeof(ModelConstants) == 192);
+static_assert(sizeof(CamoConstants) == 16);
 constexpr UINT kMaxBones = 256;
 
 bool CompileShader(const char* source, const char* entryPoint, const char* target, ID3DBlob** blob) {
@@ -535,6 +571,16 @@ bool Renderer::CreateModelResources() {
 		return false;
 	}
 
+	D3D11_BUFFER_DESC camoDesc = {};
+	camoDesc.ByteWidth = sizeof(CamoConstants);
+	camoDesc.Usage = D3D11_USAGE_DYNAMIC;
+	camoDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	camoDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	hr = device_->CreateBuffer(&camoDesc, nullptr, &camoConstantBuffer_);
+	if (FAILED(hr)) {
+		return false;
+	}
+
 	D3D11_RASTERIZER_DESC rasterDesc = {};
 	rasterDesc.FillMode = D3D11_FILL_SOLID;
 	rasterDesc.CullMode = D3D11_CULL_NONE;
@@ -818,8 +864,6 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	constants.lightDirection = DirectX::XMFLOAT4(light.x, light.y, light.z, 0.0f);
 	constants.params = DirectX::XMFLOAT4(48.0f, exposure, 0.0f, 0.0f);
 	constants.tint = tint != nullptr ? *tint : DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	constants.camoParams = DirectX::XMFLOAT4(model.camoStrength, model.camoScale > 0.0f ? model.camoScale : 1.0f,
-	                                         0.0f, 0.0f);
 
 	D3D11_MAPPED_SUBRESOURCE mapped = {};
 	if (FAILED(context_->Map(modelConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
@@ -852,8 +896,12 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 
 	ID3D11Buffer* constantBuffer = modelConstantBuffer_.Get();
 	ID3D11Buffer* boneBuffer = boneConstantBuffer_.Get();
-	ID3D11ShaderResourceView* textures[5] = {checkerTexture_.Get(), flatNormalTexture_.Get(),
-	                                         blackTexture_.Get(), blackTexture_.Get(), whiteTexture_.Get()};
+	ID3D11Buffer* camoBuffer = camoConstantBuffer_.Get();
+	ID3D11ShaderResourceView* textures[9] = {checkerTexture_.Get(), flatNormalTexture_.Get(),
+	                                         blackTexture_.Get(), blackTexture_.Get(),
+	                                         whiteTexture_.Get(), flatNormalTexture_.Get(),
+	                                         whiteTexture_.Get(), blackTexture_.Get(),
+	                                         blackTexture_.Get()};
 	ID3D11SamplerState* sampler = samplerState_.Get();
 
 	context_->OMSetDepthStencilState(onTop ? overlayDepthState_.Get() : nullptr, 0);
@@ -866,6 +914,7 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 	context_->VSSetConstantBuffers(1, 1, &boneBuffer);
 	context_->PSSetShader(modelPs_.Get(), nullptr, 0);
 	context_->PSSetConstantBuffers(0, 1, &constantBuffer);
+	context_->PSSetConstantBuffers(2, 1, &camoBuffer);
 	context_->PSSetSamplers(0, 1, &sampler);
 
 	for (std::size_t i = 0; i < model.surfaces.size(); ++i) {
@@ -877,27 +926,72 @@ void Renderer::RenderModel(const GpuModel& model, const Camera& camera, bool wir
 			continue;
 		}
 
+		const GpuMaterial* material = nullptr;
+		if (surface.materialIndex >= 0 &&
+		    surface.materialIndex < static_cast<int>(model.materials.size())) {
+			material = &model.materials[static_cast<std::size_t>(surface.materialIndex)];
+		}
+		const bool nativeCamo = material != nullptr && material->nativeStrength >= 0.0f;
+		const float strength = nativeCamo ? material->nativeStrength : model.camoStrength;
+		const float materialScaleU =
+		    material == nullptr ? 1.0f : (nativeCamo ? material->nativeUvScaleU : material->camoUvScaleU);
+		const float materialScaleV =
+		    material == nullptr ? 1.0f : (nativeCamo ? material->nativeUvScaleV : material->camoUvScaleV);
+		const float scaleU = (materialScaleU > 0.0f ? materialScaleU : 1.0f) *
+		                     (model.camoScale > 0.0f ? model.camoScale : 1.0f);
+		const float scaleV = (materialScaleV > 0.0f ? materialScaleV : 1.0f) *
+		                     (model.camoScale > 0.0f ? model.camoScale : 1.0f);
+		const float envScale = nativeCamo && material != nullptr ? material->envMapScale : model.camoEnvScale;
+
 		textures[0] = checkerTexture_.Get();
 		textures[1] = flatNormalTexture_.Get();
 		textures[2] = blackTexture_.Get();
-		textures[3] = model.camo ? model.camo.Get() : blackTexture_.Get();
+		textures[3] = nativeCamo && material->nativeCamoColor ? material->nativeCamoColor.Get()
+		                                                      : model.camo.Get();
 		textures[4] = whiteTexture_.Get();
-		if (surface.materialIndex >= 0 && surface.materialIndex < static_cast<int>(model.materials.size())) {
-			const GpuMaterial& material = model.materials[static_cast<std::size_t>(surface.materialIndex)];
-			if (material.albedo) {
-				textures[0] = material.albedo.Get();
+		textures[5] = nativeCamo && material->nativeCamoNormal ? material->nativeCamoNormal.Get()
+		                                                       : model.camoNormal.Get();
+		textures[6] = nativeCamo && material->nativeCamoSpecular ? material->nativeCamoSpecular.Get()
+		                                                         : model.camoSpecular.Get();
+		textures[7] = nativeCamo && material->nativeCamoEnvironment ? material->nativeCamoEnvironment.Get()
+		                                                            : model.camoEnvironment.Get();
+		textures[8] = nativeCamo && material->nativeCamoEmissive ? material->nativeCamoEmissive.Get()
+		                                                          : blackTexture_.Get();
+		if (textures[3] == nullptr) {
+			textures[3] = blackTexture_.Get();
+		}
+		if (textures[5] == nullptr) {
+			textures[5] = flatNormalTexture_.Get();
+		}
+		if (textures[6] == nullptr) {
+			textures[6] = whiteTexture_.Get();
+		}
+		if (textures[7] == nullptr) {
+			textures[7] = blackTexture_.Get();
+		}
+		if (material != nullptr) {
+			if (material->albedo) {
+				textures[0] = material->albedo.Get();
 			}
-			if (material.normal) {
-				textures[1] = material.normal.Get();
+			if (material->normal) {
+				textures[1] = material->normal.Get();
 			}
-			if (material.specular) {
-				textures[2] = material.specular.Get();
+			if (material->specular) {
+				textures[2] = material->specular.Get();
 			}
-			if (material.camoMask) {
-				textures[4] = material.camoMask.Get();
+			if (material->camoMask) {
+				textures[4] = material->camoMask.Get();
 			}
 		}
-		context_->PSSetShaderResources(0, 5, textures);
+		context_->PSSetShaderResources(0, 9, textures);
+
+		CamoConstants camoConstants = {};
+		camoConstants.surfaceCamo = DirectX::XMFLOAT4(strength, scaleU, scaleV, envScale);
+		if (FAILED(context_->Map(camoConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+			break;
+		}
+		std::memcpy(mapped.pData, &camoConstants, sizeof(camoConstants));
+		context_->Unmap(camoConstantBuffer_.Get(), 0);
 
 		const UINT stride = sizeof(assets::SurfaceVertex);
 		const UINT offset = 0;
@@ -921,8 +1015,12 @@ ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(const assets::ImageData
 
 	std::size_t rowPitch = 0;
 	std::size_t slicePitch = 0;
-	const DXGI_FORMAT format =
-	    srgb ? ToSrgbFormat(static_cast<DXGI_FORMAT>(image.format)) : static_cast<DXGI_FORMAT>(image.format);
+	DXGI_FORMAT baseFormat = static_cast<DXGI_FORMAT>(image.format);
+	// The H1/HMW env BRDF LUT is stored as R16G16_TYPELESS; the pixel data is half float.
+	if (image.format == 34) {
+		baseFormat = DXGI_FORMAT_R16G16_FLOAT;
+	}
+	const DXGI_FORMAT format = srgb ? ToSrgbFormat(baseFormat) : baseFormat;
 	const HRESULT pitchResult = DirectX::ComputePitch(format, image.width, image.height, rowPitch, slicePitch);
 	if (FAILED(pitchResult) || slicePitch == 0) {
 		error = "unsupported texture format " + std::to_string(image.format);
@@ -972,6 +1070,10 @@ std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model,
 	for (std::size_t i = 0; i < model.materials.size(); ++i) {
 		const assets::MaterialSlot& slot = model.materials[i];
 		GpuMaterial& material = gpu->materials[i];
+		material.name = slot.material.name;
+		material.camoUvScaleU = slot.material.decalScaleU > 0.0f ? slot.material.decalScaleU : 1.0f;
+		material.camoUvScaleV = slot.material.decalScaleV > 0.0f ? slot.material.decalScaleV : 1.0f;
+		material.envMapScale = slot.material.envMapScale;
 		std::string textureError;
 		const auto applyTexture = [&](int imageIndex, ComPtr<ID3D11ShaderResourceView>& target, bool srgb) {
 			if (imageIndex < 0 || imageIndex >= static_cast<int>(model.images.size())) {
@@ -1030,23 +1132,124 @@ std::unique_ptr<GpuModel> Renderer::UploadModel(const assets::ModelAsset& model,
 	return gpu;
 }
 
-bool Renderer::SetModelCamo(GpuModel& model, const assets::ImageData& image, float strength, float scale,
-                            std::string& error) {
-	ComPtr<ID3D11ShaderResourceView> view = CreateTexture(image, true, error);
-	if (!view) {
-		error = "camo texture: " + error;
+bool Renderer::SetModelCamo(GpuModel& model, const assets::CamoTextures& textures, float strength,
+                            float scale, std::string& error) {
+	ClearModelCamo(model);
+	ComPtr<ID3D11ShaderResourceView> color = CreateTexture(textures.color, true, error);
+	if (!color) {
+		error = "camo colour texture: " + error;
 		return false;
 	}
-	model.camo = std::move(view);
+	model.camo = std::move(color);
+	const auto uploadOptional = [&](const assets::ImageData& image, bool srgb,
+	                                ComPtr<ID3D11ShaderResourceView>& target) {
+		if (!image.available || image.pixels.empty()) {
+			return;
+		}
+		std::string ignored;
+		ComPtr<ID3D11ShaderResourceView> view = CreateTexture(image, srgb, ignored);
+		if (view) {
+			target = std::move(view);
+		}
+	};
+	uploadOptional(textures.normal, false, model.camoNormal);
+	uploadOptional(textures.specular, false, model.camoSpecular);
+	uploadOptional(textures.environment, false, model.camoEnvironment);
 	model.camoStrength = std::clamp(strength, 0.0f, 1.0f);
+	model.camoScale = scale > 0.0f ? scale : 1.0f;
+	model.camoEnvScale = textures.envMapScale;
+	return true;
+}
+
+bool Renderer::SetModelNativeCamo(GpuModel& model, const std::string& variantStem,
+                                  const assets::CamoTextures& textures, float strength, float scale,
+                                  std::string& error) {
+	ClearModelCamo(model);
+	ComPtr<ID3D11ShaderResourceView> color = CreateTexture(textures.color, true, error);
+	if (!color) {
+		error = "native camo colour texture: " + error;
+		return false;
+	}
+	ComPtr<ID3D11ShaderResourceView> normal;
+	ComPtr<ID3D11ShaderResourceView> specular;
+	ComPtr<ID3D11ShaderResourceView> environment;
+	ComPtr<ID3D11ShaderResourceView> emissive;
+	const auto uploadOptional = [&](const assets::ImageData& image, bool srgb,
+	                                ComPtr<ID3D11ShaderResourceView>& target) {
+		if (!image.available || image.pixels.empty()) {
+			return;
+		}
+		std::string ignored;
+		ComPtr<ID3D11ShaderResourceView> view = CreateTexture(image, srgb, ignored);
+		if (view) {
+			target = std::move(view);
+		}
+	};
+	uploadOptional(textures.normal, false, normal);
+	uploadOptional(textures.specular, false, specular);
+	uploadOptional(textures.environment, false, environment);
+	uploadOptional(textures.emissive, false, emissive);
+
+	std::string baseStem = variantStem;
+	for (const char* suffix : {"_fire", "_doomsday"}) {
+		const std::string s = suffix;
+		if (baseStem.size() > s.size() && baseStem.ends_with(s)) {
+			baseStem.resize(baseStem.size() - s.size());
+			break;
+		}
+	}
+	const auto stemOf = [](const std::string& name) {
+		const std::size_t slash = name.find_last_of('/');
+		return slash == std::string::npos ? name : name.substr(slash + 1);
+	};
+	const auto stripCamo = [](std::string stem) {
+		if (stem.size() > 5 && stem.ends_with("_camo")) {
+			stem.resize(stem.size() - 5);
+		}
+		return stem;
+	};
+
+	bool matched = false;
+	for (GpuMaterial& material : model.materials) {
+		const std::string stem = stemOf(material.name);
+		if (stem != baseStem && stripCamo(stem) != baseStem) {
+			continue;
+		}
+		material.nativeCamoColor = color;
+		material.nativeCamoNormal = normal;
+		material.nativeCamoSpecular = specular;
+		material.nativeCamoEnvironment = environment;
+		material.nativeCamoEmissive = emissive;
+		material.nativeStrength = std::clamp(strength, 0.0f, 1.0f);
+		material.nativeUvScaleU = textures.decalScaleU > 0.0f ? textures.decalScaleU : 1.0f;
+		material.nativeUvScaleV = textures.decalScaleV > 0.0f ? textures.decalScaleV : 1.0f;
+		material.envMapScale = textures.envMapScale;
+		matched = true;
+	}
+	if (!matched) {
+		error = "native camo material " + variantStem + " does not match any loaded material";
+		return false;
+	}
 	model.camoScale = scale > 0.0f ? scale : 1.0f;
 	return true;
 }
 
 void Renderer::ClearModelCamo(GpuModel& model) {
 	model.camo.Reset();
+	model.camoNormal.Reset();
+	model.camoSpecular.Reset();
+	model.camoEnvironment.Reset();
 	model.camoStrength = 0.0f;
 	model.camoScale = 1.0f;
+	model.camoEnvScale = 0.04f;
+	for (GpuMaterial& material : model.materials) {
+		material.nativeCamoColor.Reset();
+		material.nativeCamoNormal.Reset();
+		material.nativeCamoSpecular.Reset();
+		material.nativeCamoEnvironment.Reset();
+		material.nativeCamoEmissive.Reset();
+		material.nativeStrength = -1.0f;
+	}
 }
 
 bool Renderer::CaptureScene(std::vector<std::uint8_t>& pixels, int& width, int& height,
@@ -1170,3 +1373,4 @@ void Renderer::Present() {
 }
 
 } // namespace wb
+

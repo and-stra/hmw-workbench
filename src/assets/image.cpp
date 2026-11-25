@@ -71,6 +71,7 @@ std::uint32_t BitsPerPixel(std::int32_t format) {
 		return 16;
 	case 54: // R16_FLOAT
 		return 16;
+	case 34: // R16G16_TYPELESS (the env BRDF LUT; treated as R16G16_FLOAT)
 	case 56: // R16G16_FLOAT
 		return 32;
 	case 41: // R32_FLOAT

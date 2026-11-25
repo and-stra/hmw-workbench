@@ -437,23 +437,30 @@ bool Workbench::SetCamo(const std::string& name, std::string& error) {
 	while (!trimmed.empty() && (trimmed.back() == ' ' || trimmed.back() == '\t')) {
 		trimmed.pop_back();
 	}
+	while (!trimmed.empty() && (trimmed.front() == ' ' || trimmed.front() == '\t')) {
+		trimmed.erase(trimmed.begin());
+	}
 	if (trimmed.empty() || ToLower(trimmed) == "none") {
 		camoName_.clear();
 		camoTextureName_.clear();
+		camoWarnings_.clear();
+		camoTextures_ = assets::CamoTextures{};
 		camoImageValid_ = false;
 		ApplyCamo();
 		return true;
 	}
-	assets::ImageData image;
-	if (!assets::LoadCamoImage(roots_, trimmed, image, error)) {
+	assets::CamoTextures textures;
+	std::vector<std::string> warnings;
+	if (!assets::LoadCamoTextures(roots_, trimmed, textures, warnings, error)) {
 		return false;
 	}
 	camoName_ = trimmed;
-	camoTextureName_ = assets::CamoTextureName(roots_, trimmed);
+	camoTextureName_ = textures.colorTextureName;
 	if (camoTextureName_.empty()) {
-		camoTextureName_ = image.name;
+		camoTextureName_ = textures.color.name;
 	}
-	camoImage_ = std::move(image);
+	camoWarnings_ = std::move(warnings);
+	camoTextures_ = std::move(textures);
 	camoImageValid_ = true;
 	ApplyCamo();
 	return true;
@@ -469,7 +476,19 @@ void Workbench::ApplyCamo() {
 			return;
 		}
 		std::string error;
-		(void)renderer_.SetModelCamo(*gpu, camoImage_, camoStrength_, camoScale_, error);
+		if (camoTextures_.native) {
+			std::string materialStem;
+			std::string baseStem;
+			if (!assets::SplitNativeCamoName(camoName_, materialStem, baseStem)) {
+				renderer_.ClearModelCamo(*gpu);
+				return;
+			}
+			// Not every loaded model has this material (e.g. the crossbow); no match is fine.
+			(void)renderer_.SetModelNativeCamo(*gpu, materialStem, camoTextures_, camoStrength_,
+			                                   camoScale_, error);
+		} else if (!renderer_.SetModelCamo(*gpu, camoTextures_, camoStrength_, camoScale_, error)) {
+			renderer_.ClearModelCamo(*gpu);
+		}
 	};
 	apply(gpuGun_.get());
 	apply(gpuModel_.get());
@@ -481,8 +500,14 @@ void Workbench::ApplyCamo() {
 void Workbench::SetCamoStrength(float strength) {
 	camoStrength_ = std::clamp(strength, 0.0f, 1.0f);
 	const auto set = [this](GpuModel* gpu) {
-		if (gpu != nullptr && gpu->camo) {
-			gpu->camoStrength = camoStrength_;
+		if (gpu == nullptr) {
+			return;
+		}
+		gpu->camoStrength = camoStrength_;
+		for (GpuMaterial& material : gpu->materials) {
+			if (material.nativeStrength >= 0.0f) {
+				material.nativeStrength = camoStrength_;
+			}
 		}
 	};
 	set(gpuGun_.get());
@@ -495,7 +520,7 @@ void Workbench::SetCamoStrength(float strength) {
 void Workbench::SetCamoScale(float scale) {
 	camoScale_ = std::clamp(scale, 0.01f, 16.0f);
 	const auto set = [this](GpuModel* gpu) {
-		if (gpu != nullptr && gpu->camo) {
+		if (gpu != nullptr) {
 			gpu->camoScale = camoScale_;
 		}
 	};

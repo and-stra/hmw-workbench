@@ -164,7 +164,7 @@ void PrintUsage() {
 	    "                    [-width <n>] [-height <n>] [-yaw <deg>] [-pitch <deg>]\n"
 	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
 	    "                    [-crosshair] [-marktags]\n"
-	    "                    [-camo <camo_h1_name|name>] [-camo-strength <0..1>] [-camo-scale <n>]\n"
+	    "                    [-camo <camo_h1_name|name|native:material>] [-camo-strength <0..1>] [-camo-scale <n>]\n"
 	    "                    [-world] [-caption <text>] [-ads-align]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
 	    "  hmw-workbench.exe -character <faction> [-character-weapon <weapon>]\n"
@@ -550,8 +550,11 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 		if (options.hasCamoScale) {
 			workbench.SetCamoScale(options.camoScale);
 		}
-		std::printf("camo: %s (texture %s, strength %.2f, uv scale %.2f)\n", workbench.CamoName().c_str(),
+		std::printf("camo: %s (texture %s, strength %.2f, uv scale x%.2f)\n", workbench.CamoName().c_str(),
 		            workbench.CamoTexture().c_str(), workbench.CamoStrength(), workbench.CamoScale());
+		for (const std::string& warning : workbench.CamoWarnings()) {
+			std::printf("camo warning: %s\n", warning.c_str());
+		}
 	}	if (workbench.IsFirstPerson() && workbench.Viewmodel() != nullptr) {
 		std::printf("fov: cg %.2f (4:3 horizontal) -> vertical %.3f (viewmodel scale %.2f)\n",
 		            workbench.CgFov(), workbench.GetCamera().Fov(), settings.viewmodelFovScale);

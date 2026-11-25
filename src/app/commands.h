@@ -187,8 +187,16 @@ public:
 	const std::vector<std::string>& CamoNames();
 	const std::string& CamoName() const { return camoName_; }
 	const std::string& CamoTexture() const { return camoTextureName_; }
+	const std::vector<std::string>& CamoWarnings() const { return camoWarnings_; }
 	bool SetCamo(const std::string& name, std::string& error);
-	void ClearCamo() { camoName_.clear(); camoTextureName_.clear(); camoImageValid_ = false; ApplyCamo(); }
+	void ClearCamo() {
+		camoName_.clear();
+		camoTextureName_.clear();
+		camoWarnings_.clear();
+		camoTextures_ = assets::CamoTextures{};
+		camoImageValid_ = false;
+		ApplyCamo();
+	}
 	float CamoStrength() const { return camoStrength_; }
 	float CamoScale() const { return camoScale_; }
 	void SetCamoStrength(float strength);
@@ -394,7 +402,8 @@ private:
 	std::vector<std::string> camoNames_;
 	std::string camoName_;
 	std::string camoTextureName_;
-	assets::ImageData camoImage_;
+	assets::CamoTextures camoTextures_;
+	std::vector<std::string> camoWarnings_;
 	bool camoImageValid_ = false;
 	float camoStrength_ = 1.0f;
 	float camoScale_ = 1.0f;

@@ -1,0 +1,24 @@
+﻿finish item 3: camo self-check
+date: 2026-11-25 08:39:22
+
+No camo selected must stay pixel-identical
+  crossbow model orbit: prev 6C48E205FED729FC0F6C63BDDCADB0F0C9C83B96706527F84E61D49F8060E56D
+  crossbow model orbit: new  6C48E205FED729FC0F6C63BDDCADB0F0C9C83B96706527F84E61D49F8060E56D
+  equal: True
+  H2 M4 first person:   prev F864BD9A4CC6B21F8CE1C7A0D74C3D2502EA07548AF02AEEAC6B3CEDE10DA1D5
+  H2 M4 first person:   new  F864BD9A4CC6B21F8CE1C7A0D74C3D2502EA07548AF02AEEAC6B3CEDE10DA1D5
+  equal: True
+
+Commands
+  hmw-workbench.exe -screenshot build\nocamo_new_crossbow.png -model vm_crossbow_base -view orbit -yaw 35 -pitch 18 -dist 26 -exposure 1.4 -width 1200 -height 900
+  hmw-workbench.exe -screenshot build\nocamo_new_m4fp.png -weapon h2_m4_mp -view firstperson -exposure 1.2 -width 1200 -height 900
+  hmw-workbench.exe -screenshot review\finish\camos\m4_<camo>_after.png -model wpn_h2_m4a1_vm -view orbit -yaw 200 -pitch 10 -dist 24 -exposure 1.5 -camo camo_h1_<camo> -width 1600 -height 900
+  hmw-workbench.exe -screenshot review\finish\camos\crossbow_<camo>_after.png -model vm_crossbow_base -view orbit -yaw 35 -pitch 18 -dist 26 -exposure 1.4 -camo camo_h1_<camo> -width 1600 -height 900
+  "before" images use the pre-change exe (build\bin\Release\hmw-workbench-prev-camo.exe, the M6 diffuse-only shader).
+
+Camos
+  camo_h1_christmas_wrap, camo_h1_blue_jade, camo_h1_red_wash.
+Native H2 variants
+  native:mtl_h2_m4a1_receiver_fire, native:mtl_h2_m4a1_receiver_doomsday (static frame; emissive map, no flow animation).
+Warnings
+  native variants: their camo specular map has no pixel data in the dumps; the shader uses the white fallback. The design and emissive maps load.

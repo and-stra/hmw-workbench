@@ -8,6 +8,7 @@
 #include <vector>
 #include <wrl/client.h>
 
+#include "assets/camo.h"
 #include "assets/model_asset.h"
 #include "render/camera.h"
 
@@ -30,10 +31,24 @@ struct GpuSurface {
 };
 
 struct GpuMaterial {
+	std::string name;
 	ComPtr<ID3D11ShaderResourceView> albedo;
 	ComPtr<ID3D11ShaderResourceView> normal;
 	ComPtr<ID3D11ShaderResourceView> specular;
 	ComPtr<ID3D11ShaderResourceView> camoMask;
+	// Per-material native camo variant (H2 *_fire/*_doomsday materials). When
+	// nativeStrength >= 0 this overrides the model-level camo for this material.
+	ComPtr<ID3D11ShaderResourceView> nativeCamoColor;
+	ComPtr<ID3D11ShaderResourceView> nativeCamoNormal;
+	ComPtr<ID3D11ShaderResourceView> nativeCamoSpecular;
+	ComPtr<ID3D11ShaderResourceView> nativeCamoEnvironment;
+	ComPtr<ID3D11ShaderResourceView> nativeCamoEmissive;
+	float nativeStrength = -1.0f;
+	float camoUvScaleU = 1.0f;
+	float camoUvScaleV = 1.0f;
+	float nativeUvScaleU = 1.0f;
+	float nativeUvScaleV = 1.0f;
+	float envMapScale = 0.04f;
 };
 
 struct GpuModel {
@@ -42,8 +57,12 @@ struct GpuModel {
 	// Optional camo layer: the selected camo design sampled with the model UVs and blended
 	// over the base colour by the material's "m" mask (white when the material has none).
 	ComPtr<ID3D11ShaderResourceView> camo;
+	ComPtr<ID3D11ShaderResourceView> camoNormal;
+	ComPtr<ID3D11ShaderResourceView> camoSpecular;
+	ComPtr<ID3D11ShaderResourceView> camoEnvironment;
 	float camoStrength = 0.0f;
-	float camoScale = 1.0f;
+	float camoScale = 1.0f; // user multiplier on the material's decalParams1 scale
+	float camoEnvScale = 0.04f;
 	DirectX::XMFLOAT3 boundsCenter{0.0f, 0.0f, 0.0f};
 	DirectX::XMFLOAT3 boundsHalf{1.0f, 1.0f, 1.0f};
 };
@@ -77,8 +96,13 @@ public:
 
 	// Sets/clears the camo layer on an uploaded model (used by the weapon and the
 	// standalone model; the same camo design is shared by all surfaces of a model).
-	bool SetModelCamo(GpuModel& model, const assets::ImageData& image, float strength, float scale,
+	bool SetModelCamo(GpuModel& model, const assets::CamoTextures& textures, float strength, float scale,
 	                  std::string& error);
+	// Applies a native material variant only to the materials that match its base stem
+	// (e.g. native:mtl_h2_m4a1_receiver_fire -> all receiver_camo surfaces).
+	bool SetModelNativeCamo(GpuModel& model, const std::string& variantStem,
+	                        const assets::CamoTextures& textures, float strength, float scale,
+	                        std::string& error);
 	void ClearModelCamo(GpuModel& model);
 
 	void Present();
@@ -128,6 +152,7 @@ private:
 	ComPtr<ID3D11InputLayout> modelInputLayout_;
 	ComPtr<ID3D11Buffer> modelConstantBuffer_;
 	ComPtr<ID3D11Buffer> boneConstantBuffer_;
+	ComPtr<ID3D11Buffer> camoConstantBuffer_;
 	ComPtr<ID3D11RasterizerState> solidState_;
 	ComPtr<ID3D11RasterizerState> wireframeState_;
 	ComPtr<ID3D11DepthStencilState> overlayDepthState_;

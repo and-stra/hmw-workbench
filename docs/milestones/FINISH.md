@@ -8,8 +8,8 @@ item's result and is the resume point after a context reset.
 | item | state | commit | notes |
 |---|---|---|---|
 | 1 ADS auto-align off by default | **done** | `343cc96` | M4 reflex after: 22.1 px off (reported) |
-| 2 player model data | **done** | item 2 commit (hash in final log) | all 14 factions textured with head; head attach bug fixed |
-| 3 camo fidelity | not started | - | |
+| 2 player model data | **done** | `64b227e` | all 14 factions textured with head; head attach bug fixed |
+| 3 camo fidelity | **done** | item 3 commit (hash in final log) | full colour/normal/spec/env/decal technique + native H2 variants |
 | 4 camos in game: test commands | not started | - | |
 | 5 comfort gaps | not started | - | |
 
@@ -89,3 +89,47 @@ Still missing / not covered:
   models, also with the head included. They have no separate head model to attach.
 - No anim is loaded for the faction screenshots; they are bind-pose renders against the body
   skeleton. The 14 table entries are all textured and all heads are present.
+
+## Item 3
+
+Status: **done**. The camo preview now uses the full material technique instead of only the
+diffuse swap:
+
+- Camo colour: design `dc1` (typeHash `659983135`).
+- Camo normal: design `dn1` (`1507003663`), fallback `dna1`/`camo_nml` (`1518176625`) and the
+  universal `camo_nml` image; blended over the base normal.
+- Camo specular: slot `3426233914` (`~camo_spcmaps_01...`), fallback design `ds1` (`887934131`);
+  replaces the base specular mask.
+- Environment: env BRDF LUT `3447584578` (`~envbrdflut_ggx_16-rg`), read as `R16G16_FLOAT`
+  (the dump stores `R16G16_TYPELESS`), sampled at `(NdotV, 0.5)`, scaled by `envMapParms.x`
+  (0.04), with a neutral sky gradient because the dumps have no cubemap.
+- `decalParams1` scale: parsed from the material (`2,2` for the H2 M4 receiver and the crossbow);
+  the design/normal/spec are sampled at `uv * decalParams1 * userScale`. The UI/CLI scale is now
+  a multiplier (default 1) on the material value; the mask stays at the base UV.
+- H2 native variants are exposed as `native:<material stem>`. `native:mtl_h2_m4a1_receiver_fire`
+  and `native:mtl_h2_m4a1_receiver_doomsday` replace only the receiver materials
+  (`mtl_h2_m4a1_receiver[_camo]`) and use their static design `dc1` plus emissive map
+  (typeHash `878789447`); the fire/doomsday receiver skin does not leak onto the stock/handguard.
+  Their camo specular slot has no pixel data in the dumps; the white fallback is used.
+
+No-camo pixel identity: the pre-change exe and the new exe render byte-identical images with no
+camo selected. SHA-256 (in `review\finish\camos\camo_check.txt`):
+
+- crossbow model orbit: `6C48E205...E56D` before and after.
+- H2 M4 first person: `F864BD9A...A1D5` before and after.
+
+Review files (1600x900, before = pre-change diffuse-only exe, after = full technique):
+
+```
+review\finish\camos\m4_<christmas_wrap|blue_jade|red_wash>_{before,after}.png
+review\finish\camos\crossbow_<christmas_wrap|blue_jade|red_wash>_{before,after}.png
+review\finish\camos\m4_native_fire.png
+review\finish\camos\m4_native_doomsday.png
+review\finish\camos\camos_m4_before_after_sheet.png
+review\finish\camos\camos_crossbow_before_after_sheet.png
+review\finish\camos\camos_native_sheet.png
+review\finish\camos\camo_check.txt
+```
+
+`docs\camos.md` section 4 is the living description of the technique; `docs\mcp.md` documents
+`camo:{name,texture,native,strength,warnings}` and the `native:` names. Build 0 warnings.
