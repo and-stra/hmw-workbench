@@ -172,3 +172,5 @@ The three reviewed camos are visually distinct and use different masks/designs:
 
 Compare them on the H2 M4 (`h2_m4_mp`) and the crossbow (`iw5_exocrossbow_mp`) in game; the
 workbench images are in `review\finish\camos\` (before/after sheets and the native variants).
+The exact `give`/`set sas_weapon`/GSC commands and the camoTable indices are in
+`docs\porting\aw.md`, section "In-game test (camos)".

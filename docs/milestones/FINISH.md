@@ -9,8 +9,8 @@ item's result and is the resume point after a context reset.
 |---|---|---|---|
 | 1 ADS auto-align off by default | **done** | `343cc96` | M4 reflex after: 22.1 px off (reported) |
 | 2 player model data | **done** | `64b227e` | all 14 factions textured with head; head attach bug fixed |
-| 3 camo fidelity | **done** | item 3 commit (hash in final log) | full colour/normal/spec/env/decal technique + native H2 variants |
-| 4 camos in game: test commands | not started | - | |
+| 3 camo fidelity | **done** | `909a89e` | full colour/normal/spec/env/decal technique + native H2 variants |
+| 4 camos in game: test commands | **done** | item 4 commit (hash in final log) | `docs\porting\aw.md` "In-game test (camos)" |
 | 5 comfort gaps | not started | - | |
 
 Extra (not in the task list): red-dot comparison on the crossbow, commit `41348f9`
@@ -133,3 +133,41 @@ review\finish\camos\camo_check.txt
 
 `docs\camos.md` section 4 is the living description of the technique; `docs\mcp.md` documents
 `camo:{name,texture,native,strength,warnings}` and the `native:` names. Build 0 warnings.
+
+## Item 4
+
+Status: **done**. The commands are in `docs\porting\aw.md`, section "In-game test (camos)".
+The camo is a weapon-name suffix: HMW resolves the class camo name through `mp/camoTable.csv`,
+turns it into a number and `buildweaponnamecamo` appends `_camoNN` (`_camo0N` below 10).
+Sources: `custom_weapons.gsc:756,758,764,766,1030,1038,1136,1149` and
+`refs\iw5-scripts\maps\mp\gametypes\_class.gsc:1491-1503`.
+
+Indices used (camoTable column 0, `camotable.csv:43,46,85`):
+
+| camo | row | index | suffix |
+|---|---|---:|---|
+| red wash | `camo043` | 42 | `_camo42` |
+| blue jade | `camo046` | 45 | `_camo45` |
+| christmas wrap | `camo085` | 84 | `_camo84` |
+
+Commands documented:
+
+```text
+give h2_m4_mp_camo42 / _camo45 / _camo84
+give iw5_exocrossbow_mp_camo42 / _camo45 / _camo84
+set sas_weapon iw5_exocrossbow_mp_camo42 / _camo45 / _camo84
+```
+
+plus the GSC `buildweaponname("h2_m4"|"iw5_exocrossbow", "none", "none", <index>, [])` +
+`_giveweapon` equivalent.
+
+Crossbow: its material is camo-ready (`mtl_crossbow_base` has `dc1`, `c`, `m`,
+`dna1 = camo_nml`, the `~camo_spcmaps_01...` slot and the env LUT; `crossbow_mask_02` leaves the
+rails/limbs untouched). The likely blockers are the name/variant path, not the material: the mod
+zone has no `iw5_exocrossbow_mp_camo*` assets and `GAME\zone` has no `mp_vm_exocrossbow_*_tr.ff`
+camo transient zones; and HMW's `isvalidcamo` replacement (`custom_weapons.gsc:835-889`) allows
+`camo016..camo062` but not `camo085`, so Christmas is rejected on the class path (red/blue pass).
+Live `give` bypasses the class check but still needs the suffix asset. `iscamounlocked` can also
+reject if the crossbow has no weapon-class row in the rank table. The engine's
+`overrideviewmodelmaterial`/`setviewmodelmaterialscriptparam` builtins are not called by any
+shipped script and are not console commands; using them is an untested GSC experiment.
