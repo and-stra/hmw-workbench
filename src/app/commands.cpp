@@ -228,6 +228,7 @@ Workbench::Workbench(Settings& settings, AssetIndex& assets, Renderer& renderer,
 	camera_.SetDistance(settings_.camera.distance);
 	camera_.SetFov(settings_.camera.fov);
 	RefreshAttachmentList();
+	RefreshRootDirWatch();
 }
 
 Workbench::~Workbench() = default;
@@ -235,6 +236,7 @@ Workbench::~Workbench() = default;
 void Workbench::SetRoots(std::vector<std::filesystem::path> roots) {
 	roots_ = std::move(roots);
 	RefreshAttachmentList();
+	RefreshRootDirWatch();
 }
 
 void Workbench::ClearWeapon() {
@@ -531,6 +533,30 @@ void Workbench::SetCamoScale(float scale) {
 	}
 }
 
+void Workbench::RefreshRootDirWatch() {
+	rootDirs_.clear();
+	static const char* kDirs[] = {"materials", "materials/m", "images", "streamed_images",
+	                              "weapons", "xmodel", "xsurface", "xanim"};
+	const auto addDir = [this](const std::filesystem::path& path) {
+		std::error_code ec;
+		if (!std::filesystem::is_directory(path, ec) || ec) {
+			return;
+		}
+		const auto time = std::filesystem::last_write_time(path, ec);
+		if (ec) {
+			return;
+		}
+		rootDirs_.push_back({path, time});
+	};
+	for (const auto& root : roots_) {
+		// The root itself catches newly created asset subfolders.
+		addDir(root);
+		for (const char* dir : kDirs) {
+			addDir(root / dir);
+		}
+	}
+}
+
 void Workbench::RefreshWatchedFiles() {
 	watchedFiles_.clear();
 	const auto add = [this](const std::filesystem::path& path) {
@@ -549,7 +575,23 @@ void Workbench::RefreshWatchedFiles() {
 		}
 		watchedFiles_.push_back({path, time});
 	};
-	const auto addModel = [this, &add](const assets::ModelAsset& model) {
+	const auto addImage = [this, &add](const std::string& imageName) {
+		if (imageName.empty()) {
+			return;
+		}
+		const auto imagePath = assets::FindImageFile(roots_, imageName);
+		if (!imagePath.has_value()) {
+			return;
+		}
+		add(*imagePath);
+		const std::string stem = imagePath->stem().string();
+		for (int stream = 0; stream < 4; ++stream) {
+			const std::string pixels = stem + "_stream" + std::to_string(stream) + ".pixels";
+			add(imagePath->parent_path() / pixels);
+			add(imagePath->parent_path().parent_path() / "streamed_images" / pixels);
+		}
+	};
+	const auto addModel = [this, &add, &addImage](const assets::ModelAsset& model) {
 		if (const auto path = assets::FindModelFile(roots_, model.model.name); path.has_value()) {
 			add(*path);
 		}
@@ -557,6 +599,18 @@ void Workbench::RefreshWatchedFiles() {
 			if (const auto path = assets::FindXSurfaceFile(roots_, model.model.lodSurfaces.front());
 			    path.has_value()) {
 				add(*path);
+			}
+		}
+		// Material jsons and every image/pixel stream the material references. A change to
+		// any of these reloads the asset and re-uploads the textures.
+		for (const assets::MaterialSlot& slot : model.materials) {
+			if (!slot.material.path.empty()) {
+				add(slot.material.path);
+			}
+			for (const assets::MaterialTextureInfo& texture : slot.textures) {
+				if (texture.fileFound) {
+					addImage(texture.imageName);
+				}
 			}
 		}
 	};
@@ -584,6 +638,19 @@ void Workbench::RefreshWatchedFiles() {
 			add(*path);
 		}
 	}
+	if (camoImageValid_ && !camoTextures_.materialName.empty()) {
+		if (const auto path = assets::FindMaterialFile(roots_, camoTextures_.materialName);
+		    path.has_value()) {
+			add(*path);
+		}
+		for (const assets::ImageData* image : {&camoTextures_.color, &camoTextures_.normal,
+		                                       &camoTextures_.specular, &camoTextures_.environment,
+		                                       &camoTextures_.emissive}) {
+			if (!image->name.empty()) {
+				addImage(image->name);
+			}
+		}
+	}
 }
 
 std::vector<std::string> Workbench::WatchedFiles() const {
@@ -601,6 +668,29 @@ void Workbench::PollHotReload() {
 	}
 	if (watchedFiles_.empty()) {
 		RefreshWatchedFiles();
+	}
+	const auto now = std::chrono::steady_clock::now();
+	if (now >= nextRootScan_) {
+		nextRootScan_ = now + std::chrono::seconds(1);
+		bool rootChanged = false;
+		for (RootDirWatch& dir : rootDirs_) {
+			std::error_code ec;
+			const auto time = std::filesystem::last_write_time(dir.path, ec);
+			if (ec || time == dir.time) {
+				continue;
+			}
+			dir.time = time;
+			rootChanged = true;
+		}
+		if (rootChanged) {
+			// New files can add a material/image/model. The index is rescanned after the
+			// debounce, together with the loaded asset reload.
+			rootChangePending_ = true;
+			hotReloadPending_ = true;
+			hotReloadDetected_ = now;
+			hotReloadStatus_ = "asset roots changed";
+			return;
+		}
 	}
 	std::string changed;
 	for (WatchedFile& file : watchedFiles_) {
@@ -621,6 +711,12 @@ void Workbench::PollHotReload() {
 	if (hotReloadPending_ &&
 	    std::chrono::steady_clock::now() - hotReloadDetected_ > std::chrono::milliseconds(400)) {
 		hotReloadPending_ = false;
+		if (rootChangePending_) {
+			rootChangePending_ = false;
+			assets_.Scan(roots_);
+			RefreshAttachmentList();
+			RefreshRootDirWatch();
+		}
 		ReloadWatchedAsset();
 	}
 }

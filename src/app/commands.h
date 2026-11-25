@@ -326,6 +326,7 @@ private:
 	bool LoadCharacterInternal(const assets::CharacterFaction& faction, const std::string& weapon,
 	                           std::string& error);
 	void RefreshWatchedFiles();
+	void RefreshRootDirWatch();
 	void ReloadWatchedAsset();
 
 	Settings& settings_;
@@ -391,12 +392,19 @@ private:
 		std::filesystem::path path;
 		std::filesystem::file_time_type time;
 	};
+	struct RootDirWatch {
+		std::filesystem::path path;
+		std::filesystem::file_time_type time;
+	};
 	std::vector<WatchedFile> watchedFiles_;
+	std::vector<RootDirWatch> rootDirs_;
 	bool hotReloadEnabled_ = true;
 	bool hotReloadPending_ = false;
+	bool rootChangePending_ = false;
 	int hotReloadCount_ = 0;
 	std::string hotReloadStatus_;
 	std::chrono::steady_clock::time_point hotReloadDetected_{};
+	std::chrono::steady_clock::time_point nextRootScan_{};
 	std::map<std::string, std::string> renameMap_;
 
 	std::vector<std::string> camoNames_;

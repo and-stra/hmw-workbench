@@ -264,9 +264,11 @@ white divider) or `b` ghosted over `a`.
 
 ### `hot_reload`
 
-The server polls the loaded weapon/model/character files on every tool call (400 ms debounce) and
-reloads them when a file changes. `{"action":"poll"}` forces a poll; `{"enabled":false}` stops
-watching; returns `{enabled,pending,reloads,status,watched}`.
+The server polls the loaded weapon/model/character files, their material jsons and the image/pixel
+streams they reference on every tool call (400 ms debounce) and reloads them when a file changes.
+It also scans the asset-root directories once a second and picks up new files (the asset index is
+rescanned and the loaded asset reloaded after the debounce). `{"action":"poll"}` forces a poll;
+`{"enabled":false}` stops watching; returns `{enabled,pending,reloads,status,watched}`.
 
 ### `rename_map`
 

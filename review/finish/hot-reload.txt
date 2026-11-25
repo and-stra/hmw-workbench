@@ -1,0 +1,344 @@
+﻿finish item 5: hot reload (copy of the crossbow material/images in build\hot_reload_test)
+date: 2026-11-25 08:51:50
+> initialize -> hmw-workbench
+
+> tools/call load_model {"model":"vm_crossbow_base","camo":"camo_h1_christmas_wrap"}
+< {
+  "bones": 39,
+  "bounds_half": [
+    18.997116088867188,
+    10.983414649963379,
+    5.056245803833008
+  ],
+  "bounds_mid": [
+    7.759809970855713,
+    0.0,
+    2.313692569732666
+  ],
+  "camo": {
+    "name": "camo_h1_christmas_wrap",
+    "native": false,
+    "strength": 1.0,
+    "texture": "wpn_h1_camo_christmas_wrap_01_col",
+    "warnings": [
+      "camo emissive: no texture slot in the material"
+    ]
+  },
+  "materials": 8,
+  "model": "vm_crossbow_base",
+  "surfaces": 20
+}
+
+> tools/call hot_reload {"action":"status"}
+< {
+  "enabled": true,
+  "pending": false,
+  "reloads": 0,
+  "status": "",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~c ...[truncated]
+
+> tools/call screenshot {"dist":26,"width":1200,"yaw":35,"path":"C:\\Games\\cod-hwm\\hmw-workbench\\review\\finish\\hot_reload_material_before.png","pitch":18,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review\finish\hot_reload_material_before.png (1200x900, 447725 bytes)
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": true,
+  "reloads": 0,
+  "status": "changed: mtl_crossbow_base.json",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zone ...[truncated]
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": false,
+  "reloads": 1,
+  "status": "reloaded vm_crossbow_base (1)",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonet ...[truncated]
+
+> tools/call screenshot {"dist":26,"width":1200,"yaw":35,"path":"C:\\Games\\cod-hwm\\hmw-workbench\\review\\finish\\hot_reload_material_after.png","pitch":18,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review\finish\hot_reload_material_after.png (1200x900, 457920 bytes)
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": true,
+  "reloads": 1,
+  "status": "changed: crossbow_col_stream3.pixels",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\ ...[truncated]
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": false,
+  "reloads": 2,
+  "status": "reloaded vm_crossbow_base (2)",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonet ...[truncated]
+
+> tools/call screenshot {"dist":26,"width":1200,"yaw":35,"path":"C:\\Games\\cod-hwm\\hmw-workbench\\review\\finish\\hot_reload_image_after.png","pitch":18,"height":900,"view":"orbit"}
+< saved to C:\Games\cod-hwm\hmw-workbench\review\finish\hot_reload_image_after.png (1200x900, 293067 bytes)
+
+> tools/call list_assets {"limit":1000}
+< {
+  "assets": [
+    {
+      "kind": "Weapon",
+      "name": "airstrike_mp",
+      "root": 2
+    },
+    {
+      "kind": "Weapon",
+      "name": "at4_mp",
+      "root": 3
+    },
+    {
+      "kind": "Weapon",
+      "name": "emp_grenade_mp",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "emp_grenade_mp_lefthand",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "exoknife_mp",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "exoknife_mp_lefthand",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "frag_grenade_mp",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "frag_grenade_mp_lefthand",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_ak47_mp",
+      "root": 2
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_ak74u_mp",
+      "root": 2
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_aprast_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_aprpst_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_aprsmg_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_augast_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_augpst_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_augsmg_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+ ...[truncated]
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": true,
+  "reloads": 2,
+  "status": "asset roots changed",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\s ...[truncated]
+
+> tools/call hot_reload {"action":"poll"}
+< {
+  "enabled": true,
+  "pending": false,
+  "reloads": 3,
+  "status": "reloaded vm_crossbow_base (3)",
+  "watched": [
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb",
+    "C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67.h1Image",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream0.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb&crossbow_cos-l-67_stream1.pixels",
+    "C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonet ...[truncated]
+
+> tools/call list_assets {"limit":1000}
+< {
+  "assets": [
+    {
+      "kind": "Weapon",
+      "name": "airstrike_mp",
+      "root": 2
+    },
+    {
+      "kind": "Weapon",
+      "name": "at4_mp",
+      "root": 3
+    },
+    {
+      "kind": "Weapon",
+      "name": "emp_grenade_mp",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "emp_grenade_mp_lefthand",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "exoknife_mp",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "exoknife_mp_lefthand",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "frag_grenade_mp",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "frag_grenade_mp_lefthand",
+      "root": 1
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_ak47_mp",
+      "root": 2
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_ak74u_mp",
+      "root": 2
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_aprast_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_aprpst_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_aprsmg_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_augast_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_augpst_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+      "name": "h1_augsmg_mp",
+      "root": 8
+    },
+    {
+      "kind": "Weapon",
+ ...[truncated]
+
+material hashes: A9BBFB261B027C73F4DAC3E0A0EE02F47256009D7CCCCB4BFA31B46E6A39924D -> 207B82B305E6F007289F56E2B9075780050C561628FE03D89A84C020C03F2409
+image hashes:    207B82B305E6F007289F56E2B9075780050C561628FE03D89A84C020C03F2409 -> EB119569EC2EC8036C3953784A30D4BA81E743FD3613F187C25052DB18E25189
+status: {"enabled":true,"pending":false,"reloads":3,"status":"reloaded vm_crossbow_base (3)","watched":["C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xmodel\\vm_crossbow_base.xmb","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\xsurface\\010296ab_3f739e8a_100.xsb","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\materials\\m/mtl_crossbow_base.json","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\cloak_detail3.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\camo_transparent_col.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb\u0026crossbow_cos-l-67.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb\u0026crossbow_cos-l-67_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb\u0026crossbow_cos-l-67_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb\u0026crossbow_cos-l-67_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_spc-rgb\u0026crossbow_cos-l-67_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_nml.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_nml_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_nml_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_nml_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_nml_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\camo_nml.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\camo_nml_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\camo_nml_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\camo_nml_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\camo_nml_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_occ-l.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_occ-l_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_occ-l_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_occ-l_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~crossbow_occ-l_stream3.pixels","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\streamed_images\\crossbow_col.h1Image","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\streamed_images\\crossbow_col_stream0.pixels","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\streamed_images\\crossbow_col_stream1.pixels","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\streamed_images\\crossbow_col_stream2.pixels","C:\\Games\\cod-hwm\\hmw-workbench\\build\\hot_reload_test\\root\\streamed_images\\crossbow_col_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_mask_02.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_mask_02_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_mask_02_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_mask_02_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\crossbow_mask_02_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~camo_spcmaps_01_spc-rgb\u0026camo~b29a8732.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~camo_spcmaps_01_spc-rgb\u0026camo~b29a8732_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~camo_spcmaps_01_spc-rgb\u0026camo~b29a8732_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~camo_spcmaps_01_spc-rgb\u0026camo~b29a8732_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\streamed_images\\~camo_spcmaps_01_spc-rgb\u0026camo~b29a8732_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\zonetool\\mod\\images\\~envbrdflut_ggx_16-rg.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\materials\\camo_h1_christmas_wrap.json","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_col.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_col_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_col_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_col_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_col_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_nml.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_nml_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_nml_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_nml_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\wpn_h1_camo_christmas_wrap_01_nml_stream3.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\~$white-r32g32b32\u0026h1_mp_crash~5d27e735.h1Image","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\~$white-r32g32b32\u0026h1_mp_crash~5d27e735_stream0.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\~$white-r32g32b32\u0026h1_mp_crash~5d27e735_stream1.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\~$white-r32g32b32\u0026h1_mp_crash~5d27e735_stream2.pixels","C:\\Games\\cod-hwm\\Call of Duty Horizon Modern Warfare\\Call of Duty Modern Warfare Remastered\\dump\\workbench_hmw_patch_common_mp\\streamed_images\\~$white-r32g32b32\u0026h1_mp_crash~5d27e735_stream3.pixels"]}
+
+checks:
+  PASS watcher lists the material json, image and pixel stream (41 files)
+  PASS material json change reloaded (reloads 1, screenshot changed)
+  PASS image pixel change reloaded (reloads 2, screenshot changed)
+  PASS new root file picked up (assets 3795 -> 3796, reloads 3)
+
+result: 4 passed, 0 failed

@@ -108,10 +108,11 @@ relative to the current working directory unless they are absolute.
 | `-sheet <n>` | contact sheet of n cells of the current animation |
 | `-attach <name>` (repeatable) | mount an HMW attachment |
 | `-hidesurface <i,i,...>` | hide weapon surfaces by index |
-| `-camo <camo_h1_name\|name>` | apply a camo (M6); `-camo-strength 0..1`, `-camo-scale n` |
+| `-camo <camo_h1_name\|name\|native:material>` | apply a camo (M6/finish); full colour/normal/spec/env technique; `-camo-strength 0..1`, `-camo-scale n` (multiplier on `decalParams1`) |
 | `-world` | load the weapon's world model (no hands, orbit) and its attachments' world models |
 | `-character <faction>` | load an HMW player character (body + optional head); `-character-weapon <weapon>` mounts its world model on `tag_weapon_right` |
 | `-compare <a> <b>` | render two weapons/models with the same camera (with `-screenshot`); `-compare-mode side\|ghost`, `-compare-alpha 0..1` |
+| `-live-compare <b>` | open the window with a live split viewport: A = the loaded asset, B = `<b>`, camera and anim time synced |
 | `-compare-bones <xanim> <xmodel>` | list anim channels that do not match the model bones; add `-rename-map <json>` |
 | `-rename-map <file.json>` | bone rename table (`{"old_anim_bone":"new_model_bone"}`) applied while sampling anims |
 | `-bones` / `-wire` / `-crosshair` / `-marktags` / `-grid` / `-nogrid` | overlays |
@@ -152,9 +153,12 @@ hmw-workbench.exe -roundtrip review\roundtrip.txt
 `fit_tag`, `revert_tags`, `save_model`, `hot_reload`, `rename_map`. Every tool and parameter,
 client configuration and a smoke test are in [docs/mcp.md](docs/mcp.md).
 
-The window app watches the loaded weapon/model/character files and reloads them when a dump file
-changes (debounced, Inspector → *Hot reload*). `-compare`, `-compare-bones` and `-rename-map` are
-the headless versions of the comparison and rename-map helpers.
+The window app watches the loaded weapon/model/character files, their material jsons and every
+image/pixel stream they reference, and reloads them when a dump file changes (debounced, Inspector
+→ *Hot reload*). New files in the asset roots are also picked up: the index is rescanned after the
+debounce and the asset panel refreshes. `-compare`, `-compare-bones` and `-rename-map` are the
+headless versions of the comparison and rename-map helpers; `-live-compare` opens the split
+viewport in the window.
 
 ## Porting a weapon
 

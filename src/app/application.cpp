@@ -42,12 +42,23 @@ Application::Application(Settings& settings, AssetIndex& assets, Renderer& rende
                          commands::Workbench& workbench, std::filesystem::path exeDir, bool restoreLayout)
     : settings_(settings), assets_(assets), renderer_(renderer), workbench_(workbench),
       exeDir_(std::move(exeDir)), layoutNeeded_(!restoreLayout) {
+	compareWorkbench_ = std::make_unique<commands::Workbench>(settings_, assets_, renderer_,
+	                                                         workbench_.Roots());
 	RebuildFilter();
 	RefreshHandsOptions();
+	lastAssetCount_ = assets_.TotalCount();
 }
 
 void Application::Frame() {
 	workbench_.Update(ImGui::GetIO().DeltaTime);
+	if (compareWorkbench_) {
+		compareWorkbench_->Update(0.0);
+	}
+	if (assets_.TotalCount() != lastAssetCount_) {
+		lastAssetCount_ = assets_.TotalCount();
+		RebuildFilter();
+		RefreshHandsOptions();
+	}
 
 	DrawMenuBar();
 
@@ -263,6 +274,49 @@ void Application::DrawViewportPanel() {
 	const int pixelHeight = std::max(1, static_cast<int>(available.y * framebufferScale.y));
 	const float aspect = static_cast<float>(pixelWidth) / static_cast<float>(pixelHeight);
 
+	if (compareLive_ && compareLoaded_ && compareWorkbench_) {
+		SyncCompareState();
+		const int leftWidth = std::max(1, pixelWidth / 2);
+		const int rightWidth = std::max(1, pixelWidth - leftWidth);
+		if (!workbench_.RenderScene(leftWidth, pixelHeight) || !renderer_.CaptureSceneTo(0) ||
+		    !compareWorkbench_->RenderScene(rightWidth, pixelHeight) || !renderer_.CaptureSceneTo(1)) {
+			ImGui::TextDisabled("Split rendering failed.");
+			ImGui::End();
+			ImGui::PopStyleVar();
+			return;
+		}
+		const ImVec2 imageOrigin = ImGui::GetCursorScreenPos();
+		const ImVec2 leftSize(available.x * 0.5f - 1.0f, available.y);
+		const ImVec2 rightSize(available.x - leftSize.x - 2.0f, available.y);
+		ImGui::Image(static_cast<ImTextureID>(reinterpret_cast<uintptr_t>(renderer_.CompareTexture(0))),
+		             leftSize);
+		ImGui::SameLine(0.0f, 2.0f);
+		ImGui::Image(static_cast<ImTextureID>(reinterpret_cast<uintptr_t>(renderer_.CompareTexture(1))),
+		             rightSize);
+		ImGui::SetCursorScreenPos(imageOrigin);
+		ImGui::InvisibleButton("##viewport_input_split", leftSize,
+		                       ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight |
+		                           ImGuiButtonFlags_MouseButtonMiddle);
+		HandleViewportInput(leftSize);
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		drawList->AddLine(ImVec2(imageOrigin.x + leftSize.x + 1.0f, imageOrigin.y),
+		                  ImVec2(imageOrigin.x + leftSize.x + 1.0f, imageOrigin.y + available.y),
+		                  IM_COL32(180, 185, 195, 180), 2.0f);
+		drawList->AddText(ImVec2(imageOrigin.x + 10.0f, imageOrigin.y + 8.0f),
+		                  IM_COL32(210, 214, 222, 230), "A: current viewport");
+		drawList->AddText(ImVec2(imageOrigin.x + leftSize.x + 12.0f, imageOrigin.y + 8.0f),
+		                  IM_COL32(210, 214, 222, 230), compareStatus_.c_str());
+		const Camera& camera = workbench_.GetCamera();
+		char line[192];
+		std::snprintf(line, sizeof(line), "yaw %.1f pitch %.1f dist %.2f", camera.Yaw(),
+		              camera.Pitch(), camera.Distance());
+		drawList->AddText(ImVec2(imageOrigin.x + 10.0f, imageOrigin.y + 24.0f),
+		                  IM_COL32(170, 190, 220, 210), line);
+		ImGui::End();
+		ImGui::PopStyleVar();
+		return;
+	}
+
 	if (!workbench_.RenderScene(pixelWidth, pixelHeight)) {
 		ImGui::TextDisabled("Rendering failed.");
 		ImGui::End();
@@ -369,6 +423,9 @@ void Application::DrawInspectorPanel() {
 
 	ImGui::SeparatorText("Character");
 	DrawCharacterSection();
+
+	ImGui::SeparatorText("Live compare");
+	DrawCompareSection();
 
 	if (workbench_.GpuWeaponGun() != nullptr || workbench_.GpuStandaloneModel() != nullptr) {
 		ImGui::SeparatorText("Camo");
@@ -578,6 +635,98 @@ void Application::DrawCamoSection() {
 			ImGui::SetTooltip("Multiplier on the material's decalParams1 scale (2,2 in the H2 M4\n"
 			                  "and crossbow camo-ready materials).");
 		}
+	}
+}
+
+void Application::LoadCompareLive(const std::string& name) {
+	std::snprintf(compareAsset_, sizeof(compareAsset_), "%s", name.c_str());
+	LoadCompareAsset(name);
+}
+
+void Application::DrawCompareSection() {
+	ImGui::Checkbox("Live split viewport (A = current, B = below)", &compareLive_);
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputTextWithHint("##compare_asset", "weapon or model for B", compareAsset_,
+	                         sizeof(compareAsset_));
+	if (ImGui::Button("Load B")) {
+		LoadCompareAsset(compareAsset_);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Clear B")) {
+		compareLoaded_ = false;
+		compareLive_ = false;
+		compareStatus_.clear();
+	}
+	if (!compareStatus_.empty()) {
+		ImGui::TextWrapped("%s", compareStatus_.c_str());
+	}
+	ImGui::TextDisabled("Camera and animation time are copied from the current viewport each frame.");
+}
+
+void Application::LoadCompareAsset(const std::string& name) {
+	if (!compareWorkbench_ || name.empty()) {
+		compareStatus_ = "enter a weapon or model name";
+		return;
+	}
+	std::string error;
+	const bool isWeapon = assets::FindWeaponFile(workbench_.Roots(), name).has_value();
+	const bool isModel = assets::FindModelFile(workbench_.Roots(), name).has_value();
+	if (!isWeapon && !isModel) {
+		compareStatus_ = name + ": not a weapon or model in any asset root";
+		return;
+	}
+	bool ok = false;
+	if (isWeapon) {
+		std::string hands;
+		if (const scene::ViewmodelAsset* viewmodel = workbench_.Viewmodel()) {
+			hands = viewmodel->handsName;
+		}
+		ok = compareWorkbench_->LoadWeapon(name, hands, workbench_.IsFirstPerson(), error,
+		                                   workbench_.IsWorldModel());
+	} else {
+		ok = compareWorkbench_->LoadModel(name, error);
+	}
+	if (!ok) {
+		compareLoaded_ = false;
+		compareStatus_ = "B " + name + ": " + error;
+		return;
+	}
+	if (!workbench_.CamoName().empty()) {
+		std::string camoError;
+		compareWorkbench_->SetCamo(workbench_.CamoName(), camoError);
+	}
+	compareLoaded_ = true;
+	compareLive_ = true;
+	compareStatus_ = "B: " + name;
+	SyncCompareState();
+}
+
+void Application::SyncCompareState() {
+	if (!compareWorkbench_) {
+		return;
+	}
+	Camera& source = workbench_.GetCamera();
+	Camera& target = compareWorkbench_->GetCamera();
+	target.SetYawPitch(source.Yaw(), source.Pitch());
+	target.SetDistance(source.Distance());
+	target.SetFov(source.Fov());
+	target.SetTarget(source.Target());
+	if (source.IsFirstPerson()) {
+		target.SetFirstPerson(source.Eye(), source.LookTarget());
+	} else {
+		target.SetOrbitMode();
+	}
+	double time = workbench_.AnimTime();
+	const assets::XAnimData* sourceAnim = workbench_.Anim();
+	const assets::XAnimData* targetAnim = compareWorkbench_->Anim();
+	if (sourceAnim != nullptr && targetAnim != nullptr && sourceAnim->Duration() > 0.0f &&
+	    targetAnim->Duration() > 0.0f) {
+		time = (workbench_.AnimTime() / sourceAnim->Duration()) * targetAnim->Duration();
+	}
+	compareWorkbench_->SetAnimTime(time);
+	if (compareWorkbench_->CamoName() != workbench_.CamoName()) {
+		std::string camoError;
+		compareWorkbench_->SetCamo(workbench_.CamoName(), camoError);
 	}
 }
 

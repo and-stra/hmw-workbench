@@ -10,8 +10,8 @@ item's result and is the resume point after a context reset.
 | 1 ADS auto-align off by default | **done** | `343cc96` | M4 reflex after: 22.1 px off (reported) |
 | 2 player model data | **done** | `64b227e` | all 14 factions textured with head; head attach bug fixed |
 | 3 camo fidelity | **done** | `909a89e` | full colour/normal/spec/env/decal technique + native H2 variants |
-| 4 camos in game: test commands | **done** | item 4 commit (hash in final log) | `docs\porting\aw.md` "In-game test (camos)" |
-| 5 comfort gaps | not started | - | |
+| 4 camos in game: test commands | **done** | `5a0689d` | `docs\porting\aw.md` "In-game test (camos)" |
+| 5 comfort gaps | **done** | item 5 commit (hash in final log) | live split viewport + material/image/new-root hot reload |
 
 Extra (not in the task list): red-dot comparison on the crossbow, commit `41348f9`
 (`review: red dot comparison on the crossbow`), files in `review\reddots\`; 4 of 5 red dots done,
@@ -171,3 +171,45 @@ Live `give` bypasses the class check but still needs the suffix asset. `iscamoun
 reject if the crossbow has no weapon-class row in the rank table. The engine's
 `overrideviewmodelmaterial`/`setviewmodelmaterialscriptparam` builtins are not called by any
 shipped script and are not console commands; using them is an untested GSC experiment.
+
+## Item 5
+
+Status: **done**.
+
+### Live split viewport
+
+- `Application` now owns a second `commands::Workbench` (same settings/assets/renderer/roots).
+- `DrawViewportPanel` renders A and B into the two halves of the viewport, copies each scene
+  target into a persistent SRV (`Renderer::CaptureSceneTo`/`CompareTexture`) and displays them
+  with a 2 px divider. Input still drives A; B's camera is copied from A every frame.
+- `SyncCompareState` copies yaw/pitch/distance/fov/target (and first-person eye/target) and
+  normalizes the animation time: `timeB = timeA / durationA * durationB`, so different idle
+  lengths stay in sync. The selected camo is mirrored too.
+- UI: Inspector -> *Live compare* (checkbox, B asset field, Load/Clear). CLI:
+  `-live-compare <b>` opens the window with the split already loaded.
+- Review: `review\finish\live_compare_viewport.png` (A `wpn_h2_m4a1_vm`, B `vm_crossbow_base`,
+  loaded from `-model wpn_h2_m4a1_vm -live-compare vm_crossbow_base`).
+
+### Hot reload
+
+- `RefreshWatchedFiles` now also watches every loaded material json and every image/pixel stream
+  the materials reference (`<name>.h1Image` plus `_stream0..3.pixels`), for the gun, hands,
+  attachments, standalone model, character body/head/weapon and the selected camo. Material or
+  image changes reload/re-upload the current asset.
+- `RefreshRootDirWatch` records the mtimes of each root and its `materials`, `materials/m`,
+  `images`, `streamed_images`, `weapons`, `xmodel`, `xsurface`, `xanim` folders. `PollHotReload`
+  scans them once per second; a new file sets the debounced pending state, then
+  `assets_.Scan(roots_)` refreshes the asset index, the attachment list is rebuilt and the
+  current asset is reloaded. The window also notices the changed index count and rebuilds the
+  asset filter.
+- Test: `tools\test\finish-hot-reload.ps1` on a copy of the crossbow in `build\hot_reload_test`
+  (never the real files). 4/4 passed, log `review\finish\hot-reload.txt`:
+  - watcher lists the material json + image + pixel stream;
+  - `decalParams1` 2,2 -> 4,4 reloaded and changed the in-memory screenshot hash;
+  - zeroing the `crossbow_col` pixel streams reloaded and changed the screenshot hash;
+  - adding a new weapon json increased the asset index 3795 -> 3796 after the debounce.
+- Review screenshots: `review\finish\hot_reload_material_{before,after}.png`,
+  `review\finish\hot_reload_image_after.png` (the last one is deliberately a zeroed texture; it
+  is evidence of the image reload, not a normal render).
+
+Build 0 warnings.

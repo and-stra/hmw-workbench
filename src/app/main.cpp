@@ -106,6 +106,7 @@ struct Options {
 	std::string characterWeapon;
 	std::string compareA;
 	std::string compareB;
+	std::string liveCompare;
 	std::string compareMode = "side";
 	float compareAlpha = 0.45f;
 	std::filesystem::path renameMapPath;
@@ -156,6 +157,8 @@ void PrintUsage() {
 	    "usage:\n"
 	    "  hmw-workbench.exe\n"
 	    "      Open the window.\n"
+	    "  hmw-workbench.exe [-model <xmodel> | -weapon <name>] [-live-compare <b>]\n"
+	    "      Open the window with a live split viewport (A = loaded asset, B = <b>).\n"
 	    "  hmw-workbench.exe -screenshot <file.png> [-model <xmodel> | -weapon <name>]\n"
 	    "                    [-hands <viewhands>] [-view firstperson|orbit] [-ads]\n"
 	    "                    [-attach <attachment>]... [-hidesurface <i,i,...>]\n"
@@ -857,6 +860,10 @@ int RunWindowed(const std::filesystem::path& exeDir, wb::Settings& settings, HIN
 		}
 	}
 
+	if (!options.liveCompare.empty()) {
+		app.LoadCompareLive(options.liveCompare);
+	}
+
 	int windowTestFrames = -1;
 	if (options.windowTest) {
 		const std::filesystem::path report =
@@ -1116,6 +1123,14 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 		} else if (arg == L"-compare-alpha") {
 			valid = ParseFloatArg(nextValue(), options.compareAlpha) && options.compareAlpha > 0.0f &&
 			        options.compareAlpha < 1.0f;
+		} else if (arg == L"-live-compare") {
+			const wchar_t* value = nextValue();
+			if (value == nullptr) {
+				std::fputs("-live-compare needs a weapon or model name\n", stderr);
+				valid = false;
+			} else {
+				options.liveCompare = std::filesystem::path(value).string();
+			}
 		} else if (arg == L"-rename-map") {
 			const wchar_t* value = nextValue();
 			if (value == nullptr) {

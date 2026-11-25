@@ -2,6 +2,7 @@
 
 #include <array>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -25,6 +26,7 @@ public:
 	void LoadModelByName(const std::string& name);
 	void LoadWeapon(const std::string& name, const std::string& hands, bool firstPerson);
 	void LoadCharacter(const std::string& faction, const std::string& weapon);
+	void LoadCompareLive(const std::string& name);
 
 private:
 	void DrawMenuBar();
@@ -36,6 +38,7 @@ private:
 	void DrawWeaponInspector();
 	void DrawCamoSection();
 	void DrawCharacterSection();
+	void DrawCompareSection();
 	void DrawRigTools();
 	void DrawTagEditor();
 	void DrawGizmo(const ImVec2& origin, const ImVec2& size, float aspect);
@@ -51,6 +54,8 @@ private:
 	void ReloadWeapon();
 	void RefreshHandsOptions();
 	void DrawPlaybackControls(float width);
+	void LoadCompareAsset(const std::string& name);
+	void SyncCompareState();
 
 	const AssetEntry* SelectedEntry() const;
 
@@ -62,6 +67,7 @@ private:
 
 	bool wantsClose_ = false;
 	bool layoutNeeded_ = false;
+	int lastAssetCount_ = -1;
 
 	int selected_ = -1;
 	char search_[128] = {};
@@ -92,6 +98,12 @@ private:
 	std::string newTagParent_;
 	float newTagPos_[3] = {0.0f, 0.0f, 0.0f};
 	float newTagRot_[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	std::unique_ptr<commands::Workbench> compareWorkbench_;
+	bool compareLive_ = false;
+	bool compareLoaded_ = false;
+	char compareAsset_[128] = {};
+	std::string compareStatus_;
 };
 
 } // namespace wb

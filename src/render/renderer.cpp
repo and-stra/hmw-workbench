@@ -315,6 +315,13 @@ bool Renderer::Initialize(const RendererDesc& desc) {
 
 void Renderer::Shutdown() {
 	ReleaseSceneTarget();
+	for (int i = 0; i < 2; ++i) {
+		compareSrv_[i].Reset();
+		compareTexture_[i].Reset();
+		compareWidth_[i] = 0;
+		compareHeight_[i] = 0;
+		compareFormat_[i] = DXGI_FORMAT_UNKNOWN;
+	}
 	blackTexture_.Reset();
 	whiteTexture_.Reset();
 	flatNormalTexture_.Reset();
@@ -1289,6 +1296,44 @@ bool Renderer::CaptureScene(std::vector<std::uint8_t>& pixels, int& width, int& 
 	}
 	context_->Unmap(staging.Get(), 0);
 	return true;
+}
+
+bool Renderer::CaptureSceneTo(int slot) {
+	if (!sceneTexture_ || slot < 0 || slot > 1) {
+		return false;
+	}
+	D3D11_TEXTURE2D_DESC desc = {};
+	sceneTexture_->GetDesc(&desc);
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.CPUAccessFlags = 0;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.MiscFlags = 0;
+	if (!compareTexture_[slot] || compareWidth_[slot] != static_cast<int>(desc.Width) ||
+	    compareHeight_[slot] != static_cast<int>(desc.Height) ||
+	    compareFormat_[slot] != desc.Format) {
+		compareTexture_[slot].Reset();
+		compareSrv_[slot].Reset();
+		if (FAILED(device_->CreateTexture2D(&desc, nullptr, &compareTexture_[slot]))) {
+			return false;
+		}
+		if (FAILED(device_->CreateShaderResourceView(compareTexture_[slot].Get(), nullptr,
+		                                             &compareSrv_[slot]))) {
+			compareTexture_[slot].Reset();
+			return false;
+		}
+		compareWidth_[slot] = static_cast<int>(desc.Width);
+		compareHeight_[slot] = static_cast<int>(desc.Height);
+		compareFormat_[slot] = desc.Format;
+	}
+	context_->CopyResource(compareTexture_[slot].Get(), sceneTexture_.Get());
+	return true;
+}
+
+ID3D11ShaderResourceView* Renderer::CompareTexture(int slot) const {
+	if (slot < 0 || slot > 1) {
+		return nullptr;
+	}
+	return compareSrv_[slot].Get();
 }
 
 bool Renderer::SavePixelsToPng(const std::filesystem::path& path, const std::vector<std::uint8_t>& pixels,

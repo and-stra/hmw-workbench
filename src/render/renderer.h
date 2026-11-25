@@ -89,6 +89,9 @@ public:
 
 	// Copies the current scene target into CPU memory (BGRA/RGBA bytes as stored by D3D).
 	bool CaptureScene(std::vector<std::uint8_t>& pixels, int& width, int& height, DXGI_FORMAT& format);
+	// Copies the current scene target into a persistent SRV for the live split viewport.
+	bool CaptureSceneTo(int slot);
+	ID3D11ShaderResourceView* CompareTexture(int slot) const;
 	bool SavePixelsToPng(const std::filesystem::path& path, const std::vector<std::uint8_t>& pixels,
 	                     int width, int height, DXGI_FORMAT format);
 
@@ -138,6 +141,11 @@ private:
 	ComPtr<ID3D11DepthStencilView> depthDsv_;
 	int sceneWidth_ = 0;
 	int sceneHeight_ = 0;
+	ComPtr<ID3D11Texture2D> compareTexture_[2];
+	ComPtr<ID3D11ShaderResourceView> compareSrv_[2];
+	int compareWidth_[2] = {0, 0};
+	int compareHeight_[2] = {0, 0};
+	DXGI_FORMAT compareFormat_[2] = {DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN};
 
 	ComPtr<ID3D11VertexShader> gridVs_;
 	ComPtr<ID3D11PixelShader> gridPs_;
