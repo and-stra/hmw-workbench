@@ -18,6 +18,42 @@ The crossbow lives in `GAME\zonetool\mod` / `zone_source\mod.csv` (Sticks and St
 Disk: plan 60+ GB working space (full AW `common_mp` dump 9.3 GB, `patch_common_mp` 7.2 GB, one map ~2.7 GB + 0.9 GB
 build output). Continue on the new machine.
 
+## W0 inventory (25 Nov 2026, plan in `AW-WEAPONS-PLAN.md`, report in `aw-weapons-port.md`)
+
+- **MP content is installed**: `s1_mp64_ship.exe`, `common_mp.ff` and the `mp_*` zones exist (the earlier
+  "singleplayer only" note in `cod-mwx\docs\aw-weapons-plan.md` is obsolete).
+- **Weapon defs**: modern guns + all DLC guns in `patch_common_mp`, `iw5_maaws_mp` and `iw5_combatknife_mp`
+  only in `common_mp`. Dump JSONs with the **H2 target** (`dumpzone h2 patch_common_mp weapon`,
+  `dumpzone h2 common_mp weapon` → `AW\dump\<zone>\weapons\`); the H1 target writes 0 weapon files.
+- **Models**: the `mp_vm_<internal>_tr` / `mp_wm_<internal>_tr` zones (both `_tr` and `_2_tr` variants exist),
+  e.g. `mp_vm_asaw_tr`, `mp_vm_pbw_tr`, `mp_vm_mp11_tr`, `mp_vm_leveraction_tr`, `mp_vm_dlcgun3/4_tr`,
+  `mp_vm_m1garand_tr`, `mp_vm_mp40_tr`, `mp_vm_sten_tr`. The knife has no tr zone (models in `common_mp`).
+  Models and anims land in the dump root's shared `xmodel`/`xsurface`/`xanim` folders.
+- **English names**: `WEAPON_*` strings are in `eng_patch_common` (asset type `localize`). The internal
+  `szDisplayName` is a dev key and differs from the retail name: `WEAPON_ASAW`=Ameli, `WEAPON_LSAT`=Pytaek,
+  `WEAPON_GM6`=Lynx, `WEAPON_UTS19`=Tac-19, `WEAPON_PBW`=MP443 Grach, `WEAPON_COMBAT_KNIFE`=Combat Knife,
+  `WEAPON_MAAWS`=MAAWS. **DLC guns have no English string at all** (`szDisplayName` = `MDLC*_DLCGUN*`
+  placeholder) — name them from the model.
+- **Class numbers (`weapClass`)**: 0 rifle, 1 sniper, 2 LMG, 3 SMG, 4 shotgun, 5 pistol, 6 grenade, 7 special
+  (crossbow, MAAWS, MDL), 9 melee-ish (exo knife, throwing knife), 13 energy (EM1). The combat knife is class 5
+  but is no pistol; in HMW it becomes a secondary `weapon_melee`.
+- **Combat knife quirk**: `iw5_combatknife_mp` uses `vm_mp_tactical_knife` / `npc_mp_tactical_knife` (not
+  `vm_mp_combat_knife`), 67 anims, no attachments. HMW already uses `wpn_h1_melee_combat_knife_vm` as every
+  gun's melee-attack knife, so a ported knife looks like a second knife.
+- **Attachments** are AW-specific per weapon (18–21 per AR/SMG, 10–15 for shotgun/pistol, 0 for launcher/knife)
+  and are replaced by HMW's set (guide §3); the AW lists are only useful to know which mounts exist.
+- **Dumps added**: `AW\dump\common_mp\weapons` (413), `AW\dump\eng_patch_common\localizedstrings` (2,127),
+  `AW\dump\weapon_models` (HBRa3 + Lever Action). `AW\dump\eng_common_mp` etc. only have ESPORTS strings.
+- **Identity checks**: HBRa3 renders as a **CZ 805 BREN** (rectangular handguard slots, full-length top rail,
+  CZ folding stock) — `review\aw-weapons\W0\hbra3_*.png`; the Lever Action is a **Winchester** lever rifle
+  (`vm_winchester_loot_base`, zone `mp_vm_leveraction_tr`), exact model still open. The Ameli is the **CETME
+  Ameli**, not an "MG82".
+- **Duplicates confirmed** from the dumps: `dlcgun6`=StG44, `dlcgun13`=M1911, `dlcgun43`=AK-47,
+  `dlcgun8`=M16, `dlcgun7`=Dragunov/SVO, `sac3`=Vector, `m182spr`=Mk14 EBR. No new duplicates among the 18
+  planned weapons (HMW's "Lynx CQ300" AR only collides in name with the GM6 Lynx).
+- **Images are still the gap**: AW weapon textures are in the `imagefile*.pak`s; the tr-zone dumps have no
+  images, so workbench renders are black/untextured and HUD/kill icons need a targeted image dump later.
+
 ## Crossbow (`iw5_exocrossbow_mp`)
 
 In game: `mod.ff` builds and loads, the crossbow fires, bolts stick/explode and kill, kill feed works.

@@ -1,0 +1,52 @@
+weapon: h1_m4_mp
+gun: wpn_h1_asl_m4a1_vm_camo   hands: viewhands_tf141 (faction)
+anim: (none)
+ads: yes   additive: no
+effective IDLE    anim: h1_wpn_asl_m4a1_idle
+effective ADS_UP  anim: h1_wpn_asl_m4a1_ads_up
+camera eye (hands tag_view): (0.000 0.000 60.000)
+gun bind bounds: mid (6.071 -0.090 1.296) half (17.680 1.383 5.342)
+
+posed bones (world = viewmodel space, screen px at 1920x1016):
+  name           idx   src    parent   local position                world position                screen
+  tag_view       3     hands  tag_origin (   0.000    0.000   60.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))
+  tag_camera     6     hands  tag_cambone (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))
+  tag_torso      7     hands  tag_ads  (  -4.632    0.000   -1.377) (  -4.632    0.000   58.623) ( 960.0   76.2)
+  tag_player     12    hands  tag_camera (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))
+  tag_weapon     13    hands  tag_torso (  15.160    0.000   -6.753) (  10.528    0.000   51.870) ( 960.0 1629.7)
+  tag_ads        4     hands  tag_view (   0.000    0.000    0.000) (   0.000    0.000   60.000) (-nan(ind) -nan(ind))
+  j_gun          68    gun    tag_weapon (   0.000    0.000    0.000) (  10.528    0.000   51.870) ( 960.0 1629.7)
+  j_wrist_le     24    hands  j_elbow_le (  11.571    0.000   -0.000) (  13.785    8.042   46.227) ( 112.7 1959.2)
+  j_wrist_ri     25    hands  j_elbow_ri ( -11.571   -0.000   -0.000) (  13.785   -8.042   46.227) (1807.3 1959.2)
+
+gun posed bounds: min (-1.081 -1.472 47.825) max (34.279 1.293 58.509)  size (35.360 2.765 10.684)
+gun rear x -1.081 (camera eye x 0.000), forward x 34.279
+
+gun tags (posed, viewmodel space), distance to the camera eye and screen px:
+  tag_acog                 (  12.872    0.044   56.693)  dist  13.290  screen ( 955.0  881.2)
+  tag_brass                (  15.873   -0.691   55.579)  dist  16.491  screen (1023.2  912.5)
+  tag_clip                 (  15.604   -0.008   54.639)  dist  16.499  screen ( 960.8 1007.1)
+  tag_flash                (  34.280    0.044   55.503)  dist  34.573  screen ( 958.1  698.5)
+  tag_foregrip             (  22.788    0.000   54.254)  dist  23.501  screen ( 960.0  874.3)
+  tag_g36_scope            (  11.160   -0.008   56.935)  dist  11.573  screen ( 961.1  907.0)
+  tag_grip                 (  10.528    0.000   51.870)  dist  13.301  screen ( 960.0 1629.7)
+  tag_handguard            (  21.326    0.000   55.503)  dist  21.795  screen ( 960.0  814.3)
+  tag_holo                 (  12.669    0.044   56.658)  dist  13.102  screen ( 955.0  891.2)
+  tag_laser                (  25.210    1.826   54.870)  dist  25.791  screen ( 854.8  803.6)
+  tag_m203                 (  18.673    0.020   54.232)  dist  19.544  screen ( 958.5  956.7)
+  tag_reflex               (  13.234    0.044   56.674)  dist  13.646  screen ( 955.2  873.0)
+  tag_shotgun              (  21.964    0.000   52.163)  dist  23.320  screen ( 960.0 1026.3)
+  tag_sight_off            (  13.589    0.000   57.021)  dist  13.912  screen ( 960.0  826.4)
+  tag_sight_on             (  13.589    0.000   57.021)  dist  13.912  screen ( 960.0  826.4)
+  tag_silencer             (  34.280    0.044   55.503)  dist  34.573  screen ( 958.1  698.5)
+  tag_stock                (   8.782    0.044   55.471)  dist   9.881  screen ( 952.7 1257.1)
+  tag_thermal_scope        (  12.731    0.041   56.716)  dist  13.148  screen ( 955.3  882.7)
+  tag_bullet               (  15.152   -0.008   55.170)  dist  15.903  screen ( 960.8  971.0)
+screen centre: (960 508)
+camera: eye (0.000 0.000 60.000) target (1.000 0.000 60.000) fov 38.553 deg
+
+attachments:
+  reflexmwr                vm attach_h1_optic_reflex_vm            tag tag_reflex           found  world origin screen ( 955.2  873.0)
+    reticle reticle_h1_optic_reflex          aim (  13.825    0.044   57.946) screen ( 955.4  723.8)
+    reticle reticle_h1_reflex_transparent    aim (  13.825    0.044   57.946) screen ( 955.4  723.8)
+
