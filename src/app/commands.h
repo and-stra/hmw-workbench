@@ -144,6 +144,7 @@ public:
 	GpuModel* GpuCharacterWeapon() { return gpuCharacterWeapon_.get(); }
 	const std::vector<std::string>& CharacterMissing() const { return characterMissing_; }
 	const std::vector<std::string>& CharacterWarnings() const { return characterWarnings_; }
+	const std::string& CharacterHeadBone() const { return characterHeadBone_; }
 	const std::string& CharacterWeaponName() const { return characterWeaponName_; }
 	const std::string& CharacterWeaponTag() const { return characterWeaponTag_; }
 	DirectX::XMFLOAT3 CharacterWeaponTagWorld() const { return characterWeaponTagWorld_; }
@@ -363,6 +364,7 @@ private:
 	assets::ModelAsset characterHead_;
 	assets::ModelAsset characterWeaponModel_;
 	bool characterHasHead_ = false;
+	std::string characterHeadBone_;
 	std::unique_ptr<GpuModel> gpuCharacterBody_;
 	std::unique_ptr<GpuModel> gpuCharacterHead_;
 	std::unique_ptr<GpuModel> gpuCharacterWeapon_;

@@ -448,6 +448,10 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 		            workbench.CharacterWeaponName().empty() ? "(none)" : workbench.CharacterWeaponName().c_str(),
 		            workbench.CharacterWeaponTag().empty() ? "-" : workbench.CharacterWeaponTag().c_str(),
 		            workbench.CharacterWeaponFound() ? "found" : "MISSING");
+		if (head != nullptr) {
+			std::printf("head attach: bone %s | root %s\n", workbench.CharacterHeadBone().c_str(),
+			            head->model.bones.empty() ? "?" : head->model.bones.front().name.c_str());
+		}
 		const DirectX::XMFLOAT3 tagWorld = workbench.CharacterWeaponTagWorld();
 		std::printf("weapon tag world: (%.3f %.3f %.3f)\n", tagWorld.x, tagWorld.y, tagWorld.z);
 		for (const std::string& warning : workbench.CharacterWarnings()) {

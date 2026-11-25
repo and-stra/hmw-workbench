@@ -86,10 +86,13 @@ a world weapon in the hand and play a third-person anim.
 | `weapon` | string | weapon json whose `worldModel` is mounted |
 | `anim` / `time` | string/number | third-person xanim and seconds |
 
-Returns `{faction, display, body, head, weapon, weapon_tag, weapon_tag_world, weapon_found,
+Returns `{faction, display, body, head, head_bone, weapon, weapon_tag, weapon_tag_world, weapon_found,
 missing, warnings, anim?, frames?, time?}`. The weapon mounts on `tag_weapon_right` (the right
 wrist tag; `tag_inhand` is the chest/in-hand tag) with the same root-bone rule as attachments.
-The faction table and which bodies are actually in the dumps are in `docs/milestones/M9.md`.
+`head_bone` is the body bone the head model is bound to; the H1/H2 heads share the body skeleton
+(root `j_spine4`), so the head palette is applied directly and the head world matrix stays identity.
+The faction table and which bodies are actually in the dumps are in `docs/milestones/FINISH.md`
+(item 2) and `docs/milestones/M9.md`.
 
 ### `set_anim`
 

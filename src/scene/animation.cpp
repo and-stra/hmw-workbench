@@ -282,6 +282,7 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
                                                   const SkeletonPose& pose,
                                                   const std::vector<int>& boneMap) {
 	std::vector<DirectX::XMFLOAT4X4> palette(model.bones.size());
+	std::vector<bool> fromPose(model.bones.size(), false);
 	for (std::size_t i = 0; i < model.bones.size(); ++i) {
 		const assets::BoneData& bind = model.bones[i];
 		DirectX::XMVECTOR bindQuat = DirectX::XMLoadFloat4(&bind.worldQuat);
@@ -304,10 +305,35 @@ std::vector<DirectX::XMFLOAT4X4> BuildBonePalette(const assets::XModelData& mode
 			animatedWorld = DirectX::XMMatrixRotationQuaternion(animatedQuat) *
 			                DirectX::XMMatrixTranslation(animated.worldPos.x, animated.worldPos.y,
 			                                             animated.worldPos.z);
+			fromPose[i] = true;
 		}
 		const DirectX::XMMATRIX inverseBind = DirectX::XMMatrixInverse(nullptr, bindWorld);
 		DirectX::XMMATRIX skin = DirectX::XMMatrixMultiply(inverseBind, animatedWorld);
 		DirectX::XMStoreFloat4x4(&palette[i], skin);
+	}
+	// A bone without a pose channel stays rigid to its nearest animated ancestor. The old
+	// fallback (identity skin) left such vertices at the bind origin, which stretched the
+	// H2 head scarf/face between the head and the floor.
+	for (std::size_t i = 0; i < model.bones.size(); ++i) {
+		if (fromPose[i]) {
+			continue;
+		}
+		int ancestor = model.bones[i].parent;
+		for (std::size_t guard = 0; guard < model.bones.size(); ++guard) {
+			if (ancestor < 0 || static_cast<std::size_t>(ancestor) >= model.bones.size()) {
+				ancestor = -1;
+				break;
+			}
+			if (fromPose[static_cast<std::size_t>(ancestor)]) {
+				break;
+			}
+			ancestor = model.bones[static_cast<std::size_t>(ancestor)].parent;
+		}
+		if (ancestor >= 0 && static_cast<std::size_t>(ancestor) < model.bones.size()) {
+			palette[i] = palette[static_cast<std::size_t>(ancestor)];
+		} else {
+			DirectX::XMStoreFloat4x4(&palette[i], DirectX::XMMatrixIdentity());
+		}
 	}
 	return palette;
 }

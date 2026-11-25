@@ -65,6 +65,10 @@ The dumps contain every asset type in the zone, including streamed image pixels 
 | hmw_ar1 | 280,771,104 B (268 MiB) + 68 MB pak | `zonetool.exe -unbuffered-io -dump_streamed_image -dumpzone ..\dump\workbench_data\hmw_ar1` | `GAME\dump\workbench_hmw_ar1` | 775.4 MB / 5,570 files |
 | mp_vm_m4_base_tr (H1 M4 viewmodel) | 1,376,300 B (1.3 MiB) | `zonetool.exe -unbuffered-io -dumpzone mp_vm_m4_base_tr` (refs x64-zt build, 0.0.0.560) | `GAME\dump\workbench_hmw_m4` | 2.2 MB / xmodel + xsurface |
 | hmw_post_gfx | 209,512,052 B (200 MiB) + 209 MB pak | `zonetool.exe -unbuffered-io -dump_streamed_image -dumpzone ..\dump\workbench_data\hmw_post_gfx` | `GAME\dump\workbench_hmw_post_gfx` | 618.1 MB / 3,922 files |
+| hmw_rangers (finish item 2) | 308,121,412 B (294 MiB) + 301 MB pak | `dumpzone h1 ..\dump\workbench_hmw_rangers xmodel,xmodelsurfs` then `-dump_streamed_image` + `dumpzone h1 ..\dump\workbench_hmw_rangers material,image` | `GAME\dump\workbench_hmw_rangers` | 1,072.2 MB / 2,230 files |
+| hmw_dlc_factions (finish item 2) | 535,587,327 B (511 MiB) | `dumpzone h1 ..\dump\workbench_hmw_dlc_factions xmodel,xmodelsurfs` then `dumpzone h1 ..\dump\workbench_hmw_dlc_factions material,image` | `GAME\dump\workbench_hmw_dlc_factions` | 854.7 MB / 3,340 files |
+| hmw_patch_common_mp xsurfaces (finish item 2) | 531,834,332 B (507 MiB) | `dumpzone h1 ..\dump\workbench_hmw_patch_common_mp_xsurface xmodelsurfs` | `GAME\dump\workbench_hmw_patch_common_mp_xsurface` | 33.8 MB / 185 files |
+| hmw_ar1 usmc surfaces (finish item 2) | 280,771,104 B (268 MiB) | `loadzone hmw_ar1` + `dumpasset xmodelsurfs usmc_desert_assault_body_mp_lod{0..4}300` | `GAME\dump\workbench_hmw_ar1\xsurface` | +7.4 MB / 5 files (folder now 780.4 MB) |
 
 `hmw_attachments` contains all asset types of the zone (39 xmodels, 43 xsurfaces, 127 materials, 226 images,
 5 weapons, xanims, sounds, effects, techsets...). Its cross-zone texture references are placeholders; the real
@@ -85,6 +89,24 @@ into `workbench_data` so streamed images can be extracted.
 `workbench_hmw_m4` contains only the H1 M4 xmodel (`wpn_h1_asl_m4a1_vm_camo`) and its xsurface; the material
 jsons are missing from all dumps (see M2 open issues).
 
+`workbench_hmw_rangers` contains the HMW (H2 port) faction bodies/heads
+`body_h2_tf141|opforce|airborne|us_army|seal|militia_*` and their `head_h2_*` counterparts, their materials,
+techsets and streamed images. The streamed colour/normal maps (`.pixels`) are in `hmw_rangers.pak`; the `.ff`
+and `.pak` must both be hardlinked into the dump folder for a `-dump_streamed_image` dump, otherwise zonetool
+writes 141-byte `*.h1Image` metadata stubs and the body renders as the missing-texture checker.
+
+`workbench_hmw_dlc_factions` contains the H1 campaign/DLC port bodies and heads used by `custom_teams.gsc`
+(`mp_body_gign_*`, `mp_body_pmc_*`, `mp_body_henchmen_*`, `mp_body_africa_militia_*`,
+`mp_body_delta_elite_*`) and the matching `head_*` models, plus their materials/images. No `.pak` is needed.
+
+`workbench_hmw_patch_common_mp_xsurface` is an xsurface-only dump of `hmw_patch_common_mp` (33.8 MB) added
+because the H1 USMC body and some attachments reference surfaces from that zone.
+
+The H1 USMC desert body `body_usmc_desert_assault_mp_camo` already existed in the M2 patch_common dump, but
+its surface set was missing. The five `usmc_desert_assault_body_mp_lod{0..4}300.xsb` files were dumped from
+`hmw_ar1` with `loadzone hmw_ar1` + `dumpasset xmodelsurfs <name>` (output starts in `dump\assets`, then copied
+into `workbench_hmw_ar1\xsurface`).
+
 ## Asset roots
 
 `workbench.json` next to the exe lists the roots in this order (first hit wins):
@@ -95,10 +117,13 @@ jsons are missing from all dumps (see M2 open issues).
 4. `GAME\dump\workbench_hmw_m4`
 5. `GAME\dump\workbench_hmw_attachments`
 6. `GAME\dump\workbench_hmw_post_gfx`
-7. `C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp` (old, incomplete; fallback)
-8. `C:\Games\cod-hwm\refs\dumps\patch_common_mp`
-9. `C:\Games\cod-hwm\refs\dumps\*`
-10. `GAME\dump\*`
+7. `GAME\dump\workbench_hmw_rangers` (player bodies/heads)
+8. `GAME\dump\workbench_hmw_dlc_factions` (H1 port bodies/heads)
+9. `GAME\dump\workbench_hmw_patch_common_mp_xsurface` (USMC body surfaces)
+10. `C:\Games\cod-hwm\refs\dumps\hmw_patch_common_mp` (old, incomplete; fallback)
+11. `C:\Games\cod-hwm\refs\dumps\patch_common_mp`
+12. `C:\Games\cod-hwm\refs\dumps\*`
+13. `GAME\dump\*`
 
 ## Validation
 

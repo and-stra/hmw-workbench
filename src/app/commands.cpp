@@ -276,6 +276,7 @@ void Workbench::ClearCharacter() {
 	characterHead_ = assets::ModelAsset{};
 	characterWeaponModel_ = assets::ModelAsset{};
 	characterHasHead_ = false;
+	characterHeadBone_.clear();
 	gpuCharacterBody_.reset();
 	gpuCharacterHead_.reset();
 	gpuCharacterWeapon_.reset();
@@ -1931,22 +1932,37 @@ void Workbench::BuildPose() {
 		if (characterHasHead_ && !characterHead_.model.bones.empty()) {
 			const std::vector<int> headMap = scene::MapBonesByName(characterHead_.model, pose_);
 			characterHeadPalette_ = scene::BuildBonePalette(characterHead_.model, pose_, headMap);
-			int headBone = FindPoseBone(pose_, "j_head");
-			if (headBone < 0) {
-				headBone = FindPoseBone(pose_, "tag_head");
-			}
-			if (headBone < 0) {
-				headBone = FindPoseBone(pose_, "j_neck");
-			}
-			if (headBone < 0) {
-				headBone = FindPoseBone(pose_, "tag_neck");
-			}
-			if (headBone >= 0) {
-				const DirectX::XMMATRIX headRootBind = BoneMatrix(characterHead_.model.bones.front());
-				const DirectX::XMMATRIX inverseRoot = DirectX::XMMatrixInverse(nullptr, headRootBind);
-				const DirectX::XMMATRIX headWorld =
-				    inverseRoot * PoseBoneMatrix(pose_.bones[static_cast<std::size_t>(headBone)]);
-				DirectX::XMStoreFloat4x4(&characterHeadWorld_, headWorld);
+			// The H2/H1 head models are authored on the body skeleton: the root is j_spine4 and
+			// the palette above already maps every head bone onto the body pose. That places the
+			// head directly on the neck, so the world matrix must stay identity. (Attaching the
+			// root at j_head, or multiplying by the spine pose, moved the head off the body.)
+			const std::string& headRoot = characterHead_.model.bones.front().name;
+			const int headRootIndex = headRoot.empty() ? -1 : FindPoseBone(pose_, headRoot);
+			DirectX::XMStoreFloat4x4(&characterHeadWorld_, DirectX::XMMatrixIdentity());
+			characterHeadBone_.clear();
+			if (headRootIndex >= 0) {
+				characterHeadBone_ = headRoot;
+			} else {
+				// Fallback for a head that is not on the body skeleton: attach it at the neck/
+				// head tag.
+				int headBone = FindPoseBone(pose_, "j_head");
+				if (headBone < 0) {
+					headBone = FindPoseBone(pose_, "tag_head");
+				}
+				if (headBone < 0) {
+					headBone = FindPoseBone(pose_, "j_neck");
+				}
+				if (headBone < 0) {
+					headBone = FindPoseBone(pose_, "tag_neck");
+				}
+				if (headBone >= 0) {
+					const DirectX::XMMATRIX headRootBind = BoneMatrix(characterHead_.model.bones.front());
+					const DirectX::XMMATRIX inverseRoot = DirectX::XMMatrixInverse(nullptr, headRootBind);
+					const DirectX::XMMATRIX headWorld =
+					    inverseRoot * PoseBoneMatrix(pose_.bones[static_cast<std::size_t>(headBone)]);
+					DirectX::XMStoreFloat4x4(&characterHeadWorld_, headWorld);
+					characterHeadBone_ = pose_.bones[static_cast<std::size_t>(headBone)].name;
+				}
 			}
 		}
 

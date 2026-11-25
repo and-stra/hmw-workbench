@@ -1,0 +1,57 @@
+﻿finish item 2: faction body/head renders
+exe: C:\Games\cod-hwm\hmw-workbench\build\bin\Release\hmw-workbench.exe
+date: 2026-11-25 08:26:55
+
+=== tf141 ===
+character: TF141 | body: body_h2_tf141_assault + head head_h2_tf141_assault | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== opfor ===
+character: OpFor | body: body_h2_opforce_assault + head head_h2_opforce_assault | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== spetsnaz ===
+character: Spetsnaz | body: body_h2_airborne_assault + head head_h2_airborne_assault | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== rangers ===
+character: Rangers | body: body_h2_us_army_ar + head head_h2_us_army_assault | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== seals ===
+character: SEALs | body: body_h2_seal_assault + head head_h2_seal_assault | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== militia ===
+character: Militia | body: body_h2_militia_assault + head head_h2_militia_assault | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== gign ===
+character: GIGN | body: mp_body_gign_paris_assault + head head_gign_a | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== pmc ===
+character: PMC | body: mp_body_pmc_africa_assault_a + head head_pmc_africa_a | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== ic ===
+character: Inner Circle | body: mp_body_henchmen_assault_a + head head_henchmen_a | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== africa ===
+character: African Militia | body: mp_body_africa_militia_assault_a + head head_africa_militia_a_mp | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== delta ===
+character: Delta Force | body: mp_body_delta_elite_assault_aa + head head_delta_elite_c | weapon: (none) (tag -, MISSING)
+head attach: bone j_spine4 | root j_spine4
+
+=== usmc_desert ===
+character: USMC desert (H1) | body: body_usmc_desert_assault_mp_camo | weapon: (none) (tag -, MISSING)
+
+=== hazmat ===
+character: Hazmat | body: body_hazmat | weapon: (none) (tag -, MISSING)
+
+=== infect ===
+character: Infected | body: body_infect | weapon: (none) (tag -, MISSING)
+

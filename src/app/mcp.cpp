@@ -658,6 +658,7 @@ private:
 		            {"display", loadedFaction != nullptr ? loadedFaction->display : std::string()},
 		            {"body", loadedBody != nullptr ? loadedBody->model.name : std::string()},
 		            {"head", loadedHead != nullptr ? loadedHead->model.name : std::string()},
+		            {"head_bone", workbench_.CharacterHeadBone()},
 		            {"weapon", workbench_.CharacterWeaponName()},
 		            {"weapon_tag", workbench_.CharacterWeaponTag()},
 		            {"weapon_tag_world", Vec3(workbench_.CharacterWeaponTagWorld())},
