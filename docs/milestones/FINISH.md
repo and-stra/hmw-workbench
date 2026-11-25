@@ -1,4 +1,4 @@
-# Finish task progress log
+﻿# Finish task progress log
 
 Task: `docs\FINISH-TASK.md` (25 Nov 2026). One commit per item; this file is updated with each
 item's result and is the resume point after a context reset.
@@ -11,7 +11,7 @@ item's result and is the resume point after a context reset.
 | 2 player model data | **done** | `64b227e` | all 14 factions textured with head; head attach bug fixed |
 | 3 camo fidelity | **done** | `909a89e` | full colour/normal/spec/env/decal technique + native H2 variants |
 | 4 camos in game: test commands | **done** | `5a0689d` | `docs\porting\aw.md` "In-game test (camos)" |
-| 5 comfort gaps | **done** | item 5 commit (hash in final log) | live split viewport + material/image/new-root hot reload |
+| 5 comfort gaps | **done** | `697a8ae` | live split viewport + material/image/new-root hot reload |
 
 Extra (not in the task list): red-dot comparison on the crossbow, commit `41348f9`
 (`review: red dot comparison on the crossbow`), files in `review\reddots\`; 4 of 5 red dots done,
@@ -213,3 +213,56 @@ Status: **done**.
   is evidence of the image reload, not a normal render).
 
 Build 0 warnings.
+
+## Final summary
+
+All five FINISH items are **done** (maps were out of scope). Commits:
+
+| item | commit |
+|---|---|
+| 1 ADS auto-align off by default | `343cc96` |
+| 2 player model data | `64b227e` |
+| 3 camo fidelity | `909a89e` |
+| 4 camos in game: test commands | `5a0689d` |
+| 5 comfort gaps | `697a8ae` |
+| extra red-dot comparison (not in FINISH) | `41348f9` |
+
+Measurements are in the item sections above. The important ones:
+
+- ADS auto-align OFF: M4 reflex 22.1 px off centre and ACOG 18.1 px off; crossbow `reflex`/`acog`
+  0 px. Reported prominently in item 1.
+- Camo no-selection: byte-identical before/after the full technique (SHA-256 in
+  `review\finish\camos\camo_check.txt`).
+- Hot reload: material json, image/pixel stream and new-root-file tests all passed
+  (`review\finish\hot-reload.txt`, 4/4).
+
+Files written outside the repo (allowed writes): only new workbench dump folders under `GAME\dump`:
+
+| folder | size |
+|---|---|
+| `GAME\dump\workbench_hmw_rangers` | 1,072.2 MB / 2,230 files |
+| `GAME\dump\workbench_hmw_dlc_factions` | 854.7 MB / 3,340 files |
+| `GAME\dump\workbench_hmw_patch_common_mp_xsurface` | 33.8 MB / 185 files |
+| `GAME\dump\workbench_hmw_ar1\xsurface` | +7.4 MB / 5 files (folder now 780.4 MB) |
+
+No existing `.ff`, `.pak`, zone or real game asset was modified. The temporary hardlinks used for
+dumping were removed; the empty `workbench_hmw_pre_gfx` folder was removed. Free disk: **30.8 GB**
+(limit 20 GB). The repo's real crossbow files and `.bak` originals are untouched.
+
+Open questions / known limits:
+
+- Red-dot `variant` (`attach_h1_optic_reflex_variant_vm_mp`) is still blocked by the missing
+  `vm_h1_optic_reflex_variant_ads_mp_lodvm100.xsb` surface set; it is not in any asset root or a
+  dedicated xsurface dump of `hmw_patch_common_mp`.
+- The in-game crossbow camo path is documented but not run here. The likely blockers are the
+  missing `iw5_exocrossbow_mp_camo*` variant assets / `mp_vm_exocrossbow_*_tr.ff` zones and the
+  `isvalidcamo` whitelist rejecting `camo085` (Christmas). The crossbow material itself is
+  camo-ready.
+- Camo environment is a BRDF-LUT sample with a neutral sky gradient, because the material dumps
+  have no cubemap; animated emissive flow is shown as a static frame. Native H2 variants' camo
+  specular image has no pixel data, so the white fallback is used.
+- Live compare B is driven by A (camera and normalized anim time); B does not have its own mouse
+  controls by design. The split is a window feature; `-compare` remains the offscreen composition.
+- `AGENTS.md` and the untracked `docs\porting\AW-WEAPONS-*` / `docs\porting\guide.md` changes were
+  present in the working tree but were not part of this FINISH work and were not committed.
+
