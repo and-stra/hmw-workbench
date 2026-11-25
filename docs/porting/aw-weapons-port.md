@@ -744,70 +744,160 @@ missing images (red/checkered in ADS), unrelated to camos.
 
 ## 13. W1.2 - Crossbow finish (25 Nov 2026)
 
-Status: **done in the workbench and in the built zone; in-game confirmation is the user's step.** The
-zone now builds with **0 FATAL / 0 ERROR / 0 image warnings**; the built-in sight is centred in ADS.
+Status: **done in the workbench and in the built zone; the in-game screenshot is blocked by a
+t1-build listen-host crash (13.4).** The zone builds with **0 FATAL / 0 ERROR / 0 image
+warnings**, and the built-in sight is centred in ADS.
 
 ### 13.1 Built-in sight alignment (fixed)
 
 Measured with hmw-workbench at 1920x1016, ADS, auto-align OFF:
-- before: 	ag_scope screen y **643.9** (135.9 px below the centre 508); 	ag_sight_front_on
-  633.1 (125.1 px), 	ag_red_dot 685.9 (177.9 px) - the 125-178 px range from the plan.
-- cause: the crossbow is an AW weapon on HMW hands. The base AW ADS anim m_crossbow_ads_up
-  keys only 	ag_ads; its Z minimum is 0.0, which put the AW scope below the HMW camera. The
-  optic overrides (m_crossbow_reddot_ads_up, m_crossbow_acog_ads_up) are separate and were
+- before: `tag_scope` screen y **643.9** (135.9 px below the centre 508); `tag_sight_front_on`
+  633.1 (125.1 px), `tag_red_dot` 685.9 (177.9 px) - the 125-178 px range from the plan.
+- cause: the crossbow is an AW weapon on HMW hands. The base AW ADS anim `vm_crossbow_ads_up`
+  keys only `tag_ads`; its Z minimum is 0.0, which put the AW scope below the HMW camera. The
+  optic overrides (`vm_crossbow_reddot_ads_up`, `vm_crossbow_acog_ads_up`) are separate and were
   already 0.0 px.
-- fix: add **+0.72** to the Z minimum of the normal-translation block in m_crossbow_ads_up and
-  m_crossbow_ads_down (the dataInts min/size block read by xanim.cpp; the compressed key
-  bytes stay untouched, so every key shifts by +0.72). After: 	ag_scope **(960.0, 507.3)** =
-  **0.7 px**; 	ag_sight_front_on 539.6, 	ag_red_dot 556.9 (these are the iron-sight / mount
-  tags, not the scope picture). eflex and cog remain **0.0 px**.
-- The two xab files are changed in GAME\zonetool\hmw_aw_weapons\xanim\ (backups
-  .bak-w1.2) and in GAME\zonetool\mod\xanim\ (the workbench source; same backups).
-- Tool: mwx-debug\aw-weapons\W1.2\xanim_shift.py <in.xab> <out.xab> <delta_z> - parses the H1
+- fix: add **+0.72** to the Z minimum of the normal-translation block in `vm_crossbow_ads_up` and
+  `vm_crossbow_ads_down` (the `dataInts` min/size block read by `xanim.cpp`; the compressed key
+  bytes stay untouched, so every key shifts by +0.72). After: `tag_scope` **(960.0, 507.3)** =
+  **0.7 px**; `tag_sight_front_on` 539.6, `tag_red_dot` 556.9 (these are the iron-sight / mount
+  tags, not the scope picture). `reflex` and `acog` remain **0.0 px**.
+- The two xab files are changed in `GAME\zonetool\hmw_aw_weapons\xanim\` (backups
+  `.bak-w1.2`) and in `GAME\zonetool\mod\xanim\` (the workbench source; same backups).
+- Tool: `mwx-debug\aw-weapons\W1.2\xanim_shift.py <in.xab> <out.xab> <delta_z>` - parses the H1
   xab stream, finds the 6-float translation min/size block and adds delta to min.z. Reusable for
   every AW weapon whose built-in sight sits low on HMW hands.
 
 ### 13.2 Scope/glass/target textures (fixed)
 
-The 11 missing images from W1 §11.6 are now in the zone. The extraction path that works:
-- dumpasset image <name> writes only the **streamed image header** (.s1Image, 130-260 B) for a
-  streamed AW image, and the pixels live in the big imagefileN.pak stream files. The
-  -dump_streamed_image flag writes the header + .pixels for dumpasset only when the stream
-  file index is set; for a single asset it is not, so the .pixels are absent.
-- dumpzone h1 common_mp image (**S1 tool, h1 target**) converts and writes the H1
-  images\<name>.h1Image **and** streamed_images\<name>.h1Image +
-  streamed_images\<name>_streamN.pixels (the converter's dump_streamed_image always writes the
-  pixels). The full zone is large (~7.5 GB of streamed pixels before we stopped); the crossbow
-  images are near the end of the asset order. We kept only the 12 needed files and deleted the
-  rest. The disk stayed >= 20 GB (it reached 20.97 GB before the cleanup).
-- emblem_temp_col is in patch_code_post_gfx_mp, not common_mp: dumpzone h1
-  patch_code_post_gfx_mp image (7.5 MB) writes it.
-- The 12 files were copied into GAME\zonetool\hmw_aw_weapons\images /
-  streamed_images, and the images were added to GAME\zone_source\hmw_aw_weapons.csv
-  (image,<name> lines, backup .bak-w1.2). The H1 build then finds the materials in
-  GAME\zonetool_paths\common_mp_materials and packs the images.
+The 11 missing images from W1 section 11.6 are now in the zone. The extraction path that works:
+- `dumpasset image <name>` writes only the **streamed image header** (`.s1Image`, 130-260 B) for a
+  streamed AW image; the pixels live in the big `imagefileN.pak` stream files. The
+  `-dump_streamed_image` flag writes the header + `.pixels` for `dumpasset` only when the stream
+  file index is set; for a single asset it is not, so the `.pixels` are absent.
+- `dumpzone h1 common_mp image` (**S1 tool, h1 target**) converts and writes the H1
+  `images\<name>.h1Image` **and** `streamed_images\<name>.h1Image` +
+  `streamed_images\<name>_streamN.pixels` (the converter's `dump_streamed_image` always writes
+  the pixels). The full zone is large (~7.5 GB of streamed pixels before we stopped); the
+  crossbow images are near the end of the asset order. We kept only the 12 needed files and
+  deleted the rest. The disk stayed >= 20 GB (it reached 20.97 GB before the cleanup).
+- `emblem_temp_col` is in `patch_code_post_gfx_mp`, not `common_mp`:
+  `dumpzone h1 patch_code_post_gfx_mp image` (7.5 MB) writes it.
+- The 12 files were copied into `GAME\zonetool\hmw_aw_weapons\images` /
+  `streamed_images`, and the images were added to `GAME\zone_source\hmw_aw_weapons.csv`
+  (`image,<name>` lines, backup `.bak-w1.2`). The H1 build finds the materials in
+  `GAME\zonetool_paths\common_mp_materials` and packs the images.
 
-Build (GAME\x64zt.exe, uildzone hmw_aw_weapons, 3.8 s):
-- hmw_aw_weapons.ff **19,879,343 B**, hmw_aw_weapons.pak **15,708,188 B**,
+Build (`GAME\x64zt.exe`, `buildzone hmw_aw_weapons`, 3.8 s):
+- `hmw_aw_weapons.ff` **19,879,343 B**, `hmw_aw_weapons.pak` **15,708,188 B**,
   **0 FATAL / 0 ERROR / 0 image warnings** (the previous 11 warnings are gone).
-- Installed to GAME\hmw-aw\zone (W1.1 files kept as .bak-w1.1). GAME\zone build outputs
-  removed after the copy. GAME\mwx*, GAME\mods, GAME\players2 untouched.
-- The workbench preview source zonetool\mod also got the 12 images + the +0.72 anim, so
-  eview\aw-weapons\W1.2\ shows the fixed scope. A small checkered rectangle remains in the
-  workbench preview under the scope (the mtl_iron_sights_color/emblem surface); the zone build
-  has no missing image for it. Check it in game with the W1.2 checklist.
+- Installed to `GAME\hmw-aw\zone` (W1.1 files kept as `.bak-w1.1`). `GAME\zone` build outputs
+  removed after the copy. `GAME\mwx*`, `GAME\mods`, `GAME\players2` untouched.
+- The workbench preview source `zonetool\mod` also got the 12 images + the +0.72 anim, so
+  `review\aw-weapons\W1.2\` shows the fixed scope. A small checkered rectangle remains in the
+  workbench preview under the scope: it is the 4-vertex `m/mtl_player_emblem` surface (the AW
+  ammo/emblem display), not a scope/glass image. It should resolve in game to HMW's
+  player-emblem material; it will not show a live AW ammo count without a separate port.
 
-### 13.3 Workbench evidence (mwx-debug\aw-weapons\W1.2\)
+### 13.3 Workbench evidence (`mwx-debug\aw-weapons\W1.2\`)
 
-- crossbow_ads_noscope.png - before (scope checkered, 136 px low).
-- ds_shift072.png - after the +0.72 shift: scope centred, still checkered (pre-texture).
-- crossbow_ads_fixed_final.png - after textures + shift: scope centred and textured.
-- ds_reflex_fixed.txt / ds_acog_fixed.txt - reticles still (960, 508) = 0.0 px.
+- `crossbow_ads_noscope.png` - before (scope checkered, 136 px low).
+- `ads_shift072.png` - after the +0.72 shift: scope centred, still checkered (pre-texture).
+- `crossbow_ads_fixed_final.png` - after textures + shift: scope centred and textured.
+- `ads_reflex_fixed.txt` / `ads_acog_fixed.txt` - reticles still (960, 508) = 0.0 px.
 
 ### 13.4 Open
 
-- In-game screenshot of the no-optic ADS with the new zone (the client hmw-aw.exe has no
-  screenshot RPC in the aw-weapons branch; use the game's screenshot console command or the
-  W1.2 checklist). The workbench measurement uses the same 	ag_ads anim the game plays.
-- The workbench-only checkered rectangle (13.2); verify in game.
-- The final hmw_aw_weapons.ff is still a test artifact (not committed); packaging is W5.
+- In-game tests (ADS no-optic/optics/camo, CAC entry, kill feed, Sticks and Stones): **the user
+  will do these**. The zone is installed in `GAME\hmw-aw\zone`; `GAME\hmw-aw.exe.bak-w1.1` is the
+  W1 client that can load it before I1. The t1-build `hmw-aw.exe` has the test interface but
+  crashes in `gsc::load_custom_script` (`script_loading.cpp:210`) during a listen-host gametype
+  load (`0x1405A4E96`; minidump `GAME\minidumps\hmw-mod-crash-1-2026-11-25-15-14-36.zip`); the
+  `hmw_aw_weapons` zone itself loads in 3.1 s, so this is a t1-build/test-branch issue, not the
+  crossbow. The dedicated tests and the workbench are unaffected.
+- The workbench-only emblem square (13.2); verify in game.
+- The final `hmw_aw_weapons.ff` is still a test artifact (not committed); packaging is W5.
+
+## 14. T1 - Automated crossbow test (25 Nov 2026)
+
+Status: **crossbow test green; Sticks and Stones entry BLOCKED by the reference-only `mod.ff`.**
+
+### 14.1 Where the test lives
+
+- `cod-hmw-aw` `aw-weapons`: `data\mwx\tests\aw_weapon.gsc` (generic, dvar-driven), `aw_crossbow.gsc`,
+  `aw_crossbow_sas.gsc`, `_test.gsc` (the framework helper), `tests.json` (the 26-test framework
+  manifest + `aw_crossbow`), and `tests-aw-sas.json` (the manual sas entry, not in `run_all_tests`).
+- `aw_weapon.gsc` parameters (tests.json dvars): `mwx_aw_weapon` (base ref without `_mp`),
+  `mwx_aw_class` (`primary`/`secondary`), `mwx_aw_attachments` (comma list), `mwx_aw_camo`
+  (index), `mwx_aw_combat` (1 = combat checks, default 0 for the class test).
+- Checks: asset exists (`weaponclipsize`), the class accepts the ref (`isvalidsecondary`), the
+  name builder (`buildweaponname`) for no optic / `reflex` / `acog` / `_camo042`, then give each
+  variant to a bot and assert `hasweapon` + a non-zero clip. The class path adds a projectile
+  after the bot's class loadout, so `getcurrentweapon()` reports `none` for it; the inventory and
+  clip checks are the meaningful ones (logged). Visual ADS/camo checks remain MCP screenshots.
+- The combat half (fire/reload/switch/kill) is in `aw_sas_test` / the manual sas entry, where the
+  crossbow is the mode-spawned weapon and therefore current.
+
+### 14.2 Running it without I1
+
+`aw-weapons` is based on `origin/mwx` (`5cdcf64b`) and has no test framework. T1 was therefore
+validated on a **local-only** `t1-build` branch (`origin/opencode/autonomous` + merge `aw-weapons`,
+not pushed, no `mwx` change):
+- `data/mwx/tests/` must be loaded from the `-datadir` root; the framework's
+  `script_loading.cpp` hardcoded `mwx/tests/...`. The temp branch changes it to
+  `filesystem::get_data_dir() + "/tests/"`; the **I1 rebase must keep that**.
+- The test includes are data-dir relative (`#include tests\_test;`), not `mwx\tests\...`, so the
+  same files work with `-datadir mwx` and `-datadir hmw-aw`.
+- No BOM in the test GSC: PowerShell `Set-Content -Encoding UTF8` writes a BOM, and the GSC
+  compiler fails the whole script with `bad token: '?'` at 1:1.
+- `aw-weapons` lacks the test `mwx_test`/`events` implementation in the debug server; the test
+  client is the t1-build `hmw-aw.exe` with `-datadir hmw-aw -logdir hmw-aw-logs -debugport 27300`,
+  manifest `GAME\hmw-aw\tests\tests.json`, net ports 27116+.
+
+### 14.3 Results
+
+- `aw_crossbow` (war, mp_shipment, 4 bots): **PASS 15/15, 0 script errors** (68 s). Covers the
+  asset, `isvalidsecondary`, the four names (`iw5_exocrossbow_mp`, `_reflex`, `_acog`,
+  `_camo042`), and the give/has/clip of each variant.
+- Full suite with the zone loaded (25 existing tests + `aw_crossbow`; `sas` and the manual sas
+  entry excluded): **26 run, 25 green, 1 known failure** (`survival` wave 1 -> 2, the documented
+  prototype issue). The run was interrupted by a harness restart at `war_terrace` after 21 green;
+  the four remaining tests were rerun with fresh ports: `reinforce` **8/8**, `infect_rust`
+  **28/28**, `war_terrace` **12/12**, `aw_crossbow` **15/15**, all PASS. `infect_rust` had one
+  `scavenger bag dropped` failure in the interrupted run and passed 28/28 on the rerun (known
+  RNG flake); `reinforce` had one 416 s server-load stall and passed 8/8 on the rerun.
+- `tools\gsc-check\check-all.ps1` on `t1-build`: **42 files, 543 cross-file calls, 0 problems**
+  (the AW test includes resolve; the aw-weapons branch itself has the older checker without the
+  test-builtin list, so the merged branch's checker is the meaningful gate).
+- Sticks and Stones: **BLOCKED**. The reference-only `GAME\mods\sticksandstones\mod.ff` (177 B,
+  `weapon,,iw5_exocrossbow_mp`) crashes in `fastfiles::db_try_load_x_file_internal`
+  (`0xC0000005` at `0x1405A51A9`) while loading `mod`, on a dedicated server **and** on a listen
+  host, with the AW zone loaded. The self-contained `mod.ff` (19.8 MB) plus the AW zone crashes
+  the same way (both define `iw5_exocrossbow_mp`). The crash dumps are
+  `GAME\minidumps\hmw-mod-crash-2-2026-11-25-13-56-41.zip` and `...-14-02-50.zip`.
+  - **Next idea:** W1.5's fallback - keep the mod self-contained and have the client skip the
+    `hmw_aw_weapons` zone when `mods/sticksandstones` is loaded (conditional entry in
+    `patches.cpp`), or give the mod's copy a separate internal name. This is an integration
+    decision for I1, not a T1 test fix. Until then the self-contained `mod.ff` is restored so the
+    normal (non-AW-zone) Sticks and Stones still works; `tests-aw-sas.json` is the manual entry
+    to run once the mod/zone ownership is decided.
+- Note: the existing `sas` test in the game-mode manifest also loads the mod. With the AW zone
+  loaded it hits the same crash; it was green in the previous full runs on `opencode/autonomous`
+  because that branch does not load `hmw_aw_weapons`. T1 therefore runs the full suite without
+  `sas` and reports the mod as the one blocked existing test.
+
+### 14.4 Commits
+
+- `cod-hmw-aw` `aw-weapons`: **`aab9eab6`** (T1 tests + manifest), `60fd2b1f` (data-dir relative
+  includes), **`4d8c4466`** (CAC checks after level init), **`b1e675f3`** (final crossbow test;
+  sas entry moved to `tests-aw-sas.json`). No push.
+- `t1-build` (local only): merge `aw-weapons`, `15caf122` (test script from `-datadir`),
+  `c2a8e656` (includes), `a445976f`/`ff78a8fc`/`67166159` (test fixes).
+
+### 14.5 Open
+
+- Sticks and Stones mod/zone ownership (14.3) - I1 decision.
+- The full suite must be re-run on the merged `mwx` after I1, with the `sas` entry and the
+  manual sas test.
+- In-game tests/screenshots (ADS no-optic, optics, camo, CAC entry, kill feed, Sticks and Stones)
+  are the user's step; the zone is installed in `GAME\hmw-aw\zone`.
