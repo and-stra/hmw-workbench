@@ -427,7 +427,7 @@ The other agent works in `C:\Games\cod-hwm\cod-mwx` and owns `mwx.exe`, `GAME\mw
 Status: **done, built and installed; in-game verification is the user's step** (this agent must not launch the game).
 Commits:
 - client: `cod-hmw-aw` branch `aw-weapons` - `60012370` (feature) and `6da28dfe` (test-only flags). No push.
-- docs/review: this hmw-workbench commit (see `git log -1 --oneline`).
+- docs/review: hmw-workbench `f2436b1` (W1 report, guide/aw updates, review\aw-weapons\W1).
 Zone built: `hmw_aw_weapons.ff` 19,877,776 B + `hmw_aw_weapons.pak` 9,236,400 B, **0 FATAL / 0 ERROR**, 11 image
 warnings (the known missing crossbow scope/glass textures, see 11.6).
 
