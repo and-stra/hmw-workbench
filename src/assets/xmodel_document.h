@@ -75,6 +75,12 @@ bool AddTag(XModelDocument& document, const std::string& name, const std::string
 // Removes an added tag or restores an existing tag to the loaded/saved state.
 bool RevertTag(XModelDocument& document, const std::string& tag, std::string& error);
 
+// Renames an existing bone/tag. The name string item is rewritten as an inline string (the
+// stored scr_string_t placeholder stays; x64-zt pairs it with the string and regenerates the
+// script string at build time).
+bool RenameTag(XModelDocument& document, const std::string& oldName, const std::string& newName,
+               std::string& error);
+
 bool HasTagChanges(const XModelDocument& document);
 
 // Writes <model>.tags.json next to a model path (all tags: name, parent, local pos/rot).

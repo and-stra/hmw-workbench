@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "app/commands.h"
+#include "assets/attachment.h"
 #include "assets/material.h"
 #include "assets/model_asset.h"
 #include "assets/weapon.h"
@@ -242,6 +243,36 @@ int RunValidate(const std::vector<std::filesystem::path>& roots) {
 		}
 	}
 
+	int attachmentNames = 0;
+	int duplicateAttachments = 0;
+	{
+		std::set<std::string> names;
+		for (const auto& root : roots) {
+			const std::filesystem::path folder = root / "attachments";
+			std::error_code ec;
+			for (std::filesystem::directory_iterator it(folder, ec), end; !ec && it != end; it.increment(ec)) {
+				std::error_code fileEc;
+				if (it->is_regular_file(fileEc) && it->path().extension() == ".json") {
+					names.insert(it->path().stem().string());
+				}
+			}
+		}
+		attachmentNames = static_cast<int>(names.size());
+		for (const std::string& name : names) {
+			const std::vector<std::filesystem::path> definitions = assets::FindAttachmentDefinitions(roots, name);
+			if (definitions.size() < 2) {
+				continue;
+			}
+			++duplicateAttachments;
+			std::printf("DUPLICATE attachment %s: %zu definitions (using the first with models)\n",
+			            name.c_str(), definitions.size());
+			for (const std::filesystem::path& path : definitions) {
+				std::printf("  %s (%s)\n", path.string().c_str(),
+				            assets::AttachmentHasModels(path) ? "models" : "stub, no models");
+			}
+		}
+	}
+
 	std::printf("\nsummary:\n");
 	std::printf("  xmodels:   ok %d, failed %d\n", modelOk, modelFailed);
 	std::printf("  xsurfaces: ok %d, failed %d\n", surfaceOk, surfaceFailed);
@@ -249,6 +280,8 @@ int RunValidate(const std::vector<std::filesystem::path>& roots) {
 	std::printf("  missing surface files: %zu, missing materials: %zu\n", missingSurfaces.size(),
 	            missingMaterials.size());
 	std::printf("  models with missing surface data: %zu\n", modelsMissingSurfaces.size());
+	std::printf("  attachments: %d names, %d duplicate definitions\n", attachmentNames,
+	            duplicateAttachments);
 	return modelFailed + surfaceFailed + materialFailed;
 }
 

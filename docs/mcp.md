@@ -212,6 +212,22 @@ counts). New tags have no skinned vertices.
 | `copy_from` | string | copy the local transform of an existing tag |
 | `pos` / `rot` | numbers | local transform when `copy_from` is omitted |
 
+### `rename_tag`
+
+Rename an existing bone/tag. The name string item is rewritten (inline) and the stored
+`scr_string_t` placeholder is kept, exactly how x64-zt pairs them; `save_model` writes the file
+with the `.bak` rule.
+
+`{"old":"tag_sight_on","new":"tag_sight_front_on"}` → `{old,new,dirty}`.
+
+### `fit_tag`
+
+Attach an attachment, set ADS and move a tag in its parent space until the mounted reticle's aim
+is on the camera axis at the end of ADS (first person). Uses the weapon json's anim overrides.
+
+`{"tag":"tag_reflex","attachment":"reflex"}` → `{tag,attachment,anim,source_local,local_pos,
+local_delta,world_pos,screen,iterations}`. Does not save; call `save_model` afterwards.
+
 ### `revert_tags`
 
 Revert one tag to the loaded/saved state, or all tags when `tag` is omitted.

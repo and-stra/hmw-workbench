@@ -368,6 +368,22 @@ private:
 		                       {"pos", {{"type", "array"}, {"items", {{"type", "number"}}}}},
 		                       {"rot", {{"type", "array"}, {"items", {{"type", "number"}}}}}}},
 		       {"required", {"tag"}}}}},
+		    {{"name", "rename_tag"},
+		     {"description",
+		      "Rename an existing tag/bone (name + its string-table entry); save_model writes the file with the .bak rule."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"old", str("Current bone name.")},
+		                       {"new", str("New bone name.")}}},
+		       {"required", {"old", "new"}}}}},
+		    {{"name", "fit_tag"},
+		     {"description",
+		      "Fit a tag so the mounted attachment's reticle lands on the camera axis at the end of ADS (first person, weapon json overrides)."},
+		     {"inputSchema",
+		      {{"type", "object"},
+		       {"properties", {{"tag", str("Tag bone, e.g. tag_reflex.")},
+		                       {"attachment", str("Attachment json, e.g. reflex.")}}},
+		       {"required", {"tag", "attachment"}}}}},
 		    {{"name", "revert_tags"},
 		     {"description", "Revert one tag to the loaded/saved state, or all tags when tag is omitted."},
 		     {"inputSchema",
@@ -451,6 +467,12 @@ private:
 		}
 		if (name == "add_tag") {
 			return AddTag(args);
+		}
+		if (name == "rename_tag") {
+			return RenameTag(args);
+		}
+		if (name == "fit_tag") {
+			return FitTag(args);
 		}
 		if (name == "revert_tags") {
 			return RevertTags(args);
@@ -1126,6 +1148,41 @@ private:
 			}
 		}
 		return result;
+	}
+
+	json RenameTag(const json& args) {
+		const std::string oldName = args.value("old", "");
+		const std::string newName = args.value("new", "");
+		if (oldName.empty() || newName.empty()) {
+			return json{{"error", "old and new are required"}};
+		}
+		std::string error;
+		if (!workbench_.RenameTag(oldName, newName, error)) {
+			return json{{"error", error}};
+		}
+		return json{{"old", oldName}, {"new", newName}, {"dirty", workbench_.HasTagChanges()}};
+	}
+
+	json FitTag(const json& args) {
+		const std::string tag = args.value("tag", "");
+		const std::string attachment = args.value("attachment", "");
+		if (tag.empty() || attachment.empty()) {
+			return json{{"error", "tag and attachment are required"}};
+		}
+		commands::TagFitResult result;
+		std::string error;
+		if (!workbench_.FitTagToReticle(tag, attachment, result, error)) {
+			return json{{"error", error}};
+		}
+		return json{{"tag", result.tag},
+		            {"attachment", result.attachment},
+		            {"anim", result.anim},
+		            {"source_local", Vec3(result.sourceLocalPos)},
+		            {"local_pos", Vec3(result.finalLocalPos)},
+		            {"local_delta", Vec3(result.localDelta)},
+		            {"world_pos", Vec3(result.finalWorldPos)},
+		            {"screen", json::array({result.screenX, result.screenY})},
+		            {"iterations", result.iterations}};
 	}
 
 	json RevertTags(const json& args) {

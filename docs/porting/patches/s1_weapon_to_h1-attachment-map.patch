@@ -1,0 +1,128 @@
+--- a/tools/aw-weapon-port/s1_weapon_to_h1.py
++++ b/tools/aw-weapon-port/s1_weapon_to_h1.py
+@@ -12,7 +12,11 @@
+   * the bool fields: S1 writes 0/1, H1 wants true/false
+   * fixed-size string arrays (hideTags 32, reticleViewModels 64, gunModel/worldModel 2, turret spin sounds 4)
+   * null fields inside animOverrides / reloadOverrides / notetrackOverrides
+-  * attachments: only the ones named with --attachment are kept (each kept one must be converted and built too)
++  * attachments: only the ones named with --attachment are kept (each kept one must be converted and built too);
++    --attachment-map <aw>=<hmw> replaces an AW attachment with an existing HMW one (e.g. opticsreddot=reflex)
++  * animOverrides: attachment1/attachment2 are 1-based indices into the weapon's attachments list (0 = none). They are
++    re-indexed to the new list; overrides of dropped attachments are removed. animTreeType is converted from S1's to
++    H1's weapAnimFiles_t numbering (S1 ADS_UP 128 = H1 129; H1 inserted INSPECTION and the mantle additives)
+   * handModel: "viewhands_tf141", an MWR multiplayer arms model that is loaded when the mod zone loads. The zone CSV
+     must list it as a REFERENCE ("xmodel,,viewhands_tf141" before the weapon), never build it in.
+     Not "viewmodel_base_viewhands": HMW's weapons use it too, but it is not loaded yet when mod.ff loads, so the
+@@ -21,8 +25,10 @@
+   * exo-only anim slots (boost jump/slam, dodge, slide and sprint fire, exo punch, boost landing) are cleared: MWR
+     has no exo movement, so they would only be built into the zone for nothing (--keep-exo keeps them)
+ 
+-Usage: s1_weapon_to_h1.py <input.json> <output.json> [--attachment <name> ...] [--hands <xmodel>]
+-Crossbow: --attachment crossbowscopebase (its built-in scope; the optics attachments are not needed)
++Usage: s1_weapon_to_h1.py <input.json> <output.json> [--attachment <name> ...] [--attachment-map <aw>=<hmw> ...]
++                          [--hands <xmodel>]
++Crossbow with HMW optics: --attachment-map opticsreddot=reflex --attachment-map opticsacog2=acog
++(the weapon model needs tag_reflex / tag_acog, added with hmw-workbench; see hmw-workbench/docs/porting/aw.md)
+ """
+ 
+ import argparse
+@@ -196,10 +202,60 @@
+                 override[key] = sound_map(override[key])
+ 
+ 
++# S1 -> H1 weapAnimFiles_t (animOverrides[].animTreeType). Values not listed are equal. Generated from the
++# WEAP_ANIM_* enums in x64-zt src/zonetool/zonetool/s1/structs.hpp and h1/structs.hpp (matched by name).
++S1_TO_H1_ANIM_TREE = {
++    112: 113, 113: 114, 114: 115, 115: 116, 116: 117, 117: 118, 118: 119, 119: 120, 120: 121, 121: 122,
++    122: 123, 123: 124, 124: 125, 125: 126, 126: 127, 127: 128, 128: 129, 129: 130, 130: 131, 132: 133,
++    133: 134, 134: 135, 135: 136, 136: 137, 137: 138, 138: 139, 139: 140, 140: 141, 141: 142, 142: 143,
++    143: 144, 144: 145, 145: 146, 146: 147, 147: 148, 148: 149, 149: 150, 150: 151, 151: 152, 152: 153,
++    153: 154, 154: 155, 155: 156, 156: 157, 157: 158, 158: 159, 159: 160, 160: 161, 161: 162, 162: 163,
++    163: 164, 164: 165, 165: 166, 166: 169, 167: 170, 168: 171, 169: 172, 170: 173, 171: 174, 172: 175,
++    173: 176, 174: 184, 175: 185, 176: 186, 177: 187, 178: 188, 179: 189,
++}
++
++
++def convert_attachments(weapon, keep=(), mapping=None):
++    """New attachments list + re-indexed animOverrides. keep: AW names kept as they are; mapping: AW name -> HMW name.
++    attachment1/attachment2 are 1-based indices into the list (0 = none)."""
++    mapping = mapping or {}
++    source = [a if isinstance(a, str) else "" for a in as_list(weapon.get("attachments"))]
++    new_list = []
++    index_map = {0: 0}
++    for i, name in enumerate(source):
++        target = mapping.get(name) or (name if name in keep else None)
++        if target:
++            if target not in new_list:
++                new_list.append(target)
++            index_map[i + 1] = new_list.index(target) + 1
++    missing = [a for a in list(keep) + list(mapping) if a not in source]
++    if missing:
++        print("warning: attachments not on the weapon: %s" % ", ".join(missing))
++    weapon["attachments"] = new_list
++
++    kept, dropped, retyped = [], 0, 0
++    for override in as_list(weapon.get("animOverrides")):
++        if not isinstance(override, dict):
++            continue
++        a1, a2 = override.get("attachment1", 0) or 0, override.get("attachment2", 0) or 0
++        if a1 not in index_map or a2 not in index_map:
++            dropped += 1
++            continue
++        override["attachment1"], override["attachment2"] = index_map[a1], index_map[a2]
++        tree = override.get("animTreeType", 0) or 0
++        if tree in S1_TO_H1_ANIM_TREE:
++            override["animTreeType"] = S1_TO_H1_ANIM_TREE[tree]
++            retyped += 1
++        kept.append(override)
++    weapon["animOverrides"] = kept
++    print("animOverrides: %d kept (%d animTreeType converted), %d dropped with their attachments" % (
++        len(kept), retyped, dropped))
++
++
+ EXO_ANIM_PREFIXES = ("HIGH_JUMP_", "DODGE_", "SLIDE_", "SPRINTANDFIRE_", "MELEE_ALT_", "LAND_DIP", "SPRINT_IN_FROM_SLIDE")
+ 
+ 
+-def convert(weapon, attachments=(), hands=None, keep_exo=False):
++def convert(weapon, attachments=(), hands=None, keep_exo=False, attachment_map=None):
+     cleared = 0
+     for name in ("szXAnimsRightHanded", "szXAnimsLeftHanded", "szXAnims"):
+         table = anim_table(weapon.get(name))
+@@ -237,11 +293,7 @@
+ 
+     fix_overrides(weapon)
+ 
+-    source = [a for a in as_list(weapon.get("attachments")) if isinstance(a, str)]
+-    weapon["attachments"] = [a for a in source if a in attachments]
+-    missing = [a for a in attachments if a not in source]
+-    if missing:
+-        print("warning: attachments not on the weapon: %s" % ", ".join(missing))
++    convert_attachments(weapon, attachments, attachment_map)
+ 
+     # MWR's hands model by reference (see the header and the zone CSV)
+     weapon["handModel"] = hands if hands else "viewhands_tf141"
+@@ -255,6 +307,8 @@
+     parser.add_argument("input")
+     parser.add_argument("output")
+     parser.add_argument("--attachment", action="append", default=[], help="attachment to keep (repeatable)")
++    parser.add_argument("--attachment-map", action="append", default=[], metavar="AW=HMW",
++                        help="replace an AW attachment with an existing HMW attachment (repeatable), e.g. opticsreddot=reflex")
+     parser.add_argument("--anims-from", help="diagnosis: take the viewmodel anim table (szXAnims) from this H1 weapon JSON")
+     parser.add_argument("--keep-exo", action="store_true", help="keep the exo-only anim slots")
+     parser.add_argument("--hands", default="", help="hands model on the weapon (default viewhands_tf141, loaded in MWR multiplayer)")
+@@ -263,7 +317,14 @@
+     with open(args.input, encoding="utf-8") as f:
+         weapon = json.load(f)
+ 
+-    converted = convert(weapon, args.attachment, args.hands, args.keep_exo)
++    attachment_map = {}
++    for item in args.attachment_map:
++        if "=" not in item:
++            parser.error("--attachment-map needs AW=HMW, got %s" % item)
++        aw, hmw = item.split("=", 1)
++        attachment_map[aw.strip()] = hmw.strip()
++
++    converted = convert(weapon, args.attachment, args.hands, args.keep_exo, attachment_map)
+ 
+     if args.anims_from:
+         with open(args.anims_from, encoding="utf-8") as f:

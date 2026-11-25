@@ -149,16 +149,57 @@ int TagScore(const std::string& required, const std::string& candidate) {
 
 } // namespace
 
-std::optional<std::filesystem::path> FindAttachmentFile(const std::vector<std::filesystem::path>& roots,
-                                                        const std::string& name) {
+std::vector<std::filesystem::path> FindAttachmentDefinitions(
+    const std::vector<std::filesystem::path>& roots, const std::string& name) {
+	std::vector<std::filesystem::path> paths;
 	for (const auto& root : roots) {
 		const std::filesystem::path candidate = root / "attachments" / (name + ".json");
 		std::error_code ec;
 		if (std::filesystem::is_regular_file(candidate, ec) && !ec) {
-			return candidate;
+			paths.push_back(candidate);
 		}
 	}
-	return std::nullopt;
+	return paths;
+}
+
+bool AttachmentHasModels(const std::filesystem::path& path) {
+	std::ifstream in(path);
+	if (!in) {
+		return false;
+	}
+	nlohmann::json json;
+	try {
+		in >> json;
+	} catch (const std::exception&) {
+		return false;
+	}
+	const auto hasModel = [&json](const char* key) {
+		if (!json.contains(key) || !json[key].is_array()) {
+			return false;
+		}
+		for (const auto& value : json[key]) {
+			if (value.is_string() && !value.get<std::string>().empty()) {
+				return true;
+			}
+		}
+		return false;
+	};
+	return hasModel("viewModels") || hasModel("worldModels");
+}
+
+std::optional<std::filesystem::path> FindAttachmentFile(const std::vector<std::filesystem::path>& roots,
+                                                        const std::string& name) {
+	const std::vector<std::filesystem::path> definitions = FindAttachmentDefinitions(roots, name);
+	std::optional<std::filesystem::path> first;
+	for (const std::filesystem::path& path : definitions) {
+		if (!first.has_value()) {
+			first = path;
+		}
+		if (AttachmentHasModels(path)) {
+			return path;
+		}
+	}
+	return first;
 }
 
 std::vector<std::string> ListAttachments(const std::vector<std::filesystem::path>& roots) {

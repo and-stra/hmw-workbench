@@ -206,6 +206,7 @@ public:
 	bool AddTag(const std::string& tag, const std::string& parent, const std::string& copyFrom,
 	            const DirectX::XMFLOAT3& localPos, const DirectX::XMFLOAT4& localQuat,
 	            std::string& error);
+	bool RenameTag(const std::string& oldName, const std::string& newName, std::string& error);
 	bool RevertTag(const std::string& tag, std::string& error);
 	void RevertAllTags();
 	bool TagPoseWorld(const std::string& tag, DirectX::XMFLOAT4X4& out) const;

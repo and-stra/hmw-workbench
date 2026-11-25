@@ -97,8 +97,8 @@ std::string ReplaceToken(const std::string& text, const std::string& from, const
 }
 
 std::string StateForAnimTreeType(int type) {
-	// H1 weapAnimFiles_t values. The AW crossbow port stores 128/129 for ADS_UP/ADS_DOWN
-	// (AW's enum is shifted by one); no H1/H2 weapon in the dumps has a 128/129 override.
+	// H1 weapAnimFiles_t values (cod-mwx database.hpp enum weapAnimFiles_t):
+	// WEAP_ANIM_ADS_UP = 129, WEAP_ANIM_ADS_DOWN = 130.
 	switch (type) {
 	case 2:
 		return "EMPTY_IDLE";
@@ -110,9 +110,9 @@ std::string StateForAnimTreeType(int type) {
 		return "ADS_FIRE";
 	case 65:
 		return "ADS_LASTSHOT";
-	case 128:
-		return "ADS_UP";
 	case 129:
+		return "ADS_UP";
+	case 130:
 		return "ADS_DOWN";
 	case 133:
 		return "ADDITIVE_ADS_ROOT";
@@ -1048,6 +1048,19 @@ bool Workbench::AddTag(const std::string& tag, const std::string& parent, const 
 	return true;
 }
 
+bool Workbench::RenameTag(const std::string& oldName, const std::string& newName, std::string& error) {
+	if (!document_) {
+		error = "no editable model loaded";
+		return false;
+	}
+	if (!assets::RenameTag(*document_, oldName, newName, error)) {
+		return false;
+	}
+	SyncDocumentToScene();
+	RebuildHiddenTags();
+	return true;
+}
+
 bool Workbench::RevertTag(const std::string& tag, std::string& error) {
 	if (!document_) {
 		error = "no editable model loaded";
@@ -1284,12 +1297,17 @@ bool Workbench::OverrideAppliesToAttachment(const assets::WeaponAnimOverride& en
 	}
 	const std::vector<std::string>& listed = viewmodel_.weapon.attachments;
 	if (!listed.empty()) {
-		const auto matches = [this, &listed, &entry](std::size_t index) {
-			if (index >= listed.size()) {
+		// The weapon json's attachments array is 1-based: attachment1 = 1 is listed[0],
+		// 0 means "no attachment". Both attachment1 and attachment2 are checked.
+		const auto matches = [this, &listed](int index) {
+			if (index <= 0) {
 				return false;
 			}
-			const std::string& name = listed[index];
-			const std::string lower = ToLower(name);
+			const std::size_t slot = static_cast<std::size_t>(index - 1);
+			if (slot >= listed.size()) {
+				return false;
+			}
+			const std::string lower = ToLower(listed[slot]);
 			for (const AttachmentMount& mount : attachments_) {
 				if (ToLower(mount.name) == lower || ToLower(mount.internalName) == lower) {
 					return true;
@@ -1297,10 +1315,9 @@ bool Workbench::OverrideAppliesToAttachment(const assets::WeaponAnimOverride& en
 			}
 			return false;
 		};
-		if (matches(entry.attachment1) || (entry.attachment1 > 0 && matches(entry.attachment1 - 1))) {
-			return true;
-		}
+		return matches(entry.attachment1) || matches(entry.attachment2);
 	}
+	// No attachment list (older ports): fall back to the AW optic index map.
 	for (const AttachmentMount& mount : attachments_) {
 		if (entry.attachment1 == assets::OpticAttachmentIndexForTag(mount.requiredTag)) {
 			return true;
@@ -1805,7 +1822,18 @@ void Workbench::UpdateAttachmentWorlds() {
 		mount.world = ToFloat4x4(world);
 
 		DirectX::XMMATRIX reticleAttach = DirectX::XMMatrixIdentity();
-		const int attachTag = FindModelBone(mount.model.model, "tag_reticle_attach");
+		int attachTag = FindModelBone(mount.model.model, "tag_reticle_attach");
+		if (attachTag < 0) {
+			attachTag = FindModelBone(mount.model.model, "tag_reticle_acog");
+		}
+		if (attachTag < 0) {
+			for (std::size_t boneIndex = 0; boneIndex < mount.model.model.bones.size(); ++boneIndex) {
+				if (mount.model.model.bones[boneIndex].name.rfind("tag_reticle", 0) == 0) {
+					attachTag = static_cast<int>(boneIndex);
+					break;
+				}
+			}
+		}
 		if (attachTag >= 0) {
 			reticleAttach = BoneMatrix(mount.model.model.bones[static_cast<std::size_t>(attachTag)]);
 		}

@@ -33,6 +33,15 @@ struct AttachmentAsset {
 std::optional<std::filesystem::path> FindAttachmentFile(const std::vector<std::filesystem::path>& roots,
                                                         const std::string& name);
 
+// All definitions of an attachment name across the roots, in root order. HMW has stub
+// definitions (viewModels/worldModels null) in some zones; FindAttachmentFile prefers a
+// definition that actually has models.
+std::vector<std::filesystem::path> FindAttachmentDefinitions(
+    const std::vector<std::filesystem::path>& roots, const std::string& name);
+
+// True when the attachment json has at least one view or world model.
+bool AttachmentHasModels(const std::filesystem::path& path);
+
 // All attachment json names in all roots (first hit wins, sorted, unique).
 std::vector<std::string> ListAttachments(const std::vector<std::filesystem::path>& roots);
 

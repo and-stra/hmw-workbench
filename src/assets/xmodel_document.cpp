@@ -1,6 +1,7 @@
 #include "assets/xmodel_document.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -76,6 +77,27 @@ int FindBone(const XModelData& model, const std::string& name) {
 		}
 	}
 	return -1;
+}
+
+bool SetBoneName(XModelDocument& document, std::size_t boneIndex, const std::string& name,
+                 std::string& error) {
+	if (boneIndex >= document.model.bones.size() || boneIndex >= document.boneNameItems.size()) {
+		error = "bone index out of range";
+		return false;
+	}
+	const std::size_t itemIndex = document.boneNameItems[boneIndex];
+	if (itemIndex >= document.items.size()) {
+		error = "bone name item out of range";
+		return false;
+	}
+	RecordedItem& item = document.items[itemIndex];
+	item.type = 6;
+	item.existing = true;
+	item.text = name;
+	item.refIndex = 0;
+	item.refSub = 0;
+	document.model.bones[boneIndex].name = name;
+	return true;
 }
 
 void ComputeWorld(const XModelData& model, std::size_t index, DirectX::XMFLOAT3& worldPos,
@@ -598,6 +620,32 @@ bool AddTag(XModelDocument& document, const std::string& name, const std::string
 	return true;
 }
 
+bool RenameTag(XModelDocument& document, const std::string& oldName, const std::string& newName,
+               std::string& error) {
+	if (newName.empty()) {
+		error = "new tag name is empty";
+		return false;
+	}
+	const int index = FindBone(document.model, oldName);
+	if (index < 0) {
+		error = "tag not found: " + oldName;
+		return false;
+	}
+	std::string lower = newName;
+	std::transform(lower.begin(), lower.end(), lower.begin(),
+	               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	for (const BoneData& bone : document.model.bones) {
+		std::string existing = bone.name;
+		std::transform(existing.begin(), existing.end(), existing.begin(),
+		               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		if (existing == lower) {
+			error = "bone already exists: " + newName;
+			return false;
+		}
+	}
+	return SetBoneName(document, static_cast<std::size_t>(index), newName, error);
+}
+
 bool RevertTag(XModelDocument& document, const std::string& tag, std::string& error) {
 	const int index = FindBone(document.model, tag);
 	if (index < 0) {
@@ -615,6 +663,9 @@ bool RevertTag(XModelDocument& document, const std::string& tag, std::string& er
 			return false;
 		}
 		const BoneData& original = document.originalModel.bones[boneIndex];
+		if (!SetBoneName(document, boneIndex, original.name, error)) {
+			return false;
+		}
 		SetLocal(document, boneIndex, original.localPos, original.localQuat);
 		return true;
 	}
@@ -698,6 +749,9 @@ bool HasTagChanges(const XModelDocument& document) {
 	for (std::size_t i = 0; i < document.model.bones.size(); ++i) {
 		const BoneData& a = document.model.bones[i];
 		const BoneData& b = document.originalModel.bones[i];
+		if (a.name != b.name) {
+			return true;
+		}
 		const float dx = a.localPos.x - b.localPos.x;
 		const float dy = a.localPos.y - b.localPos.y;
 		const float dz = a.localPos.z - b.localPos.z;
