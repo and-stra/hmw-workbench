@@ -727,6 +727,10 @@ void Application::DrawWeaponInspector() {
 	}
 	ImGui::SameLine();
 	ImGui::TextDisabled("ADS FOV %.1f (adsZoomFov)", viewmodel->weapon.adsZoomFov);
+	bool autoAlign = workbench_.AdsAutoAlign();
+	if (ImGui::Checkbox("debug: snap ADS to reticle (hides misalignment)", &autoAlign)) {
+		workbench_.SetAdsAutoAlign(autoAlign);
+	}
 
 	if (workbench_.IsFirstPerson()) {
 		float cgFov = settings_.firstPersonFov;

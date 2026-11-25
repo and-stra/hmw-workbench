@@ -123,6 +123,7 @@ block with the saved path and size.
 | `caption` | string | – | text in the top-left corner |
 | `sheet` | int | 0 | contact sheet of N cells of the current animation |
 | `ads` | bool | – | set ADS before rendering |
+| `ads_align` | bool | false | **debug only**: snap `tag_ads` to the reticle (hides real misalignment) |
 
 ### `get_bones`
 

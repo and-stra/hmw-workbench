@@ -232,7 +232,7 @@ private:
 		    {"marktags", boolean("Label every weapon tag.")},
 		    {"caption", str("Caption drawn at the top left.")},
 		    {"sheet", integer("Contact sheet: N cells of the current animation instead of one frame.")},
-		    {"ads_align", boolean("Auto-align tag_ads to a mounted reticle in ADS (default true).")}};
+		    {"ads_align", boolean("Debug only: auto-align tag_ads to a mounted reticle in ADS (default false; hides real misalignment).")}};
 
 		return json::array({
 		    {{"name", "list_assets"},

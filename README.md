@@ -119,7 +119,7 @@ relative to the current working directory unless they are absolute.
 | `-exposure <n>` | lighting exposure |
 | `-width <n>` / `-height <n>` | image/sheet cell size |
 | `-caption <text>` | caption in the top-left corner of a screenshot |
-| `-no-ads-align` | disable automatic ADS reticle alignment (tag fitting) |
+| `-ads-align` | debug only: snap `tag_ads` to the mounted reticle in ADS (off by default; hides real misalignment). `-no-ads-align` is still accepted as a no-op. |
 | `-posedump [file]` | text dump of the posed skeleton, animation coverage, bounds, tag screen positions |
 | `-info <xmodel\|xanim>` | text dump (bones/tags/surfaces/materials or anim frames/notetracks) |
 | `-fit-report [file] -weapon <name>` | attachment fit report (needed tag, found/missing, nearest tags; add `-world`) |

@@ -124,17 +124,20 @@ in `<model>.tags.json`.
 ```bat
 hmw-workbench.exe -screenshot review\check\<weapon>_reflex_ads.png -weapon <weapon>_mp ^
                   -view firstperson -ads -anim <idle_anim> -time 0 -attach reflexmwr ^
-                  -no-ads-align -crosshair -width 1920 -height 1016
+                  -crosshair -width 1920 -height 1016
 hmw-workbench.exe -posedump review\check\pose.txt -weapon <weapon>_mp -view firstperson -ads ^
-                  -anim <idle_anim> -time 0 -attach reflexmwr -no-ads-align -width 1920 -height 1016
+                  -anim <idle_anim> -time 0 -attach reflexmwr -width 1920 -height 1016
 ```
 
-Use `-no-ads-align` when you are testing the tag itself (the workbench otherwise auto-aligns the
-reticle to hide small tag errors). The crosshair marks the image centre; `-posedump` prints the
-reticle/tag screen position so you can write down the offset. The M5 crossbow result: reflex aim
-**(960.0, 508.0)** at 1920x1016 with `vm_crossbow_reddot_ads_up`, ACOG the same with
-`vm_crossbow_acog_ads_up`, i.e. 0 px off centre. The built-in `tag_sight_on` ring still occludes
-the reflex lens in game; that is a `hideTags` weapon-json change, not a tag fit issue.
+ADS auto-alignment is **off by default**, so the measured reticle position is the real tag result.
+Do not pass `-ads-align`: that debug switch snaps `tag_ads` to the reticle and hides a
+misalignment (useful only for a quick look at an optic, never for a fit check). The crosshair
+marks the image centre; `-posedump` prints the reticle/tag screen position so you can write down
+the offset. The M5 crossbow result: reflex aim **(960.0, 508.0)** at 1920x1016 with
+`vm_crossbow_reddot_ads_up`, ACOG the same with `vm_crossbow_acog_ads_up`, i.e. 0 px off centre.
+The built-in `tag_sight_on` ring still occluded the reflex lens before the HMW optic port; it is
+now `tag_sight_front_on` and hidden by the HMW attachments (`hideTags`), a weapon-json/model change
+rather than a tag fit issue.
 
 If an optic is off:
 
@@ -186,10 +189,10 @@ hmw-workbench.exe -screenshot review\M2\crossbow_fp.png -weapon iw5_exocrossbow_
 hmw-workbench.exe -fit-report review\M5\fit_crossbow_after.txt -weapon iw5_exocrossbow_mp
 hmw-workbench.exe -screenshot review\M5\crossbow_reflex_ads_end.png -weapon iw5_exocrossbow_mp ^
                   -view firstperson -ads -anim vm_crossbow_idle -time 0 -attach reflexmwr ^
-                  -no-ads-align -crosshair -hidesurface 0,1,3,18,19 -width 1920 -height 1016
+                  -crosshair -hidesurface 0,1,3,18,19 -width 1920 -height 1016
 hmw-workbench.exe -screenshot review\M5\crossbow_acog_ads_end.png -weapon iw5_exocrossbow_mp ^
                   -view firstperson -ads -anim vm_crossbow_idle -time 0 -attach acogmwr ^
-                  -no-ads-align -crosshair -width 1920 -height 1016
+                  -crosshair -width 1920 -height 1016
 ```
 
 Expected: `tag_reflex`, `tag_acog`, `tag_silencer` found; both reticles at (960, 508) at

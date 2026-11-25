@@ -100,6 +100,7 @@ struct Options {
 	std::filesystem::path roundTripPath;
 	bool fitCrossbow = false;
 	bool noAdsAlign = false;
+	bool adsAlign = false;
 	std::string camoName;
 	std::string characterName;
 	std::string characterWeapon;
@@ -164,7 +165,7 @@ void PrintUsage() {
 	    "                    [-dist <units>] [-fov <vertical deg>] [-exposure <n>]\n"
 	    "                    [-crosshair] [-marktags]\n"
 	    "                    [-camo <camo_h1_name|name>] [-camo-strength <0..1>] [-camo-scale <n>]\n"
-	    "                    [-world] [-caption <text>] [-no-ads-align]\n"
+	    "                    [-world] [-caption <text>] [-ads-align]\n"
 	    "      Render the viewport offscreen (no window) and exit.\n"
 	    "  hmw-workbench.exe -character <faction> [-character-weapon <weapon>]\n"
 	    "                    [-anim <xanim>] [-time <s>] [-view orbit] [-screenshot <file.png>]\n"
@@ -504,6 +505,9 @@ int RunHeadless(const std::filesystem::path& exeDir, wb::Settings& settings, con
 		}
 		if (options.noAdsAlign) {
 			workbench.SetAdsAutoAlign(false);
+		}
+		if (options.adsAlign) {
+			workbench.SetAdsAutoAlign(true);
 		}
 		if (options.fitCrossbow) {
 			RunCrossbowFit(workbench);
@@ -1048,6 +1052,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int) {
 			options.fitCrossbow = true;
 		} else if (arg == L"-no-ads-align") {
 			options.noAdsAlign = true;
+		} else if (arg == L"-ads-align") {
+			options.adsAlign = true;
 		} else if (arg == L"-camo") {
 			const wchar_t* value = nextValue();
 			if (value == nullptr) {

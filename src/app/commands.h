@@ -354,7 +354,7 @@ private:
 	bool attachmentCatalogValid_ = false;
 	std::unique_ptr<assets::XModelDocument> document_;
 	bool documentIsWeapon_ = false;
-	bool adsAutoAlign_ = true;
+	bool adsAutoAlign_ = false; // off by default: auto-align hides real ADS misalignment
 
 	// character (body + optional head + world weapon on a hand tag)
 	bool hasCharacter_ = false;

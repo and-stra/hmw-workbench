@@ -97,7 +97,7 @@ hands+gun pose.
 - Next: check the five hands models that are not in the roots (the game may pick one of them for the failing
   faction), and the in-game `setviewmodel`/material path for a failure that leaves the hands model unloaded.
 
-### Port fixes to try (none applied yet)
+### Port fixes (state 25 Nov 2026; details in "Crossbow optics" below)
 
 1. **Done 25 Nov 2026 (weapon json):** `zonetool\mod\weapons\iw5_exocrossbow_mp.json` (original kept as `.json.bak`)
    now has `attachments = ["acog", "reflex"]` (HMW's MW2-style optics, the same ones the M4A1 uses) and 5
@@ -108,15 +108,12 @@ hands+gun pose.
    (not applied yet – `cod-mwx` is the MWX agents' repo).
 2. **Done 25 Nov 2026 (workbench M5):** `vm_crossbow_base.xmb` in `GAME\zonetool\mod\xmodel` has three new tags
    (original kept as `.xmb.bak`, edits in `vm_crossbow_base.tags.json`), all children of `j_gun`:
-   `tag_reflex` = `tag_red_dot` + (0, 0, +0.356), `tag_acog` = `tag_acog_2` + (0, 0, +0.110),
-   `tag_silencer` = `tag_flash`. With `reflexmwr` + `vm_crossbow_reddot_ads_up` and `acogmwr` +
-   `vm_crossbow_acog_ads_up` the reticle lands exactly on screen centre at ADS end (checked by Claude via MCP).
-   Not done yet: the same tags on the world model `npc_crossbow_base` (world attachments), zone rebuild, in-game test.
-3. Hide the built-in sight (`tag_sight_on` surfaces) when an optic is mounted (`hideTags`). Confirmed needed: in
-   ADS with `reflexmwr` the built-in ring sits in front of the reflex and covers most of its glass. Plan: HMW's
+   `tag_reflex`, `tag_acog`, `tag_silencer` (= `tag_flash`). First tuned for the MWR optics, then re-tuned the same
+   day for HMW's MW2-style `reflex`/`acog` (final offsets in "Crossbow optics" below). World model done too.
+3. **Done 25 Nov 2026:** hide the built-in sight when an optic is mounted. HMW's
    `reflex` and `acog` attachments hide `tag_sight_front_on`, so renaming the crossbow bone `tag_sight_on` →
    `tag_sight_front_on` hides the ring exactly when an HMW optic is mounted (no anim or weapon field uses
-   `tag_sight_on`).
+   `tag_sight_on`). Renamed in `vm_crossbow_base` and `npc_crossbow_base`.
 
 **HMW attachment models:** attachments are defined per weapon class, the models are mostly shared. HMW's MW2-style
 weapons (`h2_*`, e.g. the M4A1) use one generic set: `reflex` (`attach_h2_reflex_vm` on `tag_reflex`), `acog`
@@ -124,8 +121,8 @@ weapons (`h2_*`, e.g. the M4A1) use one generic set: `reflex` (`attach_h2_reflex
 `attach_h1_scope_acog_vm` (30 `acogmwr<weapon>` definitions) and `attach_h1_optic_reflex_vm` (22 `reflexmwr<weapon>`);
 the per-weapon definitions only differ in anim suffixes and stats. A few models are weapon-specific (AUG/F2000 scopes,
 M203/GP25 launchers, M1014 foregrip).
-4. Fix ADS alignment without optic (sight 178 px low) – check what AW does for the no-optic case first.
-5. Dump the 11 missing images (AW `common_mp`) in H1 format.
+4. Open: fix ADS alignment without optic (built-in sight 125–178 px low in the workbench; check in game first) – check what AW does for the no-optic case first.
+5. Open: dump the 11 missing images (AW `common_mp`) in H1 format.
 
 ## Crossbow optics: workbench + zone state (25 Nov 2026)
 
