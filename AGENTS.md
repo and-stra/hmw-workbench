@@ -30,3 +30,5 @@ The full plan, facts and milestones are in [docs/PLAN.md](docs/PLAN.md). Read it
 - Keep at least 20 GB free on C:. Never copy or extract outside `C:\Games\cod-hwm`.
 - Dependencies only as git submodules from their official repositories.
 - C++20, MSVC warnings level 4, no warnings in our code. Keep asset readers free of D3D code (`src/assets`).
+- Porting knowledge: every reusable finding goes into `docs\porting\guide.md` (engine/tool rules, errors and fixes),
+  source-game specifics into `docs\porting\<game>.md` (e.g. `aw.md`). Follow the "How to document" rules there.
