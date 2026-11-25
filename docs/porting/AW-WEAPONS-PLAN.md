@@ -148,6 +148,12 @@ shield (separate project), Goliath/mech/turret weapons, exo grenades/launchers, 
   name builder (`_class::buildweaponnamecamo`), workbench previews next to `h2_m4`, in-game checklist.
 - Becomes a standard step in every later weapon milestone (W2+); recipe in `guide.md` §4. In-game test by the user.
 
+### W1.2 – Crossbow finish (open)
+- The crossbow's 11 missing scope and glass textures.
+- Aiming without an optic: the built-in sight sits 125–178 px low in the workbench; fix it, or prove that the
+  game does it differently, with an in-game screenshot.
+- Then T1 and I1 (see "Integration and testing") before W2 starts.
+
 ### W2 – Pilot: M1 Garand, SIG MPX (KF5), combat knife
 - Full pipeline per weapon: dump (new folders only) → convert (`s1_weapon_to_h1.py`, patch applied) → hmw-workbench
   check (anims on MWR hands incl. faction hands, fit report, add/tune HMW attachment tags on view + world model,
@@ -160,7 +166,7 @@ shield (separate project), Goliath/mech/turret weapons, exo grenades/launchers, 
 - Combat knife: in the melee list next to the hatchet; check its anims, melee range/damage against HMW's melee
   weapons. Camo tab: `MeleeInUseCheck` hardcodes HMW's five melee refs, so a new melee ref keeps its camo tab; do
   not add it to that list.
-- Attachment matrix rows for the three weapons. Commit. STOP.
+- Attachment matrix rows for the three weapons. Then the batch gate (see "Integration and testing"). STOP.
 
 ### W3 – All remaining weapons, in batches
 - Batches of 4–5 (modern first, then classic), same process as W2 (including the camo step), one commit per batch,
@@ -178,6 +184,84 @@ shield (separate project), Goliath/mech/turret weapons, exo grenades/launchers, 
   mode tests (`run_all_tests`).
 - Packaging: final location of `hmw_aw_weapons.ff`, size, load-time cost, how friends install it (MWX packaging
   step). Update `hmw-workbench\docs\porting\aw-weapons-port.md` and `hmw-workbench\docs\porting\aw.md`. Commit. STOP.
+
+## Integration and testing (added by Claude, 25 Nov 2026)
+
+State on 25 Nov 2026: `origin/mwx` = `5cdcf64b`. The game-mode branch `opencode/autonomous` is 32 commits ahead
+(not merged yet, review fixes pending). `aw-weapons` is 3 commits ahead (W1, W1.1, `-datadir/-logdir`). Both
+branches touch `debug_server.cpp`, `gsc/script_loading.cpp` and `ui_scripting.cpp` (the data-dir helpers). The
+converter patch (`hmw-workbench\docs\porting\patches\`) is not in any cod-mwx branch yet.
+
+Principle: integrate early and in small steps. No big merge at the end. Every weapon gets an automated test in
+the MWX test framework (`data/mwx/tests`), so a later change that breaks it is caught by `run_all_tests`.
+Claude merges into `mwx`; the agents never do. The order is always: the game-mode branch first, then
+`aw-weapons` rebased onto the new `mwx`.
+
+### T1 – Automated test for the crossbow (after W1.2, before I1)
+- In `cod-hmw-aw` (branch `aw-weapons`): a GSC test `data/mwx/tests/aw_crossbow.gsc` plus its `tests.json`
+  entry, using the existing framework (dedicated server, bots, asserts):
+  - the weapon asset exists and the statstable row is there;
+  - `isvalidprimary`/`isvalidsecondary` accept it, and HMW's name builder gives the expected name (no optic,
+    `reflex`, `acog`, `_camoNNN`);
+  - a player spawns with each variant, fires, reloads, switches weapons, and kills a bot with it (credited kill,
+    correct kill-feed weapon);
+  - Sticks and Stones: with the mod loaded, the mod's crossbow still works (a separate test entry with the mod
+    dvar).
+- A generic version `aw_weapon.gsc` driven by `tests.json` parameters (weapon, attachments, camo, class), so each
+  later weapon only needs one json entry.
+- Visual checks that GSC cannot do (ADS reticle centred, ring hidden, camo look, CAC entry) stay as MCP
+  screenshots in `mwx-debug\aw-weapons\<milestone>\` with a short checklist in the report.
+- Run the full suite with the zone loaded: every existing test stays green. STOP.
+
+### I1 – First integration into mwx (after T1)
+1. Claude merges the game-mode branch into `mwx` (after its review fixes).
+2. The AW agent rebases `aw-weapons` onto the new `mwx` in `cod-hmw-aw`. It resolves the data-dir conflicts
+   (keep `filesystem::get_data_dir()`/`get_log_dir()`), applies the converter patch to
+   `tools/aw-weapon-port`, and rebuilds `hmw-aw.exe`.
+3. Zone handling:
+   - The repo holds the zone source and documents the build command.
+   - The built `hmw_aw_weapons.ff` lives in a fixed place in the data dir. Never in `hmw-mod\` and never
+     inside HMW's zones.
+   - The client loads it only if it exists. If the file is missing, the game must not crash and the AW
+     weapons are hidden in Create-a-Class (fallback test: rename the file and start the game).
+4. Party modes: check every mode that picks weapons itself (Gun Game, Sharpshooter, One in the Chamber, All or
+   Nothing, Arena, Infected loadouts). Either the AW weapons are deliberately excluded or included, and none of
+   these modes breaks with the zone loaded. Write the decision into the report.
+5. Gates:
+   - `run_all_tests`, run twice: all existing tests plus `aw_*` green;
+   - `check-all` clean;
+   - `load_times.log` before and after, with the zone's cost written down;
+   - weapon pool usage before and after (`fastfiles.cpp` pool counts).
+6. Claude reviews and merges `aw-weapons` into `mwx`. From then on `mwx.exe` contains the AW code.
+   `hmw-aw.exe` stays as the AW agent's isolated test client while two agents work in parallel. STOP.
+
+### Gate for every W2/W3 batch (replaces "Commit. STOP.")
+- Rebase onto the current `mwx` first (only after Claude has merged; never merge yourself).
+- One `aw_weapon` test entry per new weapon (all attachments from its matrix row, one camo), plus the
+  screenshot checklist.
+- Full suite green twice, pool and load-time numbers updated in the report.
+- Claude merges each finished batch into `mwx`. A weapon marked "BLOCKED" stays out of the statstable and CAC.
+
+### I2 – LAN and multiplayer test (after W3)
+- Host plus a second client on the same PC (`mwx.exe` and `hmw-aw.exe` with separate data and log dirs and
+  debug ports): join, both players use AW weapons with attachments and camos, kills and the kill feed show on
+  both sides, a weapon drop is picked up by the other player.
+- Zone mismatch: a client without `hmw_aw_weapons.ff`, or with an older version, joins a host that has it. It
+  must get a clear error message (version or content check in `getInfo`/connect), not a crash and not invisible
+  weapons. Implement the check if it's missing.
+- Bot matches on 5 maps (one with a usermap) in TDM, FFA, S&D and one party mode, about 10 minutes each: no
+  script errors, no pool overflow, no crash dumps.
+- Sticks and Stones over LAN as well. STOP.
+
+### I3 – Release candidate (after W4/W5)
+- The W5 regression, run as tests: the full suite twice, all `aw_*` tests, all HMW weapons (a generated test
+  that spawns every HMW base weapon once and fires it), and the I2 LAN checklist again.
+- Install test:
+  - Install exactly as friends would: a fresh data dir (`-datadir`) and only the shipped files.
+  - Follow the written install steps.
+  - First start, Create-a-Class, and a match.
+- Release notes: weapon list with real names, known limits from the attachment matrix, zone size, load-time
+  cost. Claude does the final merge and tags the version. STOP.
 
 ## Documentation (required at every milestone)
 Every important finding is written down so future ports (more AW weapons, Ghosts, IW7, T7, H2 …) get easier:
