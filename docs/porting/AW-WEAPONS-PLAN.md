@@ -1,4 +1,4 @@
-# Plan: AW weapons in MWX (written by Claude, 25 Nov 2026)
+﻿# Plan: AW weapons in MWX (written by Claude, 25 Nov 2026)
 
 **Goal:** one fastfile `hmw_aw_weapons.ff` with every approved Advanced Warfare (S1) weapon, shipped with the MWX
 game files, loaded by the MWX client after the HMW zones, and selectable in Create-a-Class like HMW's own weapons.
@@ -32,7 +32,6 @@ handles `iw5_*`). Confirm each identification from the model in P0 (workbench sc
 | AK-12 | AK12 | iw5_ak12 | AR |
 | Beretta ARX160 | ARX-160 | iw5_arx160 | AR |
 | CZ 805 BREN (sources also say Robinson XCR – decide from the model) | HBRa3 | iw5_hbra3 | AR |
-| SIG MPX | KF5 | iw5_kf5 | SMG |
 | CBJ-MS | MP11 | iw5_mp11 | SMG |
 | Ameli (MG82) | Ameli | iw5_asaw | LMG |
 | LSAT | Pytaek | iw5_lsat | LMG |
@@ -40,6 +39,9 @@ handles `iw5_*`). Confirm each identification from the model in P0 (workbench sc
 | UTS-15 | Tac-19 | iw5_uts19 | shotgun |
 | MP-443 Grach | MP443 Grach | iw5_pbw | pistol |
 | Carl Gustaf M3 MAAWS | MAAWS | iw5_maaws (common_mp, dump it) | launcher |
+
+Dropped 26 Nov (user decision): **SIG MPX (KF5)** - the MWR **Fang 45** (`h1_aprsmg`) is the real
+SIG MPX and is a Create-a-Class weapon now (item 12), so the KF5 is not ported.
 | Combat knife | Combat knife | iw5_combatknife (common_mp) | melee (optional, last) |
 
 ### PORT – classic guns (AW supply-drop DLC weapons)
@@ -154,7 +156,7 @@ shield (separate project), Goliath/mech/turret weapons, exo grenades/launchers, 
   game does it differently, with an in-game screenshot.
 - Then T1 and I1 (see "Integration and testing") before W2 starts.
 
-### W2 – Pilot: M1 Garand, SIG MPX (KF5), combat knife
+### W2 - Pilot: M1 Garand, MP40, combat knife (KF5 dropped: the MWR Fang 45 is the SIG MPX)
 - Full pipeline per weapon: dump (new folders only) → convert (`s1_weapon_to_h1.py`, patch applied) → hmw-workbench
   check (anims on MWR hands incl. faction hands, fit report, add/tune HMW attachment tags on view + world model,
   ADS checks, hide built-in sights) → add to `hmw_aw_weapons` → statstable/CAC/names/icons → in-game test.

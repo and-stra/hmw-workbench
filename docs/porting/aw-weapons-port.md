@@ -30,7 +30,7 @@ are present).
 | AK-12 | AK12 | `iw5_ak12_mp` | patch_common_mp | 0 rifle | `vm_ak12_loot_base` | `npc_ak12_base_loot` | 88 | 20 |
 | Beretta ARX160 | ARX-160 | `iw5_arx160_mp` | patch_common_mp | 0 rifle | `vm_arx160_base_loot` | `npc_arx160_base_loot` | 87 | 20 |
 | CZ 805 BREN | HBRa3 | `iw5_hbra3_mp` | patch_common_mp | 0 rifle | `vm_hbra3_base_loot` | `npc_hbra3_base_loot` | 86 | 21 |
-| SIG MPX | KF5 | `iw5_kf5_mp` | patch_common_mp | 3 SMG | `vm_kf5_base_loot` | `npc_kf5_base_loot` | 87 | 18 |
+| ~~SIG MPX~~ | ~~KF5~~ | ~~`iw5_kf5_mp`~~ | dropped 26 Nov: the MWR Fang 45 (`h1_aprsmg`) is the real SIG MPX and is in CAC | - | - | - | - | - |
 | CBJ-MS | MP11 | `iw5_mp11_mp` | patch_common_mp | 3 SMG | `vm_cbj_ms_base_loot` | `npc_cbj_ms_base_loot` | 89 | 18 |
 | CETME Ameli (see note) | Ameli | `iw5_asaw_mp` | patch_common_mp | 2 LMG | `vm_ameli_base_loot` | `npc_ameli_base_loot` | 85 | 18 |
 | LSAT | Pytaek | `iw5_lsat_mp` | patch_common_mp | 2 LMG | `vm_lsat_base_loot` | `npc_lsat_base_loot` | 87 | 18 |
@@ -61,7 +61,6 @@ The English strings are in AW `eng_patch_common` (new dump). Confirmed:
 | `WEAPON_AK12` | AK12 |
 | `WEAPON_ARX160` | ARX-160 |
 | `WEAPON_HBRA3` | HBRa3 |
-| `WEAPON_KF5` | KF5 |
 | `WEAPON_MP11` | MP11 |
 | `WEAPON_ASAW` | **Ameli** |
 | `WEAPON_LSAT` | **Pytaek** |
