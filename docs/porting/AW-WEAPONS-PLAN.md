@@ -139,7 +139,7 @@ shield (separate project), Goliath/mech/turret weapons, exo grenades/launchers, 
 - MWX loads the zone after the HMW zones; statstable row; CAC category from W0; whitelist via MWX GSC
   `replacefunc` (never edit HMW's zones); attachments `reflex` and `acog` selectable for it in CAC; camos as
   decided in W0 (or disabled with a note).
-- Sticks and Stones keeps working (decision from W0).
+- The **native `sas` mode** (Sticks and Stones) keeps working; it is no longer a mod (part C).
 - Test with the MWX MCP: CAC shows the crossbow in its category (`ui_snapshot`), equip it with no optic / reflex /
   acog, spawn, fire, reload, ADS (reticle centred, ring hidden), kill feed, swap weapons; a bot match; restart the
   game and the class is still there. Screenshots into `mwx-debug\aw-weapons\W1\`.
@@ -207,8 +207,7 @@ Claude merges into `mwx`; the agents never do. The order is always: the game-mod
     `reflex`, `acog`, `_camoNNN`);
   - a player spawns with each variant, fires, reloads, switches weapons, and kills a bot with it (credited kill,
     correct kill-feed weapon);
-  - Sticks and Stones: with the mod loaded, the mod's crossbow still works (a separate test entry with the mod
-    dvar).
+  - Native `sas` (Sticks and Stones): the crossbow comes from `hmw_aw_weapons.ff`, no mod is loaded.
 - A generic version `aw_weapon.gsc` driven by `tests.json` parameters (weapon, attachments, camo, class), so each
   later weapon only needs one json entry.
 - Visual checks that GSC cannot do (ADS reticle centred, ring hidden, camo look, CAC entry) stay as MCP

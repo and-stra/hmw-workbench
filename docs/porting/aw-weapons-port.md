@@ -900,3 +900,14 @@ not pushed, no `mwx` change):
   manual sas test.
 - In-game tests/screenshots (ADS no-optic, optics, camo, CAC entry, kill feed, Sticks and Stones)
   are the user's step; the zone is installed in `GAME\hmw-aw\zone`.
+
+### 14.6 Part C update (26 Nov 2026): native Sticks and Stones
+
+Sticks and Stones is no longer a mod. gamemodes.cpp registers the native sas row, the script is
+data/mwx/maps/mp/gametypes/sas.gsc, and the crossbow comes from hmw_aw_weapons.ff. The
+data/mods/sticksandstones PoC and the installed GAME\mods\sticksandstones (mod.ff + all .bak
+files) were moved to `mwx-debug\backups\sticksandstones-mod`. 	ests-aw-sas.json and
+w_crossbow_sas.gsc are gone; w_crossbow covers the weapon. The native sas test passes 8/8
+(x3) with the crossbow, hatchet and throwing knife, and the suicide/throwing-knife bankruptcy rules.
+The mod-system load/swap test now uses the minimal data/mods/test_mod (one script, no mod.ff, no
+weapons).
